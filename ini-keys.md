@@ -38,7 +38,7 @@ Written when the Detail page initialises, based on detected renderer and hardwar
 
 | Section | Key | Value | Address |
 |---|---|---|---|
-| `WinDrv.WindowsClient` | `MinDesiredFrameRate` | per-renderer (`SoftDrv...`, `D3DDrv...`) | `0x1090ED2C`, `0x1090ED9E` |
+| `WinDrv.WindowsClient` | `MinDesiredFrameRate` | `1` — two call sites, same value (see below) | `0x1090ED2C`, `0x1090ED9E` |
 | `Galaxy.GalaxyAudioSubsystem` | `UseReverb` | `False` | `0x1090EF28` |
 | `Galaxy.GalaxyAudioSubsystem` | `OutputRate` | `11025Hz` | `0x1090EF4E` |
 | `Galaxy.GalaxyAudioSubsystem` | `UseSpatial` | `False` | `0x1090EF73` |
@@ -50,6 +50,27 @@ Written when the Detail page initialises, based on detected renderer and hardwar
 | `WinDrv.WindowsClient` | `WindowedColorBits` | `16` | `0x1090F5E7` |
 | `WinDrv.WindowsClient` | `FullscreenViewportX` / `Y` | `640` / `480` | `0x1090F60C`, `0x1090F631` |
 | `WinDrv.WindowsClient` | `FullscreenColorBits` | `16` | `0x1090F656` |
+
+> **Correction.** This table previously described `MinDesiredFrameRate` as
+> *per-renderer*, on the strength of there being two call sites. There are two
+> call sites but only one value: both `push offset a1` where `a1` is the string
+> `"1"`. Read from the disassembly at `0x1090ED0C` and `0x1090ED7E`.
+>
+> The condition, from `WConfigPageDetail__OnInitDialog`, is a single `if` with
+> three alternatives — software renderer, a slow CPU, or Direct3D:
+>
+> ```c
+> if (renderer == "SoftDrv.SoftwareRenderDevice"
+>     || 280000000.0 * GSecondsPerCycle > 1.0      /* below ~280 MHz */
+>     || renderer == "D3DDrv.D3DRenderDevice")
+>     GConfig->SetString("WinDrv.WindowsClient", "MinDesiredFrameRate", "1");
+> ```
+>
+> The shipped default is `1.0`, so the write is still a real change. Nothing
+> else in the detail block is renderer-dependent.
+>
+> The audio branch alongside it selects `SoundLow` over `SoundHigh` when
+> `GIsMMX == 0 || GPhysicalMemory <= 0x4000000` (64 MB), at `0x1090EDA1`.
 
 Cross-checks against the shipped `System/DeusEx.ini`: `[FirstRun] FirstRun=0`,
 `[Engine.Engine] CdPath=..\`, `GameRenderDevice=GlideDrv.GlideRenderDevice`,
