@@ -1,5 +1,5 @@
 /* Types for DeusEx.exe (UE1 `Launch` module), transcribed from the Deus Ex SDK headers
- * in ReleaseSDK1112f/Headers/DxHeaders.zip:
+ * in reference/ReleaseSDK1112f/Headers/DxHeaders.zip:
  *   Core/Inc/UnTemplate.h, Core/Inc/UnName.h, Core/Inc/Core.h, Window/Inc/Window.h
  *
  * Written C-style (explicit embedded bases) so IDA's parser accepts it; the SDK

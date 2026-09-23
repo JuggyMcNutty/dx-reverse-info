@@ -4,7 +4,7 @@ Static analysis checked against the real binary running under Proton, 2026-09-21
 
 **Setup.** `umu-run` into the existing `umu-default` prefix
 (`Proton-CachyOS Latest`). The install was restored to its shipped state afterwards;
-`DeusEx.ini` is byte-identical to the backup in `.ini-backup/`.
+`DeusEx.ini` is byte-identical to the backup in `reference/ini-backup/`.
 
 ## Runs
 
@@ -80,7 +80,7 @@ present, `InitSplash` asserts and the process dies before the wizard or the engi
 Any launch not carrying `-log`, `-server` or `TestRenDev` is affected.
 
 > This install had both bitmaps deleted, which is how the behaviour surfaced.
-> `Help/Logo.bmp` has been restored from `ReleaseSDK1112f/Help/Logo.bmp`.
+> `Help/Logo.bmp` has been restored from `reference/ReleaseSDK1112f/Help/Logo.bmp`.
 > **A port should treat a missing splash as non-fatal.**
 
 **2. `Detected.ini` is not only produced by an explicit `-testrendev=`.** It also
