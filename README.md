@@ -1,8 +1,11 @@
-# The reverse-engineering spec
+# The original launcher, reverse-engineered
 
-What the original `System/DeusEx.exe` does, established before any of the
-launcher was written. This is the contract the launcher keeps;
-[`../DESIGN.md`](../DESIGN.md) records where it deliberately diverges.
+How the project began. Before any of the launcher was written, the game's own
+`System/DeusEx.exe` was reverse-engineered, so the project started from known
+behaviour and could write clean code of its own from there. This is that
+record: what the original does, with the addresses it was read from.
+[What the launcher kept and dropped](#what-the-launcher-kept-and-dropped) is at
+the end; the launcher itself is [`../LAUNCHER.md`](../LAUNCHER.md).
 
 | File | Contents |
 |---|---|
@@ -95,8 +98,8 @@ sites, five read the *same* control (`+0xB0`, `IDC_No3DSound`). So ticking
 "Disable 3D sound hardware" silently also applies `-nohard -noddraw
 -defaultres`, and `No3DVideo`, `Window` and `Res` do nothing. Static analysis
 only — never observed live. Moot for the launcher now: safe mode was dropped
-because Surreal Engine honours none of its flags ([`../DESIGN.md`](../DESIGN.md),
-divergence 1).
+because Surreal Engine honours none of its flags (row 1
+[below](#what-the-launcher-kept-and-dropped)).
 
 **`appStrfind` flags match anywhere.** `readini`, `Server`, `NewWindow`,
 `changevideo`, `TestRenDev` are raw substring matches needing no leading `-` —
@@ -138,3 +141,28 @@ read (`HKLM\software\mpath\mplayer\main`), and `.ICD`→`.EXE` rewriting in
   other `.u` files). Search it — a regex over the file — before guessing what
   the game's script does: that is how the `CycleActors` semantics, the
   `bIgnoreNextShowMenu` swallow and the key-menu command list were found.
+
+## What the launcher kept and dropped
+
+Kept as the original does it: the `FirstRun` gates (220/400/1100) and the
+up-only clamp, the `Running.ini` sentinel lifecycle and its create-after-UI
+ordering, the three non-equivalent command-line parsers, the single-instance
+handoff. Changed or dropped:
+
+| # | Original | The launcher | Why |
+| --- | --- | --- | --- |
+| 1 | Safe mode: eight checkboxes become flags (`-nosound`, `-nohard`, `-window`, ...) on a re-exec of the launcher; three of the eight were dead in the shipped binary | Dropped. The System tab (engine log, clear crash marker, resets) replaces it | Surreal Engine honours none of those flags. The corrected eight-box wiring existed (commit `93020da`) and was removed with the page |
+| 2 | Missing splash bitmap → assert → process dies before the wizard | No splash | Nothing to be missing (`0x109090A4`, [`live-verification.md`](live-verification.md)) |
+| 3 | `MPLAYER` / `HEAT` console commands, one `HKLM\software\mpath` read | Dropped | Services dead since ~2001; `GotoHEAT.exe` is not shipped. [`porting-notes.md`](porting-notes.md) |
+| 4 | `.ICD`→`.EXE` rewrite in `InitPathnames` | Dropped | SafeDisc artifact; the GOG build is not wrapped |
+| 5 | `-make` rejected with a fatal error | Dropped | Points at `ucc`, shipped separately |
+| 6 | Renderer page runs Win32 3D device detection, re-execing itself per candidate, and writes `GameRenderDevice` | Crash-isolated GPU probe (forked child); choice written to `Settings.json` `RenderDevice.Type` | Surreal Engine overrides `GameRenderDevice`. `-testrendev` is still parsed; `dxl-cli --probe` is its replacement |
+| 7 | `CreateMutex` + `FindWindowEx`/`WM_COPYDATA` handoff | `flock` pidfile + abstract unix socket | Same protocol (one string, the command-line tail), different transport. The four `appStrfind` bypass tokens still skip it |
+| 8 | CD check loops on `<CdPath>Textures\Palettes.utx` with a modal box | Install-validation screen | Generalises to "did the user supply the game files?", which is the actual first-run failure here |
+| 9 | Driver page (2022) names the detected Direct3D card | The renderer picker's status line (GPU, API version) | The page existed to name a D3D card and point at a driver download |
+| 10 | FirstTime page (2019) | Dropped; a first run opens on the Video tab with a note on Play | Its whole content was "Deus Ex is starting up for the first time" and a Run button |
+| 11 | Web button `ShellExecute`s a troubleshooting URL | Dropped | No browser to hand off to, and the URL is long dead |
+| 12 | Six-page modal wizard, shown only on first run, `-changevideo`, `-safe` or after a crash | Tabbed home screen on every launch; `DXL_NO_HOME=1` for the old behaviour | Settings must be reachable with a pad; a screen that appears only after a crash or a command-line flag is not |
+| 13 | Detail page (sound quality, skin/world texture detail, 640×480) writes a block of `[WinDrv.WindowsClient]`/`[Galaxy...]` keys | Dropped; the Video tab carries the engine's real options | The engine's renderer and mixer read none of those keys |
+| 14 | RecoveryMode page ("was not shut down properly") | Crash banner on Play quoting the engine's reported error; Troubleshoot opens System | The engine log can say *why* |
+| 15 | `<Game>.ini` missing: UE1's Core creates it from `Default.ini` (before the launcher runs) | The launcher does it, and also rebuilds a stub with no `[Core.System] Paths` | [Where the settings actually live](../LAUNCHER.md#where-the-settings-actually-live) |
