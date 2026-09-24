@@ -23,7 +23,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `DeusEx.dll` | package DeusEx: the player, NPCs (`ScriptedPawn`), saving and the save directory, particle and laser effects | [`deusex-dll.md`](deusex-dll.md) | read |
 | `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, with Deus Ex's additions (AI senses and events, NPC movement tests, blend animations, stasis) | [`engine-dll.md`](engine-dll.md) | read |
 | `Core.dll` | package Core: objects, names, packages, configuration and the script interpreter, with Deus Ex's `GetConfig`, `CriticalDelete` and debug system | [`core-dll.md`](core-dll.md) | read |
-| `Extension.dll` | package Extension: the UI's windows and graphics contexts, and flags | [`extension-dll.md`](extension-dll.md) | not yet |
+| `Extension.dll` | package Extension: the UI's windows and graphics contexts, flags, and the game engine and input that put the UI in front of the game | [`extension-dll.md`](extension-dll.md) | read |
 | `ConSys.dll` | package ConSys: conversations and their events | [`consys-dll.md`](consys-dll.md) | not yet |
 | `DeusExText.dll` | package DeusExText: the parser of books, datacubes and emails | [`deusextext-dll.md`](deusextext-dll.md) | not yet |
 
@@ -53,7 +53,8 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   <class>` prints a class's fields at their offsets -- the quickest way to name
   an offset seen in `objdump`. A class that is C++ only (`ULevel`,
   `UEventManager`, `DDeusExGameEngine`) has no script and so no layout from it;
-  its SDK header has its members.
+  its SDK header has its members. Extension's and ConSys's native arrays
+  are typed as `TArray`s ([why](extension-dll.md#the-binary)).
 - **Strings.** This build is Unicode: its strings are UTF-16, and IDA takes
   many for 8-bit ones, which the decompiler shows as nonsense.
   [`tools/ida/utf16_strings.py`](../../tools/ida/utf16_strings.py), run after

@@ -210,8 +210,9 @@ what travels with the player so it is not saved twice:
 - **Numbers:** the directory index, the player's incremented `saveCount`,
   its play time `saveTime`, the time stamp, and `bCheatsEnabled`.
 - **Place:** the level's `MissionLocation`.
-- **Picture:** a 160×120 snapshot from the root window, skipped when the
-  ini's `GameRenderDevice` is `OpenGLDrv.OpenGLRenderDevice`.
+- **Picture:** a 160×120 snapshot from the root window
+  ([save pictures](extension-dll.md#save-pictures)), skipped when the ini's
+  `GameRenderDevice` is `OpenGLDrv.OpenGLRenderDevice`.
 
 Slot 0 means a new slot: the highest existing `SaveNNNN` plus 1. It then
 empties the slot, copies `Current` into it, saves the `SaveInfo` there and the

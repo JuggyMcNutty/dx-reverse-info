@@ -727,6 +727,10 @@ def emit(model, lay, natives, cpp):
             return "FString"
         if k == "array":
             return "FArray"
+        # Extension's and ConSys's stand-in for a TArray, whose fields
+        # (Num, Max, Ptr) are not the order a TArray has them in.
+        if k == "struct" and rt[1].name.lower() == "dynamicarray":
+            return "FArray"
         if k == "pointer":
             return "void *"
         if k == "class":
