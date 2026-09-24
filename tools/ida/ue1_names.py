@@ -80,12 +80,22 @@ def pushed_value(p):
     return None
 
 
+def mangled_prefix(name, mangled):
+    """The prefix a class has where the DLL's mangled names use it as a type
+    (the X of XAIEvent in `PAUXAIEvent@@`), or None."""
+    found = set(re.findall(r"[UV]([A-Z])%s@@" % re.escape(name), mangled))
+    return found.pop() if len(found) == 1 else None
+
+
 def name_unexported_classes(calls):
     """A class the DLL does not export has no name for its class object. Its
-    constructor call pushes the class's name (the last string pushed) and its
-    base (the fourth push back from the call), so the object gets the name its
-    export would have, prefixed A for an actor and U for the rest. A base named
-    here passes its prefix on, so this repeats until nothing more is named."""
+    constructor call pushes the class's name without its prefix (the last
+    string pushed) and its base (the fourth push back from the call), so the
+    object gets the name its export would have. The prefix is the one the
+    DLL's mangled names give the class, else A for an actor and U for the
+    rest; a base named here passes its A on, so this repeats until nothing
+    more is named."""
+    mangled = " ".join(n for _, n in idautils.Names())
     pending = {}
     for call in calls:
         obj = class_object(call)
@@ -108,7 +118,7 @@ def name_unexported_classes(calls):
             if base in pending:
                 continue
             m = CLASS_OBJECT.search(idc.get_name(base) or "") if base is not None else None
-            prefix = "A" if m and m.group(1).startswith("A") else "U"
+            prefix = mangled_prefix(name, mangled) or ("A" if m and m.group(1).startswith("A") else "U")
             if set_name(obj, "?PrivateStaticClass@%s%s@@0VUClass@@A" % (prefix, name)):
                 n += 1
             del pending[obj]
