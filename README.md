@@ -48,6 +48,11 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   an offset seen in `objdump`. A class that is C++ only (`ULevel`,
   `UEventManager`, `DDeusExGameEngine`) has no script and so no layout from it;
   its SDK header has its members.
+- **Strings.** This build is Unicode: its strings are UTF-16, and IDA takes
+  many for 8-bit ones, which the decompiler shows as nonsense.
+  [`tools/ida/utf16_strings.py`](../../tools/ida/utf16_strings.py), run after
+  the types, redefines them; a function decompiled before then needs
+  decompiling again.
 - **The script and the headers.** Every native class declares its fields in
   its script, in the order its C++ class has them: after `UObject`'s 0x28
   bytes, bools packed 32 to a dword, bytes packed, the rest aligned to 4, a
