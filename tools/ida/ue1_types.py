@@ -809,29 +809,30 @@ def ida_main():
     for f in failed[:20]:
         print("  FAILED:", f)
 
-    # Every class the DLL registers, against the size it gives UClass.
-    ctor = None
-    for ea, name in idautils.Names():
-        if re.search(r"\?\?0UClass@@QAE@W4ENativeConstructor@@", name):
-            ctor = ea
-            break
+    # Every class the DLL registers, against the size it gives UClass. The
+    # constructor is Core's: calls go to its import or to a jump stub of it
+    # (Engine.dll has one nothing calls), so every name it has counts.
+    ctors = {ea for ea, name in idautils.Names() if re.search(r"\?\?0UClass@@QAE@W4ENativeConstructor@@", name)}
     results, unread = {}, []
-    if ctor is not None:
-        calls = sorted({x.frm for x in idautils.XrefsTo(ctor) if idc.print_insn_mnem(x.frm) in ("call", "jmp")})
+    if ctors:
+        calls = sorted({x.frm for c in ctors for x in idautils.XrefsTo(c)
+                        if x.frm not in ctors and idc.print_insn_mnem(x.frm) in ("call", "jmp")})
         for ea in calls:
-            pushes, cls = [], None
+            # The last `mov ecx` before the call loads the class object; an
+            # earlier one can load the base's (ServerCommandlet's).
+            pushes, cls, obj = [], None, None
             f = ida_funcs.get_func(ea)
             lo = f.start_ea if f else ea - 0x80
             p = ea
-            while p > lo and (cls is None or len(pushes) < 2):
+            while p > lo and (obj is None or len(pushes) < 2):
                 p = idc.prev_head(p)
                 mn = idc.print_insn_mnem(p)
                 if mn == "push":
                     pushes.append(p)
-                elif mn == "mov" and idc.print_operand(p, 0) == "ecx" and cls is None:
-                    m = re.match(r"^\?PrivateStaticClass@(\w+)@@", idc.get_name(idc.get_operand_value(p, 1)) or "")
-                    if m:
-                        cls = m.group(1)
+                elif mn == "mov" and idc.print_operand(p, 0) == "ecx" and obj is None:
+                    obj = idc.get_operand_value(p, 1)
+                    m = re.match(r"^\?PrivateStaticClass@(\w+)@@", idc.get_name(obj) or "")
+                    cls = m.group(1) if m else None
             if cls is None or len(pushes) < 2 or idc.get_operand_type(pushes[1], 0) != idc.o_imm:
                 unread.append(cls or hex(ea))
                 continue

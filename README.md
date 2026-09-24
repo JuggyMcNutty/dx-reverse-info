@@ -57,8 +57,10 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   decompiling again.
 - **Names.** [`tools/ida/ue1_names.py`](../../tools/ida/ue1_names.py) names
   the functions a UE1 DLL registers its classes and natives from, which IDA
-  leaves as `sub_...`. So a new database gets the three scripts in turn:
-  types, strings, names.
+  leaves as `sub_...`, and the class object of each class the DLL does not
+  export (`Engine.dll`'s AI events), with the name its export would have. So
+  a new database gets the three scripts in turn: types, strings, names; the
+  types again after the names checks the unexported classes too.
 - **The script and the headers.** Every native class declares its fields in
   its script, in the order its C++ class has them: after `UObject`'s 0x28
   bytes, bools packed 32 to a dword, bytes packed, the rest aligned to 4, a
