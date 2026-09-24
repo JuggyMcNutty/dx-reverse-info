@@ -371,6 +371,11 @@ actor's `RenderInterface` with it (`AActor::Destroy`); the renderer makes it
 from `RenderIteratorClass`, runs it and draws its items
 ([render iterators](render-dll.md#render-iterators)).
 
+## The network
+
+The protocol -- joining, packets, channels, replication and remote calls --
+is in [`network.md`](network.md).
+
 ## Small
 
 - **`SetInstantSoundVolume`, `SetInstantSpeechVolume`,
