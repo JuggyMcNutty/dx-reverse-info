@@ -51,9 +51,8 @@ The natives the script marks as Deus Ex's (`DEUS_EX`), with their numbers:
   `StrafeFacing` 506 take a speed.
 
 Beside them, C++ with no native of its own: the event manager, stasis and the
-blend slots in the actor tick, blending in the mesh. What is read is below;
-`ParabolicTrace`, `GetBoundingBox`, `TraceTexture`, `CycleActors`,
-`TraceVisibleActors`, the sound IDs and the changed natives are not yet.
+blend slots in the actor tick, blending in the mesh. All of it is read,
+below.
 
 ## The AI event system
 
@@ -242,6 +241,75 @@ enemy's drawn weapon or distress), and callbacks such as `HandleShot` and
   paths, then sets each node's `visitedWeight` to its shortest distance over
   the path network from `GetPathnodeList`'s nodes (`0x103c8a40`). No script
   calls it.
+- **`StrafeTo(dest, focus, speed)`** and **`StrafeFacing(dest, target,
+  speed)`** (`0x103bd5f0`, `0x103bd8c0`), speed 1 by default: UE1's strafes
+  with Deus Ex's speed. A player's `DesiredSpeed` is its `MaxDesiredSpeed`;
+  an NPC's is that held to at most the speed and at least 0. Both clear
+  `bReducedSpeed` and time the move by its distance. `StrafeTo` drops the move
+  target and looks at the focus; `StrafeFacing` needs a target (without one it
+  does nothing), faces it and looks at where it is. The scripts give no speed:
+  NPCs running and firing (`StrafeFacing`, in combat) and stepping back from a
+  door (`StrafeTo`).
+- **`SetPhysics(newPhysics, newFloor)`** (`0x103c8ea0`; `AActor::setPhysics`,
+  `0x103c95f0`): when the physics changes to none, walking, rolling, rotating
+  or spider, the actor takes `newFloor` as its base -- through the floor's
+  `SupportActor` event, which bases it -- or, with none, finds its base below;
+  to any other, it leaves its base. None and rotating also stop its velocity
+  and acceleration. The scripts pass the wall hit as grenades, pool balls,
+  basketballs and fragments come to rest.
+
+## Traces
+
+- **The multi-hit line check** under the two iterators
+  (`ULevel::MultiLineCheck`, `0x1039b220`): the level's BSP first; a hit there
+  (its actor the `LevelInfo`) shortens the line to 5 units past it; then the
+  actors along what is left, up to 64 hits in all, nearest first. Nothing
+  beyond the first wall is listed.
+- **`TraceTexture(BaseClass, Actor, texName, texGroup, flags, HitLoc,
+  HitNorm, End, Start, Extent)`** (`0x1036e450`), from the actor by default,
+  with no extent: every hit, in turn -- `BaseClass` is read and not used. A
+  hit on the level gives the texture of the surface hit, its group (the
+  texture's outer) and the surface's `PolyFlags`; an actor, no texture and
+  flags 0. The scripts use it for the floor under a pawn (its footsteps), a
+  laser beam (where it stops, and whether it reflects: `PF_Mirrored`), the
+  player, weapons and turrets.
+- **`TraceVisibleActors(BaseClass, Actor, HitLoc, HitNorm, End, Start,
+  Extent)`** (`0x1036ec50`): the same, `BaseClass` again unused, except that
+  the line passes BSP nodes that do not block visibility (node flag 4). An NPC
+  seeking a spot uses it for its line of sight: the level blocks it, and an
+  actor with `bBlockSight`.
+- **`ParabolicTrace(finalLocation, startVelocity, startLocation,
+  bCheckActors, cylinder, maxTime, elasticity, bBounce, landingSpeed,
+  granularity)`** (`0x1036e190`, the work at `0x1036c0a0`): a thrown thing's
+  flight, in steps. By default the actor's velocity, location,
+  `bCollideActors`, collision cylinder and `bBounce`, 5 s, an elasticity of
+  0.9, a landing speed of 60, and steps of 0.025 s (held between 0.005 and
+  1).
+  - Each step adds the zone's gravity to the velocity and moves by it and the
+    zone's velocity. On a hit it lands if the surface is a floor (normal Z
+    above 0.7) and it is not bouncing or is slower than the landing speed;
+    else it bounces: the velocity mirrored about the surface and times the
+    elasticity, the rest of the step slid along it, a second wall handled as
+    falling handles one. It holds the speed to the zone's terminal velocity.
+  - It fails -- 0, the start its final location -- on entering water, leaving
+    the world, a step longer than about 1,580 units, or running out of time;
+    else it returns the time of flight, and where it landed.
+
+  NPCs use it for where a falling grenade will land, and whether a throw of
+  their own is safe (`AISafeToThrow`).
+- **`GetBoundingBox(MinVect, MaxVect, bExact, testLocation, testRotation)`**
+  (`0x1036dea0`), at the actor's own place and rotation by default: puts the
+  actor there for the moment and takes its primitive's box -- its brush's,
+  else its mesh's, else the collision cylinder's (`bExact` passed on) -- and
+  returns whether the box is valid. The scripts pass a mover's place and
+  rotation at one of its keys: the HUD's highlight on a door, and a mover's
+  area.
+- **`CycleActors(BaseClass, Actor, Index)`** (`0x1036e9d0`): the level's
+  actors of the class (Actor by default), from the slot `Index` names (0 when
+  out of range) and round once; each one found sets `Index` to the slot after
+  it. Empty slots are passed over, actors being destroyed are not. NPCs keep
+  the index between calls to go on where they stopped (pawns, carcasses,
+  food).
 
 ## Blend animations
 
@@ -270,6 +338,11 @@ the rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   so a blend sequence moves only what it changes. A slot tweening in moves from
   its last pose, cached per actor and slot, toward the sequence's first frame.
   `UMesh::GetFrame` does not blend.
+- **Its vertex count.** `GetFrame` works out only the vertices the renderer's
+  budget asks for, and the special ones, at most a frame's
+  ([mesh detail](render-dll.md#mesh-detail)); tweening from the actor's cached
+  pose, no more than that pose holds. It reads neither `LODHysteresis` nor the
+  mesh's remap of animation vertices.
 
 ## Stasis and render time
 
@@ -317,6 +390,13 @@ from `RenderIteratorClass`, runs it and draws its items
 - **`ResetKeyboard()`** (`0x103b96d0`): `UObject::ResetConfig` of the class of
   the viewport's input, which `DeusExPlayer.TravelPostAccept` calls on every
   level. What that does in Deus Ex: [configuration](core-dll.md#configuration).
+- **`PlaySound(Sound, Slot, Volume, bNoOverride, Radius, Pitch)`**
+  (`0x103e1f60`), by default `SLOT_Misc`, the actor's `TransientSoundVolume`
+  and `TransientSoundRadius`, and pitch 1; a radius of 0 or less is 800. Each
+  player pawn hears it (`CheckHearSound`). Deus Ex returns its ID: the
+  actor's object index × 16 + the slot × 2, + 1 with `bNoOverride`.
+  **`StopSound(Id)`** (`0x103e27d0`) hands the ID to the audio subsystem (its
+  virtual at +0x78), which stops that sound.
 
 ## The database
 
