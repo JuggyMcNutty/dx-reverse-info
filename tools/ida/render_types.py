@@ -1,18 +1,20 @@
 """IDA types for Render.dll's C++ structures.
 
 Render.dll's one class, URender, and everything it works on -- the scene node,
-the sprites, span buffers, BSP nodes and zones, and the level, model and
-viewport it reads through them -- are C++ only, so tools/ida/ue1_types.py has
-no script to take them from. These declarations follow the SDK's headers
-(Engine/Inc/UnRender.h, UnObj.h, UnModel.h, UnLevel.h, UnCamera.h,
+the sprites, span buffers, BSP nodes and zones, the level, model and viewport
+it reads through them, and the textures, light maps and cache items of its
+lighting -- are C++ only, so tools/ida/ue1_types.py has no script to take them
+from. These declarations follow the SDK's headers (Engine/Inc/UnRender.h,
+UnObj.h, UnModel.h, UnLevel.h, UnCamera.h, UnTex.h, Core/Inc/UnCache.h,
 Render/Src/RenderPrivate.h and UnSpan.h, in reference/ReleaseSDK1112f), up to
 the fields the renderer uses, packed to 4 bytes as the DLLs are.
 
 Run it in IDA (File > Script file, or the MCP's py_exec_file) on Render.dll's
 database after tools/ida/ue1_types.py, whose script types it builds on. It
 declares the structures, types URender's methods through their exports (each a
-jump to the code), and names the sprite's constructor and Setup and the weapon
-triangle's globals, which are not exported. Running it again changes nothing.
+jump to the code), and names what is not exported: the sprite's constructor
+and Setup, the light manager's methods and helpers, and the globals of the
+weapon triangle and of the lighting. Running it again changes nothing.
 """
 import ida_name
 import ida_nalt
@@ -117,11 +119,31 @@ struct URender
 	int PolyVStats; int PolyCStats; int IllumStats; int HardwareStats; int Extra6Stats; int Extra7Stats; int Extra8Stats;
 	int NumPostDynamics; void** PostDynamics;
 };
+struct FMipmapBase { unsigned char* DataPtr; int USize; int VSize; unsigned char UBits; unsigned char VBits; };
+struct FTextureInfo
+{
+	UTexture* Texture; unsigned __int64 CacheID; unsigned __int64 PaletteCacheID; FVector Pan;
+	void* MaxColor; int Format; float UScale; float VScale; int USize; int VSize;
+	int UClamp; int VClamp; int NumMips; int LOD; void* Palette; unsigned int Flags;
+	struct FMipmapBase* Mips[12];
+};
+struct FLightMapIndex
+{
+	int DataOffset; int iLightActors; FVector Pan; float UScale; float VScale;
+	int UClamp; int VClamp; unsigned char UBits; unsigned char VBits;
+};
+struct FCacheItem
+{
+	unsigned __int64 Id; unsigned char* Data; unsigned short Time; unsigned char Segment; unsigned char Extra;
+	int Cost; struct FCacheItem* LinearNext; struct FCacheItem* LinearPrev; struct FCacheItem* HashNext;
+};
+struct FLightEffectInfo { void* Spatial; int SpatialChanges; int BrightnessWavers; };
 #pragma pack(pop)
 """
 
 # Sizes the headers and the registration give: a check that the packing holds.
-SIZES = {"FSceneNode": 0x16C, "FDynamicSprite": 0xDC, "FBspNode": 0x40, "FZoneProperties": 0x18, "URender": 0xF4}
+SIZES = {"FSceneNode": 0x16C, "FDynamicSprite": 0xDC, "FBspNode": 0x40, "FZoneProperties": 0x18, "URender": 0xF4,
+         "FTextureInfo": 0x80, "FLightMapIndex": 0x28, "FCacheItem": 0x20}
 
 FRAME = "struct URender *this, struct FSceneNode *Frame"
 MESH = FRAME + (", AActor *Owner, AActor *LightSink, struct FSpanBuffer *SpanBuffer, AZoneInfo *Zone,"
@@ -158,10 +180,38 @@ JUMPS = {
     0x10B0117C: ("FDynamicSprite_ctor",
                  "struct FDynamicSprite * __thiscall f(struct FDynamicSprite *this, struct FSceneNode *Frame, int iNode, AActor *Actor);"),
     0x10B010E6: ("FDynamicSprite_Setup", "int __thiscall f(struct FDynamicSprite *this, struct FSceneNode *Frame);"),
+    # The light manager: its vtable's entries, in FLightManagerBase's order, and its helpers.
+    0x10B01159: ("FLightManager_Init", "void __thiscall f(void *this);"),
+    0x10B01154: ("FLightManager_Exit", "void __thiscall f(void *this);"),
+    0x10B010B9: ("FLightManager_SetupForActor",
+                 "unsigned int __thiscall f(void *this, struct FSceneNode *Frame, AActor *Actor, struct FVolActorLink *LeafLights,"
+                 " struct FActorLink *Volumetrics);"),
+    0x10B0122B: ("FLightManager_SetupForSurf",
+                 "void __thiscall f(void *this, struct FSceneNode *Frame, FCoords *FacetCoords, struct FBspDrawList *Draw,"
+                 " struct FTextureInfo **LightMap, struct FTextureInfo **FogMap, int Merged);"),
+    0x10B01168: ("FLightManager_FinishSurf", "void __thiscall f(void *this);"),
+    0x10B0103C: ("FLightManager_FinishActor", "void __thiscall f(void *this);"),
+    0x10B01271: ("FLightManager_Light", "FPlane *__thiscall f(void *this, FPlane *result, void *Point, unsigned int ExtraFlags);"),
+    0x10B011F4: ("FLightManager_Fog", "FPlane *__thiscall f(void *this, FPlane *result, void *Point, unsigned int ExtraFlags);"),
+    0x10B01122: ("FLightManager_AddLight", "int __stdcall f(AActor *Owner, AActor *Light);"),
+    0x10B0100F: ("FLightManager_SetupLight", "void __thiscall f(void *this, struct FTextureInfo *Map, struct FSceneNode *Frame);"),
+    0x10B01217: ("FLightManager_ShadowFromBits", "void __stdcall f(struct FTextureInfo *Map, unsigned char *Bits, unsigned char *Dest);"),
+    0x10B010FF: ("FLightManager_MergeLight", None),
 }
 DATA = {
     0x10B4EA08: ("GWeaponCoords", "FCoords GWeaponCoords;"),
     0x10B4EB10: ("GMeshHadWeaponTriangle", "int GMeshHadWeaponTriangle;"),
+    0x10B2A93C: ("FLightManager_vftable", "void *FLightManager_vftable[8];"),
+    0x10B3D2F0: ("GLightManagerObject", "void *GLightManagerObject;"),
+    0x10B2A0F0: ("GLightEffects", "struct FLightEffectInfo GLightEffects[20];"),
+    0x10B49E20: ("GLightMapInfo", "struct FTextureInfo GLightMapInfo;"),
+    0x10B3D2F8: ("GFogMapInfo", "struct FTextureInfo GFogMapInfo;"),
+    0x10B401C0: ("GLightInfos", "int GLightInfos[9472];"),
+    0x10B49DF4: ("GLastLightInfo", "int *GLastLightInfo;"),
+    0x10B49DFC: ("GNumStaticLights", "int GNumStaticLights;"),
+    0x10B3CADC: ("GNumAnimatedLights", "int GNumAnimatedLights;"),
+    0x10B3CAC8: ("GNumMovingLights", "int GNumMovingLights;"),
+    0x10B49E04: ("GRebuildStaticMap", "int GRebuildStaticMap;"),
 }
 
 
@@ -194,7 +244,8 @@ def main():
             continue
         ida_name.set_name(ea, "j_" + name, ida_name.SN_NOWARN | ida_name.SN_FORCE)
         ida_name.set_name(body, name, ida_name.SN_NOWARN | ida_name.SN_FORCE)
-        idc.SetType(body, proto)
+        if proto:
+            idc.SetType(body, proto)
     for ea, (name, decl) in DATA.items():
         ida_name.set_name(ea, name, ida_name.SN_NOWARN | ida_name.SN_FORCE)
         idc.SetType(ea, decl)

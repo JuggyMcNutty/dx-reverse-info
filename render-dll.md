@@ -3,8 +3,9 @@
 The native half of package Render: `URender`, UE1's scene renderer --
 occlusion through the BSP, which actors are drawn and how, dynamic lighting,
 meshes, sprites, decals and coronas. Read where a feature's drawing lives
-there: render iterators, the render time the engine and the scripts read, and
-coronas. How it was read: [working on the binaries](README.md#working-on-the-binaries).
+there -- render iterators, the render time the engine and the scripts read,
+coronas -- and, in a second pass for the handheld's frame, mesh detail and
+lighting. How it was read: [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 
@@ -130,11 +131,134 @@ brightness from 0 to 1:
   distance, translucent, in the colour of its hue and saturation times the
   brightness.
 
+## Mesh detail
+
+Every mesh of the game's characters, decorations and items is a LOD mesh --
+431 in `DeusExCharacters.u`, `DeusExDeco.u` and `DeusExItems.u` -- with tables
+for dropping detail: its vertices in the order they collapse, the vertex each
+collapses to (`CollapsePointThus`), the same for the texture corners
+(`CollapseWedgeThus`), and the vertex count below which each face goes
+(`FaceLevel`). `DrawLodMesh` (`0x10b0ea80`) works out a vertex budget each
+time it draws one:
+
+- **The budget** is the mesh's vertex count (`ModelVerts`) times a factor, at
+  least `LODMinVerts` and at most the whole mesh. The factor is 430 × a
+  resolution term (0.3 + 0.7 × the view's width in pixels / 640) × the
+  actor's `DrawScale` × its `LODBias` × the mesh's `MeshScaleMax`, divided by
+  the mesh's `LODStrength` × the renderer's shape LOD (0.25) × the tangent of
+  half the field of view × the actor's depth in the view less the mesh's
+  `LODZDisplace` (at least 1) × a complexity term (0.25 + 0.003 ×
+  `ModelVerts`). So the budget falls as one over the depth, sooner for a
+  complex mesh and a wide view (zoomed in, it keeps more). A mesh with
+  `LODStrength` 0 or without the tables is drawn whole.
+- **What it drops.** It asks `ULodMesh::GetFrame` (`Engine.dll`) for the
+  budget's vertices only, and the special ones (the weapon triangle's); draws
+  only the faces whose `FaceLevel` is within the budget; and moves each corner
+  of those down its collapse list until its vertex is within the budget too.
+  Only the vertices of faces turned to the eye get lit.
+- **Morphing.** With `LODMorph` above 0, the vertices in that top fraction of
+  the budget slide toward the vertex they collapse to, the nearer the top the
+  further, their texture coordinates with them: detail fades rather than
+  pops, beginning before the first vertex goes.
+- **The settings** are `URender`'s. `Init` sets the shape LOD to 0.25, its
+  adjustment to 1 (nothing changes it), the mode to 1 and the fixed factor to
+  1. Console commands set them (`URender::Exec`): `MLOD` the shape LOD,
+  `MLMODE` the mode (0: the fixed factor, `MLFIX`, whatever the distance; 1:
+  normal; 2: no morphing; 3: the field of view ignored; 4: both), and `TLOD`
+  a texture LOD distance.
+- **The game's meshes.** Every one has `LODMinVerts` 10, `LODMorph` 0.3, and
+  no `LODZDisplace` or `LODHysteresis`; no actor's `LODBias` differs from 1. A
+  character has 310 to 380 vertices and `LODStrength` 0.5, its carcass 1; a
+  decoration has 38 as a median (up to 482) and an item 30, at 1. So a
+  trooper (`GM_Jumpsuit`, 370 vertices) at the default 75° is whole to about
+  2,700 units deep at 853 pixels wide (3,700 at 1280), and has about 200
+  vertices at 5,000 and 100 at 10,000.
+
+## Lighting
+
+`FLightManager` (its vtable at `0x10b2a93c`, in `FLightManagerBase`'s order;
+one object, `GLightManager`) lights the world's surfaces through light maps,
+and meshes vertex by vertex. Each light it takes gets a record for the draw
+(`SetupLight`, `0x10b05fa0`): its place, radius, and brightness and colour
+at this moment (`URender::GlobalLighting` gives a pulsing or flickering light
+its brightness now), and its effect's entry in `GLightEffects`
+(`0x10b2a0f0`): the function that shapes it, whether that shape changes over
+time (searchlight, slow and fast wave, cloud cast, shock, disco,
+interference, rotor), and whether its brightness wavers from texel to texel
+(torch and fire waver, watery shimmer).
+
+### Light maps
+
+`SetupForSurf` (`0x10b06c90`) gives each surface drawn its light map.
+
+- **Three kinds of light** (`AddLight`, `0x10b08b30`), from the surface's list
+  of the level's lights, each with its shadow bits (a bit a texel, stored
+  with the level), and the moving lights over it:
+  - *static*: `bStatic`, `LT_Steady`, and an effect whose shape and
+    brightness hold still;
+  - *animated*: any other `bStatic` or `bNoDelete` light that is not
+    `bDynamicLight`;
+  - *moving*: `bDynamicLight`, or neither `bStatic` nor `bNoDelete`. It casts
+    no shadow.
+
+  With the client's `NoDynamicLights` on (an ini setting, off by default),
+  animated lights count as static and moving ones are left out.
+- **The static map**: the zone's ambient light, and each static light through
+  its shadow bits (smoothed as they are unpacked, `0x10b02650`). It is kept
+  in the global cache (`GCache`) under the model, the light map and the zone,
+  and built again only when it is not there, when one of its lights has
+  `bLightChanged`, or, for a mover's surface, when the mover has moved,
+  turned or changed leaf since.
+- **The dynamic map**, only when an animated or moving light reaches the
+  surface: the static map copied and those lights added, every frame --
+  cached with the frame's time, so a surface drawn twice in a frame is lit
+  once. An animated light whose shape holds still is kept in the cache as its
+  shadowed light on that surface, and only scaled by its brightness now; one
+  whose shape changes keeps its unpacked shadows there and has its shape run
+  again; a moving light is run without shadows. As a light is added
+  (`MergeLight`, `0x10b03040`), a torch waver dims each texel by a random
+  amount of up to 5%, and a fire waver up to 20%.
+- **To the device.** A map holds a byte a channel, up to 127. The render
+  device gets the static map, which it holds already, or the dynamic map,
+  marked changed (`bRealtimeChanged`) for it to upload whole.
+
+### Meshes
+
+`SetupForActor` (`0x10b08c70`) picks an actor's lights once a draw, and
+`Light` (`0x10b027f0`) lights each vertex with them.
+
+- **The candidates**: the static lights that reach into the actor's leaf of
+  the BSP, the moving lights in it, and the lights it had last frame (kept in
+  the cache under the actor, up to 16). Each counts once a frame, and only
+  if its `bSpecialLit` is the actor's. Its strength at the actor's centre is
+  (1 − distance / radius) × its brightness (a cylinder light counts with
+  three quarters of its brightness and radius).
+- **The pick**, strongest first: static lights until 8 are taken, the others
+  while fewer than 8 lights in all are, and none below an eighth of the
+  strongest taken.
+- **Shadowed or not**: a line from the light to the actor through the
+  level's BSP, checked again for each light every 16 frames (by the frame
+  count and the light's object index), except for a `bMovable` light that is
+  not static, which is always taken. A light fades in when found and out when
+  shadowed or dropped, over about a third of a second, and lights as it
+  fades.
+- **Per vertex**, for each light: a diffuse term, (cos + 1)² − 1.5 of the
+  angle to the light (nothing beyond about 77°, 2.5 facing it), and a
+  highlight, 6 × cos² of the angle between the eye and the light's reflection
+  at the vertex when the reflection heads toward the eye, both times
+  (1 − distance / radius) and the light's colour. The sum is scaled by 1.4 ×
+  `ScaleGlow`, and the zone's ambient light and the actor's `AmbientGlow`
+  (255 pulses) added, each channel at most 1. An unlit draw (`PF_Unlit`) is
+  mid-grey.
+
 ## The database
 
 `gamefiles/System/Render.dll.i64` has the script types, the UTF-16 strings,
 the initializers' names and the renderer's C++ types from
 [`tools/ida/render_types.py`](../../tools/ida/render_types.py), which also
-types `URender`'s methods and names the sprite's constructor and `Setup` and
-the weapon triangle's globals. By hand it has `CoronaTest`. Each function
+types `URender`'s methods; declares the texture, light map and cache
+structures; and names the sprite's constructor and `Setup`, the light
+manager's methods and helpers, and the globals of the weapon triangle and of
+the lighting (the light map and fog map being built, the effects, the light
+records and their counts by kind). By hand it has `CoronaTest`. Each function
 above carries a one-line comment.

@@ -9,7 +9,7 @@ What was read from the original game's binaries, and how. Two efforts:
   what Surreal Engine lacks or has wrong and to port it -- patch 0034 was the
   first ([what the fork changes](../ENGINE.md#what-the-fork-changes)). Each
   DLL is read ([the binaries](#the-binaries)); `Render.dll` as far as a
-  feature's drawing lives there. What the engine lacks, and the work that
+  feature's drawing lives there, and its mesh detail and lighting. What the engine lacks, and the work that
   would fill it: [`natives.md`](natives.md).
 
 ## The binaries
@@ -27,7 +27,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, flags, and the game engine and input that put the UI in front of the game | [`extension-dll.md`](extension-dll.md) | read |
 | `ConSys.dll` | package ConSys: conversations and their events, and what binds them to actors | [`consys-dll.md`](consys-dll.md) | read |
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
-| `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there |
+| `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas, mesh detail, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; mesh detail and lighting |
 
 ## Working on the binaries
 
