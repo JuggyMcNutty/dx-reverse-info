@@ -274,8 +274,9 @@ the rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
 ## Stasis and render time
 
 - **`LastRenderTime`**: `Engine.dll` sets it only when an actor spawns, to
-  −10 s; what keeps it is outside the DLL. `LastRendered()` (`0x1036de30`) is
-  the time since, not below 0.
+  −10 s; the renderer keeps it, and a zone's
+  ([render time](render-dll.md#render-time)). `LastRendered()` (`0x1036de30`)
+  is the time since, not below 0.
 - **`DistanceFromPlayer`**: `ULevel::Tick` sets it for every dynamic actor
   before they tick, the distance to the local player, in single player and not
   while paused.
@@ -293,9 +294,9 @@ the rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
 calls the script's `Init` and sets the observer), `First`, `Next`, `IsDone`
 (once `Index` reaches `MaxItems`) and `CurrentItem`. Its constructor
 (`0x103d9cf0`) requires an actor as its outer. `Engine.dll` only destroys an
-actor's `RenderInterface` with it (`AActor::Destroy`); `Render.dll` makes it
-from `RenderIteratorClass` (near `0x10b22f42`), where the items are drawn --
-to read with it.
+actor's `RenderInterface` with it (`AActor::Destroy`); the renderer makes it
+from `RenderIteratorClass`, runs it and draws its items
+([render iterators](render-dll.md#render-iterators)).
 
 ## Small
 

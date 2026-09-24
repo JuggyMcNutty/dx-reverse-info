@@ -7,9 +7,10 @@ What was read from the original game's binaries, and how. Two efforts:
   [`launcher.md`](launcher.md). Complete.
 - **The game's DLLs.** The original C++ behind Deus Ex's natives, read to find
   what Surreal Engine lacks or has wrong and to port it -- patch 0034 was the
-  first ([what the fork changes](../ENGINE.md#what-the-fork-changes)). In
-  progress. What the engine lacks, and the work that would fill it:
-  [`natives.md`](natives.md).
+  first ([what the fork changes](../ENGINE.md#what-the-fork-changes)). Each
+  DLL is read ([the binaries](#the-binaries)); `Render.dll` as far as a
+  feature's drawing lives there. What the engine lacks, and the work that
+  would fill it: [`natives.md`](natives.md).
 
 ## The binaries
 
@@ -26,7 +27,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, flags, and the game engine and input that put the UI in front of the game | [`extension-dll.md`](extension-dll.md) | read |
 | `ConSys.dll` | package ConSys: conversations and their events, and what binds them to actors | [`consys-dll.md`](consys-dll.md) | read |
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
-| `Render.dll` | package Render: UE1's scene renderer, with what `Engine.dll` leaves to it -- the render iterators' loop, and likely what keeps `LastRenderTime` | -- | where a feature's drawing lives there |
+| `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there |
 
 ## Working on the binaries
 
@@ -54,8 +55,12 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   <class>` prints a class's fields at their offsets -- the quickest way to name
   an offset seen in `objdump`. A class that is C++ only (`ULevel`,
   `UEventManager`, `DDeusExGameEngine`) has no script and so no layout from it;
-  its SDK header has its members. Extension's and ConSys's native arrays
-  are typed as `TArray`s ([why](extension-dll.md#the-binary)).
+  its SDK header has its members, packed to 4 bytes: a `QWORD` or `DOUBLE` is
+  not aligned to 8 (`ULevel::TimeSeconds` is at 0xdc). `Render.dll`'s types
+  are all C++, and [`tools/ida/render_types.py`](../../tools/ida/render_types.py)
+  declares them from those headers ([`Render.dll`](render-dll.md#the-binary)).
+  Extension's and ConSys's native arrays are typed as `TArray`s
+  ([why](extension-dll.md#the-binary)).
 - **Strings.** This build is Unicode: its strings are UTF-16, and IDA takes
   many for 8-bit ones, which the decompiler shows as nonsense.
   [`tools/ida/utf16_strings.py`](../../tools/ida/utf16_strings.py), run after
@@ -108,5 +113,5 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 |---|---|
 | [`launcher.md`](launcher.md) | `DeusEx.exe`: anchors, struct sizes, findings, what the launcher kept and dropped |
 | [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md), [`cli-flags.md`](cli-flags.md), [`ini-keys.md`](ini-keys.md), [`porting-notes.md`](porting-notes.md), [`types/launch.h`](types/launch.h), [`live-verification.md`](live-verification.md) | the launcher's details ([its index](launcher.md)) |
-| [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
+| [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md), [`render-dll.md`](render-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
 | [`natives.md`](natives.md) | what Surreal Engine lacks of the original, what the player sees of it, and the work -- from [`tools/natives_audit.py`](../../tools/natives_audit.py) and play |
