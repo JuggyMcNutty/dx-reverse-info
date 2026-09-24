@@ -11,7 +11,9 @@ them by what they do:
 - <class>_StaticInit: builds the class object (UClass's native constructor);
 - <class>_StaticInitAtExit: calls that and registers the destructor;
 - <class>_StaticClassDestroy: the class object's destructor;
-- RegisterNative_<class>_exec<name>: one GRegisterNative call.
+- RegisterNative_<class>_exec<name>: one native's registration, a call to
+  GRegisterNative -- or, in Core.dll, where GRegisterNative is its own, the
+  store into GNatives the compiler inlined in its place.
 
 Only functions still called sub_... and class objects with no name of their
 own are renamed; running it again changes nothing. It prints what it named.
@@ -21,6 +23,7 @@ import re
 import ida_bytes
 import ida_funcs
 import ida_name
+import ida_xref
 import idautils
 import idc
 
@@ -153,15 +156,35 @@ def referenced_names(f):
     return " ".join(names)
 
 
+def gnatives():
+    """The native table, when the DLL defines it (Core.dll; the others import
+    it): 4096 pointers."""
+    ea = idc.get_name_ea_simple("?GNatives@@3PAP8UObject@@AEXAAUFFrame@@QAX@ZA")
+    if ea == idc.BADADDR or idc.get_segm_name(ea) != ".data":
+        return None
+    return (ea, ea + 4 * 4096)
+
+
+def stores_into(f, span):
+    """Whether f writes into span. A registration's store goes to its slot,
+    GNatives + 4 * number, which has no name of its own."""
+    for ea in idautils.FuncItems(f):
+        for x in idautils.XrefsFrom(ea, 0):
+            if x.type == ida_xref.dr_W and span[0] <= x.to < span[1]:
+                return True
+    return False
+
+
 def main():
     calls = ctor_calls()
+    table = gnatives()
     counts = {"object": name_unexported_classes(calls)}
     counts.update({"class": name_class_inits(calls), "native": 0, "atexit": 0, "destroy": 0})
     for f in list(idautils.Functions()):
         if not unnamed(f):
             continue
         refs = referenced_names(f)
-        if "GRegisterNative" in refs:
+        if "GRegisterNative" in refs or (table and stores_into(f, table)):
             m = re.search(r"\bint([ADUXF]\w+?)exec(\w+)\b", refs)
             if m and set_name(f, "RegisterNative_%s_exec%s" % (m.group(1), m.group(2))):
                 counts["native"] += 1

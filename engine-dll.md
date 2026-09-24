@@ -315,7 +315,7 @@ to read with it.
   back to level.
 - **`ResetKeyboard()`** (`0x103b96d0`): `UObject::ResetConfig` of the class of
   the viewport's input, which `DeusExPlayer.TravelPostAccept` calls on every
-  level. What that resets is `Core.dll`'s.
+  level. What that does in Deus Ex: [configuration](core-dll.md#configuration).
 
 ## The database
 

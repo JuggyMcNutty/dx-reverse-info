@@ -22,7 +22,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `DeusEx.exe` | the `Launch` module: a bootstrap shell, not the game | [`launcher.md`](launcher.md) | complete |
 | `DeusEx.dll` | package DeusEx: the player, NPCs (`ScriptedPawn`), saving and the save directory, particle and laser effects | [`deusex-dll.md`](deusex-dll.md) | read |
 | `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, with Deus Ex's additions (AI senses and events, NPC movement tests, blend animations, stasis) | [`engine-dll.md`](engine-dll.md) | read |
-| `Core.dll` | package Core: objects, names, packages and the script interpreter | [`core-dll.md`](core-dll.md) | not yet |
+| `Core.dll` | package Core: objects, names, packages, configuration and the script interpreter, with Deus Ex's `GetConfig`, `CriticalDelete` and debug system | [`core-dll.md`](core-dll.md) | read |
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, and flags | [`extension-dll.md`](extension-dll.md) | not yet |
 | `ConSys.dll` | package ConSys: conversations and their events | [`consys-dll.md`](consys-dll.md) | not yet |
 | `DeusExText.dll` | package DeusExText: the parser of books, datacubes and emails | [`deusextext-dll.md`](deusextext-dll.md) | not yet |
@@ -41,7 +41,9 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   and the like, unpacked while open -- the `.id0`, `.id1`, `.id2`, `.nam` and
   `.til` files beside it are working files, and the `.i64` is only written on
   save. Backups in `reference/idb-backup/`. The bridge serves whichever
-  database IDA has open, so one binary is worked on at a time.
+  database IDA has open, so one binary is worked on at a time. It picks its
+  IDA when it starts: a DLL opened in a second IDA window is served on the
+  next port (13338), and the bridge stays with the first window.
 - **Types.** [`tools/ida/ue1_types.py`](../../tools/ida/ue1_types.py) gives a
   database the layout of every native class, struct and enum, from the
   script source in the game's packages, and checks each class against the size
