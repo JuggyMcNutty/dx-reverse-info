@@ -8,7 +8,8 @@ What was read from the original game's binaries, and how. Two efforts:
 - **The game's DLLs.** The original C++ behind Deus Ex's natives, read to find
   what Surreal Engine lacks or has wrong and to port it -- patch 0034 was the
   first ([what the fork changes](../ENGINE.md#what-the-fork-changes)). In
-  progress.
+  progress. What the engine lacks, and the work that would fill it:
+  [`natives.md`](natives.md).
 
 ## The binaries
 
@@ -88,3 +89,4 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | [`launcher.md`](launcher.md) | `DeusEx.exe`: anchors, struct sizes, findings, what the launcher kept and dropped |
 | [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md), [`cli-flags.md`](cli-flags.md), [`ini-keys.md`](ini-keys.md), [`porting-notes.md`](porting-notes.md), [`types/launch.h`](types/launch.h), [`live-verification.md`](live-verification.md) | the launcher's details ([its index](launcher.md)) |
 | [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
+| [`natives.md`](natives.md) | what Surreal Engine lacks of the original, what the player sees of it, and the work -- from [`tools/natives_audit.py`](../../tools/natives_audit.py) and play |
