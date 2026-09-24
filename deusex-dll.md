@@ -49,7 +49,7 @@ work runs where the pawn is simulated here: not controlled by a remote client
 
 1. **Disappearing.** With `bDisappear`, a pawn in stasis, or not rendered for
    more than 5 s (`Level.TimeSeconds` less `LastRenderTime`), is destroyed, and
-   the tick ends there.
+   the tick ends there ([stasis and render time](engine-dll.md#stasis-and-render-time)).
 2. **Pivot.** While `PrePivotTime` is above 0, `PrePivot` moves toward
    `DesiredPrePivot` in a straight line, reaching it as `PrePivotTime` runs
    out.
@@ -270,8 +270,9 @@ texture beside it.
 
 Both are render iterators: the engine draws an actor with a
 `RenderIteratorClass` once for each item its iterator gives from
-`CurrentItem` (the protocol is `Engine/Inc/UnRenderIterator.h`). Both draw
-one proxy actor many times, moving it before each.
+`CurrentItem` (the protocol is `Engine/Inc/UnRenderIterator.h`;
+[render iterators](engine-dll.md#render-iterators)). Both draw one proxy actor
+many times, moving it before each.
 
 **`UParticleIterator`** holds 64 particles (`FsParticle` in
 `DeusEx/Inc/uparticle.h`). The script adds them from `ParticleGenerator`.
