@@ -13,7 +13,7 @@ locations. How it was read: [working on the binaries](README.md#working-on-the-b
 | Imagebase | `0x10000000` |
 | SHA1 | `b31ec4613068a88843cebe6057f84913644cbf50` |
 | Exports | 372: 16 classes, 57 `exec` natives |
-| Functions | 834 in IDA; 261 unnamed |
+| Functions | 834 |
 
 ## Classes
 
@@ -300,3 +300,21 @@ of segments. `CurrentItem` (`0x1001a1a0`):
   aims the segment along the result: the electricity of
   `ElectricityEmitter`;
 - after the last item, leaves the proxy at a segment chosen at random.
+
+## Bug locations
+
+`UDumpLocation` is Ion Storm's QA tool, not read in detail: its 21 natives
+(3020--3040) keep bug locations -- map, position, view, game version, title
+and description, the script's `DumpLocationStruct` -- in dump files per
+user, to list, add, delete and go back to. `DeusExGameInfo.Login` asks
+`HasLocationBeenSaved` on every map; nothing a player uses depends on it.
+
+## The database
+
+`gamefiles/System/DeusEx.dll.i64` has the class layouts, the UTF-16 strings
+and the initializers' names ([working on the binaries](README.md#working-on-the-binaries)),
+and by hand the inlined `FString` and `TArray` helpers (`TArrayTCHAR_*`,
+`TArrayFString_*`).
+
+The functions above carry a one-line comment. What is left unnamed is the C
+runtime and small thunks.

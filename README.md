@@ -20,7 +20,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | Binary | What it holds | Notes | Read |
 |---|---|---|---|
 | `DeusEx.exe` | the `Launch` module: a bootstrap shell, not the game | [`launcher.md`](launcher.md) | complete |
-| `DeusEx.dll` | package DeusEx: the player, NPCs (`ScriptedPawn`), saving and the save directory, particle and laser effects | [`deusex-dll.md`](deusex-dll.md) | in progress |
+| `DeusEx.dll` | package DeusEx: the player, NPCs (`ScriptedPawn`), saving and the save directory, particle and laser effects | [`deusex-dll.md`](deusex-dll.md) | read |
 | `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, with Deus Ex's additions (AI senses and events, blend animations) | [`engine-dll.md`](engine-dll.md) | not yet |
 | `Core.dll` | package Core: objects, names, packages and the script interpreter | [`core-dll.md`](core-dll.md) | not yet |
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, and flags | [`extension-dll.md`](extension-dll.md) | not yet |
@@ -53,6 +53,10 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   [`tools/ida/utf16_strings.py`](../../tools/ida/utf16_strings.py), run after
   the types, redefines them; a function decompiled before then needs
   decompiling again.
+- **Names.** [`tools/ida/ue1_names.py`](../../tools/ida/ue1_names.py) names
+  the functions a UE1 DLL registers its classes and natives from, which IDA
+  leaves as `sub_...`. So a new database gets the three scripts in turn:
+  types, strings, names.
 - **The script and the headers.** Every native class declares its fields in
   its script, in the order its C++ class has them: after `UObject`'s 0x28
   bytes, bools packed 32 to a dword, bytes packed, the rest aligned to 4, a
