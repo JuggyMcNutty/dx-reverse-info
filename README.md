@@ -34,7 +34,9 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   impossible here. If the MCP tools go dark mid-session that bridge broke, not
   the analysis. IDA sees this tree as `X:\Documents\projects\port-ex-machina`
   and the whole filesystem as `Z:\`, so a script in any scratch directory runs
-  through `py_exec_file`.
+  through `py_exec_file`. `py_eval` keeps its top-level names as locals, which
+  a function or comprehension defined there cannot see: put the code in a
+  function, or in a file.
 - **One database per binary**, beside it: `gamefiles/System/DeusEx.exe.i64`
   and the like, unpacked while open -- the `.id0`, `.id1`, `.id2`, `.nam` and
   `.til` files beside it are working files, and the `.i64` is only written on
