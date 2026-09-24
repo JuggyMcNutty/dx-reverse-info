@@ -129,7 +129,8 @@ and calls the function named here.
   becoming `DeusExCon`, so `DeusExConText.ConList_Mission02` in the game
   itself.
 - The list binds the actor's conversations in ConSys's
-  `DConversationList::BindConversations`.
+  `DConversationList::BindConversations`
+  ([how](consys-dll.md#an-actors-conversations)).
 - With no `DeusExLevelInfo` it logs that conversations cannot be bound.
 
 ## The player
