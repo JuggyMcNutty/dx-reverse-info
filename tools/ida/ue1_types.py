@@ -522,9 +522,10 @@ class PE:
     def registered_sizes(self):
         """{C++ class: size} from `push Size; push 0` shortly before
         `mov ecx, offset <class>` and a call -- UClass's native constructor
-        taking (EC_NativeConstructor, Size, ...). Best effort, from the bytes:
-        a class whose code does not match is left out; IDA's check reads
-        them all."""
+        taking (EC_NativeConstructor, Size, ...). A size under 0x80 is pushed
+        as one byte (Core.dll's small classes), a larger one as four. Best
+        effort, from the bytes: a class whose code does not match is left
+        out; IDA's check reads them all."""
         out = {}
         d = self.data
         for name, va in self.exports.items():
@@ -536,12 +537,15 @@ class PE:
             while pos >= 0 and m.group(1) not in out:
                 after = d[pos + 5:pos + 17]
                 if b"\xFF\x15" in after or b"\xE8" in after:
-                    for p in range(pos - 6, max(pos - 32, 0), -1):
-                        if d[p] != 0x68:
+                    for p in range(pos - 3, max(pos - 32, 0), -1):
+                        if d[p] == 0x68 and p <= pos - 6:
+                            size, ec = struct.unpack_from("<I", d, p + 1)[0], d[p + 5:p + 7]
+                        elif d[p] == 0x6A:
+                            size, ec = d[p + 1], d[p + 2:p + 4]
+                        else:
                             continue
-                        size = struct.unpack_from("<I", d, p + 1)[0]
-                        ec = d[p + 5:p + 7]
-                        if size < 0x100000 and (ec[:1] in (b"\x56", b"\x57", b"\x53", b"\x55") or ec == b"\x6A\x00"):
+                        # No class is smaller than UObject's 0x28 bytes.
+                        if 0x28 <= size < 0x100000 and (ec[:1] in (b"\x56", b"\x57", b"\x53", b"\x55") or ec == b"\x6A\x00"):
                             out[m.group(1)] = size
                             break
                 pos = d.find(needle, pos + 1)

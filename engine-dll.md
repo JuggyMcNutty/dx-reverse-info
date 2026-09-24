@@ -26,7 +26,7 @@ classes `XAIEventType`, `XAIEvent`, `XAISenderEvent` and `XAIReceiverEvent`,
 `UServerCommandlet`. 57 match their script's layout, and `UEventManager` and
 the four event classes the SDK's `Engine/Inc/UnEventManager.h`; the other 34
 are C++ only (`ULevel`, `UModel`, `UMesh`, the network channels). The host
-check reads 69 of the registrations from the bytes alone.
+check reads the 88 exported ones from the bytes alone.
 
 ## What Deus Ex added
 

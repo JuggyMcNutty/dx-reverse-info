@@ -18,5 +18,5 @@ Not yet read.
 | Exports | 2,395: 36 classes, 453 `exec` natives |
 
 34 classes have a layout from their script; `XGameEngineExt` and `XInputExt`
-are C++ only. The host check reads 26 of the registrations, and the 24 of
-those with a script layout match it.
+are C++ only. The host check reads all 36 registrations, and the 34 with a
+script layout match it.

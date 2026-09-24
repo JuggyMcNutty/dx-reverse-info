@@ -74,8 +74,9 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
   and generated ones (`Engine/Inc/EngineClasses.h`, `DeusEx/Inc/DeusExClasses.h`),
   but none of the script's structs. Where script and header disagree, the
   registered size shows which the DLL was built with: `ADeusExPlayer` has a
-  field (`LastinHand`) the SDK's header lacks, and ConSys's `DConCamera` is
-  0x84 bytes as its header has it, not the script's 0xbc.
+  field (`LastinHand`) the SDK's header lacks, and ConSys's `DConCamera` and
+  `DConEventAnimation` are as their headers have them
+  ([`ConSys.dll`](consys-dll.md#the-binary)).
 - **Without IDA**, `objdump` reads the DLLs. `objdump -p` lists the exports
   under their C++ names (`?AICanSee@APawn@@QAEMPAVAActor@@MHHHH@Z`, and
   `?execAICanSee@...` for its script entry); an `Engine.dll` export is a jump

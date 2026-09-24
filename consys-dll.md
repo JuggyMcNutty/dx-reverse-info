@@ -17,6 +17,12 @@ Not yet read.
 | Exports | 495: 34 classes, 10 `exec` natives |
 
 33 classes have a layout from their script, and `DConImport` is C++ only.
-Unlike the other DLLs, a script layout is not always the code's:
-`DConCamera` registers 0x84 bytes, as its SDK header (`ConSys/Inc/ConCamera.h`)
-declares it, where its script declares 0xbc.
+The host check reads all 34 registrations. Unlike the other DLLs, a script
+layout is not always the code's; two classes are as their SDK headers
+declare them:
+
+- `DConCamera` registers 0x84 bytes (`ConSys/Inc/ConCamera.h`), where its
+  script declares 0xbc;
+- `DConEventAnimation` registers 0x60 (`ConSys/Inc/ConEventAnimation.h`: a
+  play mode and a play length where the script has `bLoopAnim`), where its
+  script declares 0x58.

@@ -23,7 +23,8 @@ Four have a script and match its layout: `UObject`, `USubsystem`,
 `UCommandlet` and `UDebugInfo`. The other 31 -- `UField`, `UStruct`,
 `UFunction`, `UState`, `UClass`, the property classes, `UPackage`, the
 linkers, `USystem` -- are C++ only, and the SDK's `Core/Inc/` headers have
-them.
+them. The host check reads the exported ones but `UClass` from the bytes
+alone.
 
 ## What Deus Ex added
 
