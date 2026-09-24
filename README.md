@@ -25,7 +25,8 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `Core.dll` | package Core: objects, names, packages, configuration and the script interpreter, with Deus Ex's `GetConfig`, `CriticalDelete` and debug system | [`core-dll.md`](core-dll.md) | read |
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, flags, and the game engine and input that put the UI in front of the game | [`extension-dll.md`](extension-dll.md) | read |
 | `ConSys.dll` | package ConSys: conversations and their events, and what binds them to actors | [`consys-dll.md`](consys-dll.md) | read |
-| `DeusExText.dll` | package DeusExText: the parser of books, datacubes and emails | [`deusextext-dll.md`](deusextext-dll.md) | not yet |
+| `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
+| `Render.dll` | package Render: UE1's scene renderer, with what `Engine.dll` leaves to it -- the render iterators' loop, and likely what keeps `LastRenderTime` | -- | where a feature's drawing lives there |
 
 ## Working on the binaries
 
