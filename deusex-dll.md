@@ -213,9 +213,9 @@ what travels with the player so it is not saved twice:
 - **Picture:** a 160×120 snapshot from the root window, skipped when the
   ini's `GameRenderDevice` is `OpenGLDrv.OpenGLRenderDevice`.
 
-Slot 0 means a new slot: the highest existing `SaveNNNN` plus 1. It then empties
-the slot, copies `Current` into it, saves the `SaveInfo` there and the level
-with `SaveCurrentLevel`.
+Slot 0 means a new slot: the highest existing `SaveNNNN` plus 1. It then
+empties the slot, copies `Current` into it, saves the `SaveInfo` there and the
+level with `SaveCurrentLevel`.
 
 **The others:**
 
@@ -316,5 +316,6 @@ and the initializers' names ([working on the binaries](README.md#working-on-the-
 and by hand the inlined `FString` and `TArray` helpers (`TArrayTCHAR_*`,
 `TArrayFString_*`).
 
-The functions above carry a one-line comment. What is left unnamed is the C
+The native tick, `Browse`, the save functions, the iterators and the
+alliance functions carry a one-line comment. What is left unnamed is the C
 runtime and small thunks.

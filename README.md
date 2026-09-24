@@ -32,7 +32,9 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 - **IDA runs under Proton** (Windows IDA 9.4 via umu, in-IDA HTTP server on
   `127.0.0.1:13337` plus a Linux-side proxy). `idalib` headless mode is
   impossible here. If the MCP tools go dark mid-session that bridge broke, not
-  the analysis. IDA sees this tree as `X:\Documents\projects\port-ex-machina`.
+  the analysis. IDA sees this tree as `X:\Documents\projects\port-ex-machina`
+  and the whole filesystem as `Z:\`, so a script in any scratch directory runs
+  through `py_exec_file`.
 - **One database per binary**, beside it: `gamefiles/System/DeusEx.exe.i64`
   and the like, unpacked while open -- the `.id0`, `.id1`, `.id2`, `.nam` and
   `.til` files beside it are working files, and the `.i64` is only written on
