@@ -21,7 +21,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 |---|---|---|---|
 | `DeusEx.exe` | the `Launch` module: a bootstrap shell, not the game | [`launcher.md`](launcher.md) | complete |
 | `DeusEx.dll` | package DeusEx: the player, NPCs (`ScriptedPawn`), saving and the save directory, particle and laser effects | [`deusex-dll.md`](deusex-dll.md) | read |
-| `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, with Deus Ex's additions (AI senses and events, blend animations) | [`engine-dll.md`](engine-dll.md) | not yet |
+| `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, with Deus Ex's additions (AI senses and events, NPC movement tests, blend animations, stasis) | [`engine-dll.md`](engine-dll.md) | read |
 | `Core.dll` | package Core: objects, names, packages and the script interpreter | [`core-dll.md`](core-dll.md) | not yet |
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, and flags | [`extension-dll.md`](extension-dll.md) | not yet |
 | `ConSys.dll` | package ConSys: conversations and their events | [`consys-dll.md`](consys-dll.md) | not yet |
