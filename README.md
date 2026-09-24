@@ -22,13 +22,26 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 |---|---|---|---|
 | `DeusEx.exe` | the `Launch` module: a bootstrap shell, not the game | [`launcher.md`](launcher.md) | complete |
 | `DeusEx.dll` | package DeusEx: the player, NPCs (`ScriptedPawn`), saving and the save directory, particle and laser effects | [`deusex-dll.md`](deusex-dll.md) | read |
-| `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, with Deus Ex's additions (AI senses and events, NPC movement tests, blend animations, stasis) | [`engine-dll.md`](engine-dll.md) | read |
+| `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, traces, and the network protocol ([`network.md`](network.md)), with Deus Ex's additions (AI senses and events, NPC movement tests, blend animations, stasis) | [`engine-dll.md`](engine-dll.md) | read |
 | `Core.dll` | package Core: objects, names, packages, configuration and the script interpreter, with Deus Ex's `GetConfig`, `CriticalDelete` and debug system | [`core-dll.md`](core-dll.md) | read |
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, flags, and the game engine and input that put the UI in front of the game | [`extension-dll.md`](extension-dll.md) | read |
 | `ConSys.dll` | package ConSys: conversations and their events, and what binds them to actors | [`consys-dll.md`](consys-dll.md) | read |
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
 | `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas, mesh detail, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; mesh detail and lighting |
 | `IpDrv.dll` | package IpDrv: the sockets -- the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
+
+Beside them in the workspace's `System/`, copied in by the owner
+(2026-09-24) and not the game's:
+
+- **`RGalaxy.dll`** is `Galaxy.dll` with 8 bytes changed: 7 rename its package
+  to RGalaxy, so both can be installed, and 1 makes a music console command
+  (the one that logs "Galaxy order") call a different mode of the music
+  function.
+- **`ALAudio.dll`** is OldUnreal's OpenAL audio driver built for Deus Ex
+  ("OpenAL Audio for DeusEX", 2016): lip sync, EFX reverb with a mode that
+  emulates the old one, HRTF, Doppler, OGG, and tracker music through libxmp.
+  It needs `OpenAL32.dll` (copied too), `ALURE32.dll` and `libxmp.dll` (not
+  copied).
 
 ## Working on the binaries
 
