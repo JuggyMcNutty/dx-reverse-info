@@ -270,10 +270,10 @@ texture beside it.
 
 ## Particles and lasers
 
-Both are render iterators: the engine draws an actor with a
+Both are render iterators: the renderer draws an actor with a
 `RenderIteratorClass` once for each item its iterator gives from
 `CurrentItem` (the protocol is `Engine/Inc/UnRenderIterator.h`;
-[render iterators](engine-dll.md#render-iterators)). Both draw one proxy actor
+[render iterators](render-dll.md#render-iterators)). Both draw one proxy actor
 many times, moving it before each.
 
 **`UParticleIterator`** holds 64 particles (`FsParticle` in
