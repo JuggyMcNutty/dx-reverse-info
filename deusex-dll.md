@@ -102,7 +102,7 @@ and calls the function named here.
   a `ScriptedPawn` that holds this one's alliance hostile, else what this pawn
   makes of the other's alliance. `None` is Neutral.
 - **`IsValidEnemy(pawn, bCheckAlliance)`** (`0x10019300`): ported by patch
-  0034 ([its message](../../engine-patches/0034-deusex-ai-sight.patch)).
+  0034 ([its message](https://github.com/JuggyMcNutty/SurrealEngine/commit/b5d08853dbf4e24894d56942c07a5a743438e824)).
 - **`UpdateAgitation(dt)`** (`0x10019e30`) and **`UpdateFear(dt)`**
   (`0x10019f60`), called only from the native tick. They do exactly what the
   script's own `UpdateAgitation` and `UpdateFear` do, which nothing calls:

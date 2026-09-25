@@ -183,7 +183,7 @@ enemy's drawn weapon or distress), and callbacks such as `HandleShot` and
 
   `AIVisibility` uses it, and no script calls it.
 - **`AICanSee`** (`0x103c6ab0`) and **`AIVisibility`** (`0x1036bca0`): ported
-  by patch 0034 ([its message](../../engine-patches/0034-deusex-ai-sight.patch)).
+  by patch 0034 ([its message](https://github.com/JuggyMcNutty/SurrealEngine/commit/b5d08853dbf4e24894d56942c07a5a743438e824)).
 
 ## Moving
 
