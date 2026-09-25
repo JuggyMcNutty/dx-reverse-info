@@ -60,8 +60,8 @@ also written out inline where they are used.
 | `AmbientFactor` | 0.7 | the scale of ambient sounds' volume |
 | `DopplerSpeed` | 6,500 | the speed of sound for Doppler, in units a second |
 
-`UseSpatial`, also in `DeusEx.ini`, is no setting of this class: nothing
-reads it.
+`UseSpatial`, also in `DeusEx.ini` (the original launcher writes it), is no
+setting of this class, and nothing in the game reads it.
 
 ## Playing a sound
 

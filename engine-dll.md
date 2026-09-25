@@ -381,7 +381,8 @@ is in [`network.md`](network.md).
 - **`SetInstantSoundVolume`, `SetInstantSpeechVolume`,
   `SetInstantMusicVolume`** (`0x103e2850`, `0x103e28d0`, `0x103e2950`): hand
   the volume to the audio subsystem's own call for it (its virtuals at +0x90,
-  +0x94, +0x98), which applies it at once instead of at the next tick.
+  +0x94, +0x98), which applies it at once instead of at the next tick
+  ([`Galaxy.dll`](galaxy-dll.md#volume)).
 - **`GetPlayerPawn()`**: the first viewport's actor.
 - **`IsOverlapping(other)`** (`0x10369430`): collision cylinders overlap; a
   brush or the level never does.
@@ -401,7 +402,8 @@ is in [`network.md`](network.md).
   player pawn hears it (`CheckHearSound`). Deus Ex returns its ID: the
   actor's object index × 16 + the slot × 2, + 1 with `bNoOverride`.
   **`StopSound(Id)`** (`0x103e27d0`) hands the ID to the audio subsystem (its
-  virtual at +0x78), which stops that sound.
+  virtual at +0x78), which stops that sound. What the audio subsystem does
+  with both: [`Galaxy.dll`](galaxy-dll.md#playing-a-sound).
 
 ## The database
 

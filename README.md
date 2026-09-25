@@ -80,7 +80,8 @@ Beside them in the workspace's `System/`, copied in by the owner
   many for 8-bit ones, which the decompiler shows as nonsense.
   [`tools/ida/utf16_strings.py`](../../tools/ida/utf16_strings.py), run after
   the types, redefines them; a function decompiled before then needs
-  decompiling again.
+  decompiling again. The MCP bridge's own preview of a string (the `refs` of
+  `decompile`) still shows a UTF-16 one as nonsense: the database is right.
 - **Names.** [`tools/ida/ue1_names.py`](../../tools/ida/ue1_names.py) names
   the functions a UE1 DLL registers its classes and natives from, which IDA
   leaves as `sub_...`, and the class object of each class the DLL does not
@@ -109,6 +110,10 @@ Beside them in the workspace's `System/`, copied in by the owner
   parameters**: each is set before its argument is read. Upstream's natives
   take them as `std::optional`, and a default is not always false
   (`IsValidEnemy` checks the alliance unless told not to).
+- **A subsystem's `Exec` runs on its `FExec` part.** It is called through the
+  `FExec` vtable, with `this` 0x28 past the object, so the decompiler's field
+  names in it are 0x28 short (`Galaxy.dll`'s `Exec` "toggles"
+  `UseReverb` where it toggles its stats flag).
 - **MSVC reverses overload groups in the vtable.** In `FConfigCache`,
   `GetString(FString&)` sits at **+12**, *before* `GetString(TCHAR*, INT)` at
   **+16**. Resolve every `GConfig` call by argument arity and types, never by
