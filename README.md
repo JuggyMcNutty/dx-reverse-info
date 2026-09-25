@@ -29,14 +29,15 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
 | `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas, mesh detail, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; mesh detail and lighting |
 | `IpDrv.dll` | package IpDrv: the sockets -- the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
+| `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library -- channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 
 Beside them in the workspace's `System/`, copied in by the owner
 (2026-09-24) and not the game's:
 
 - **`RGalaxy.dll`** is `Galaxy.dll` with 8 bytes changed: 7 rename its package
-  to RGalaxy, so both can be installed, and 1 makes a music console command
-  (the one that logs "Galaxy order") call a different mode of the music
-  function.
+  to RGalaxy, so both can be installed, and 1 makes the `MUSICORDER` console
+  command change the music's order when the playing pattern ends, not at
+  once ([the console](galaxy-dll.md#hardware-and-the-console)).
 - **`ALAudio.dll`** is OldUnreal's OpenAL audio driver built for Deus Ex
   ("OpenAL Audio for DeusEX", 2016): lip sync, EFX reverb with a mode that
   emulates the old one, HRTF, Doppler, OGG, and tracker music through libxmp.
@@ -127,6 +128,6 @@ Beside them in the workspace's `System/`, copied in by the owner
 |---|---|
 | [`launcher.md`](launcher.md) | `DeusEx.exe`: anchors, struct sizes, findings, what the launcher kept and dropped |
 | [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md), [`cli-flags.md`](cli-flags.md), [`ini-keys.md`](ini-keys.md), [`porting-notes.md`](porting-notes.md), [`types/launch.h`](types/launch.h), [`live-verification.md`](live-verification.md) | the launcher's details ([its index](launcher.md)) |
-| [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md), [`render-dll.md`](render-dll.md), [`ipdrv-dll.md`](ipdrv-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
+| [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md), [`render-dll.md`](render-dll.md), [`ipdrv-dll.md`](ipdrv-dll.md), [`galaxy-dll.md`](galaxy-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
 | [`natives.md`](natives.md) | what Surreal Engine lacks of the original, what the player sees of it, and the work -- from [`tools/natives_audit.py`](../../tools/natives_audit.py) and play |
 | [`network.md`](network.md) | how the original plays over a network: joining, packets, replication, remote calls |
