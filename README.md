@@ -28,6 +28,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `ConSys.dll` | package ConSys: conversations and their events, and what binds them to actors | [`consys-dll.md`](consys-dll.md) | read |
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
 | `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas, mesh detail, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; mesh detail and lighting |
+| `D3DDrv.dll` | the Direct3D 7 display driver: gamma, the light maps' brightness on screen, fog, detail textures, and each pass's blending -- the look's reference | [`d3ddrv-dll.md`](d3ddrv-dll.md) | read |
 | `IpDrv.dll` | package IpDrv: the sockets -- the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library -- channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 
