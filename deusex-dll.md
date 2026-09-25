@@ -159,7 +159,8 @@ and calls the function named here.
 Saves live under the ini's `SavePath`:
 
 - `Save\Current` holds the maps of the mission in progress as the player
-  left them.
+  left them, and a `SaveInfo.<ext>` of its own (seen in a reference save,
+  2026-09-24).
 - `Save\SaveNNNN` is a slot and `Save\QuickSave` the quick save, each a copy
   of `Current` plus the level saved in, and `SaveInfo.<ext>`.
 - A map's mission number is its name's two leading digits
