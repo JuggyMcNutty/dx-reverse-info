@@ -257,9 +257,18 @@ enemy's drawn weapon or distress), and callbacks such as `HandleShot` and
   to any other, it leaves its base. None and rotating also stop its velocity
   and acceleration. The scripts pass the wall hit as grenades, pool balls,
   basketballs and fragments come to rest.
+- **Falling in water** (`physFalling`, `0x103d0a50`): gravity is scaled by
+  1 − `Buoyancy` / `Mass`, the mass floored at 1, so a massless actor
+  (Deus Ex's `GeneratorScout`, a pawn of mass 0) falls at full gravity.
 
 ## Traces
 
+- **What an actor collides as** (`AActor::GetPrimitive`, `0x1034c9a0`): its
+  brush, else its mesh, else the engine's cylinder of its collision size --
+  so a mover with no brush (`09_NYC_ShipBelow` has one) collides as a
+  cylinder. A model with no BSP nodes answers every line and point check at
+  once with no hit (`UModel::LineCheck`, `0x103f3c20`; `PointCheck`,
+  `0x103f1570`).
 - **The multi-hit line check** under the two iterators
   (`ULevel::MultiLineCheck`, `0x1039b220`): the level's BSP first; a hit there
   (its actor the `LevelInfo`) shortens the line to 5 units past it; then the
