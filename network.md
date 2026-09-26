@@ -75,7 +75,9 @@ A client refused (`FAILURE`) goes back to its menu with `?failed`; a
 `FAILCODE` goes to the console's `ConnectFailure` with the URL less its
 password, for the menu to ask again; `UPGRADE` ends the join. `USERFLAG` sets
 a number of the connection's either way; `DYNAMICRATE` and `STATICRATE` the
-client notes.
+client keeps each as a time between updates -- 1 s over the rate, 0.01 s to
+1 s, none for 0 -- which Deus Ex's `ReplicateMove` paces the player's moves
+by.
 
 - **The client's level** (`UGameEngine::LoadMap`): loaded as a client's
   (`NetMode` 3). Of the map's actors it keeps the static and no-delete ones,
@@ -85,9 +87,11 @@ client notes.
   show `LevelAction` Connecting (`UGameEngine::Tick`).
 - **The player** (`HandleClientPlayer`, `0x10405290`): the first bunch of a
   `PlayerPawn` the client owns (below), while the connection is still
-  pending, makes it the client's: an autonomous proxy, the view's show flags
-  and render map set, possessed by the viewport (`SetPlayer`, and
-  `Possess`), input reset, `LevelAction` back to none, the connection open.
+  pending, makes it the client's: the viewport takes the connection's speed
+  and the two update intervals, the pawn is an autonomous proxy with the
+  view's show flags and render map set, possessed by the viewport
+  (`SetPlayer`, and `Possess`), input reset, `LevelAction` back to none, the
+  connection open.
 
 ## Addresses
 
@@ -129,11 +133,16 @@ as many bits as the maximum needs (`FBitWriter::WriteInt`).
 - **A reliable bunch** already had is dropped. An unreliable one opens a
   channel only if it closes it too: an actor sent once, to keep
   (`bNetTemporary`).
-- **Timing:** an empty packet goes out when nothing has for `KeepAliveTime`,
-  and a connection with nothing in for `ConnectionTimeout`
-  (`InitialConnectTimeout` until its player is in) closes (`Tick`,
-  `0x10404a40`). Sending stops for the tick when the bytes queued pass the
-  connection's rate (`IsNetReady`).
+- **Timing:** a packet goes out at the end of a tick that sent a bunch;
+  otherwise, with the acks' second copies (written every tick), when nothing
+  has for `KeepAliveTime`. A connection with nothing in for
+  `ConnectionTimeout` (`InitialConnectTimeout` until its player is in)
+  closes (`Tick`, `0x10404a40`). Sending stops for the tick when the bytes
+  queued pass the connection's rate (`IsNetReady`).
+- **Frames:** a client runs at most its connection's speed over 64 frames a
+  second -- 40 at 2,600 --, a server at `NetServerMaxTickRate`
+  (`LanServerMaxTickRate` with `-lanplay`), 10 to 120
+  (`UGameEngine::GetMaxTickRate`, `0x1038fc60`).
 
 ## Numbering
 
@@ -234,12 +243,25 @@ and a spawned actor gets `PostNetBeginPlay` after its first.
   (`UActorChannel::Destroy`, `0x103fd120`), unless it was sent to keep
   (`bNetTemporary`).
 
-**Remote functions** (`AActor::ProcessRemoteFunction`, `0x103e5d90`): a
-function marked for the net goes to the other side instead of running, when
-its condition says so -- from the server to the client whose player owns the
-actor, from a client to the server -- as its index and parameters on the
-actor's channel. An unreliable one is dropped when the connection is full;
-one a simulated proxy calls, not marked simulated, does not run.
+**Remote functions** (`AActor::ProcessRemoteFunction`, `0x103e5d90`): every
+call of an actor's script function in a net game -- and of a native without
+its own number -- passes this first. A simulated or dumb proxy runs only
+functions marked simulated. A function marked for the net goes to the other
+side instead of running when its condition holds -- the first declaration's,
+from its class's replication block, evaluated for the actor: from the server
+to the client whose player owns the actor, from a client to the server, and
+from a client only on an actor the server gave it a channel for. It goes as
+its field number and its parameters (a bool its bit, any other a bit for
+whether it is not zero, then its value), reliable as the function is marked;
+an unreliable one is dropped when the connection has no room.
+
+**Ticking by role** (`AActor::Tick`, `0x103a1aa0`): another player's pawn on a
+client (a simulated proxy) moves smoothly along its velocity -- a player's,
+off the ground by a trace 8 units down and not flying or in water, gaining
+half the zone's gravity -- and runs its `Tick`: no state code, timers or
+physics. A dumb proxy only falls. The local player's pawn runs its input,
+`PlayerInput`, `PlayerTick`, state code and timers, but its physics only in
+its moves (`AutonomousPhysics`). Anything else ticks as a standalone game's.
 
 ## Deus Ex's additions
 
