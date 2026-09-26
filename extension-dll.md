@@ -185,6 +185,20 @@ text plus both margins. Turning it on widens every column
 (`ResizeColumns(true)`, `0x1002fc40`); `ResizeColumns(false)` first shrinks
 every column to its margins.
 
+### The list's size
+
+- **What it asks for** (`ParentRequestedPreferredSize`, `0x10033260`): the
+  visible columns' widths side by side, and a row size for each row. The clip
+  window a list sits in sizes it so, and the scroll area around it scrolls a
+  row at a time (`ParentRequestedGranularity`: 1 across, a row size down).
+- **The row size** (`ComputeRowSize`, `0x10031fd0`): the tallest of the
+  columns' fonts, by the height of a space, plus the row margin above and
+  below.
+- **When it changes.** Adding, changing or deleting rows, setting a field's
+  text or number, and a column's number, width, font, title or hiding, and
+  the margins, each ask the parent to lay the list out again
+  (`AskParentForReconfigure`).
+
 ### Moving, selecting, activating
 
 - **`MoveRow(move, bSelect, bClearRows, bDrag)`** (`0x1002f790`) moves the
@@ -275,14 +289,52 @@ window shows an actor with it too.
 `RootWindow.GenerateSnapshot(bFilter)` (`0x10039410`), after
 `SetSnapshotSize(w, h)`:
 
-- reads the rendered frame from the render device;
-- averages it down to w × h, each pixel the mean of the pixels it covers;
-- stores it in a new 8-bit texture, its sizes rounded up to powers of two
-  (160 × 120 in a 256 × 128), in grey. The C++ can quantize to a palette of
-  256 colours instead, and nothing asks it to.
+- reads the frame the render device last drew, at the viewport's size;
+- averages it down to w × h: each pixel the mean of the box of pixels it
+  covers -- steps of the frame's size over w and h, each box starting where
+  its step truncates to -- each channel scaled by 256/255 and clamped;
+- keeps the mean of the three channels in an 8-bit texture with a grey
+  palette, its sizes rounded up to powers of two (160 × 120 in a
+  256 × 128, the rest black). The C++ can quantize to a palette of 256
+  colours instead, and nothing asks it to.
 
-`bFilter` is not used. The save's picture is the grey snapshot `SaveGame`
-takes ([the game engine](deusex-dll.md#the-game-engine-travel-and-saving)).
+The C++ fills a texture it is given, or makes one beside the root window;
+the script's call always makes one. `bFilter` is not used. Three callers:
+
+- **The Save Game screen**, for the new save's row: it hides the UI, and two
+  ticks later takes one -- not under the OpenGL driver
+  (`MenuScreenSaveGame.GenerateNewSnapShot`).
+- **The save itself**: `SaveGame` takes a 160 × 120 one into a texture made
+  beside the save info, so the save's `SaveInfo` file carries it
+  ([the game engine](deusex-dll.md#the-game-engine-travel-and-saving)). The
+  screens show it for the selected save.
+- **The menus' background**: [the raw background](#the-raw-background).
+
+### The raw background
+
+What the game shows under a menu, by the player's UI background option
+(`UIBackground`: Render 3D, Snapshot, Black):
+
+- **`EnableRendering(false)`** (`0x10039e20`) stops the world: the root's
+  `PreRender` (`0x1003a760`) gives the scene a frame of no size, so neither
+  the level nor the player's overlays are drawn; the windows still are.
+  `SetRenderViewport` gives the scene a rectangle of the root instead (the
+  conversations' letterbox).
+- **The raw background** (`SetRawBackground(texture, colour)`,
+  `SetRawBackgroundSize`, `StretchRawBackground`) is drawn before any window
+  (`DrawRawBackground`, `0x1003c720`), wherever the scene is not: over the
+  whole root with rendering off, around the render viewport with one set,
+  nowhere otherwise. Every window is made with `bDrawRawBackground` on
+  (`XWindow::Init`) and nothing clears it, so no window keeps it out. Each
+  piece left -- above the viewport, below it, then left and right of it --
+  is drawn in the colour, unsmoothed: stretched from the background's own
+  size, or tiled from the piece's corner.
+- **The game's use** (`DeusExRootWindow.ShowSnapshot`): opening a menu with
+  Snapshot takes a snapshot of the frame under it at the root's snapshot
+  size (256 × 192), draws it stretched at half brightness and turns
+  rendering off; Black has no background and turns rendering off. Closing
+  the menus turns rendering on and leaves the background set. The credits
+  turn rendering off for their own screen.
 
 ## Small
 
