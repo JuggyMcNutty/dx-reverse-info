@@ -261,6 +261,54 @@ enemy's drawn weapon or distress), and callbacks such as `HandleShot` and
   1 − `Buoyancy` / `Mass`, the mass floored at 1, so a massless actor
   (Deus Ex's `GeneratorScout`, a pawn of mass 0) falls at full gravity.
 
+### Teleporting an actor
+
+`SetLocation` is `ULevel::FarMoveActor(actor, spot, test, noCheck)`
+(`0x10398ba0`), which the engine uses for its own moves too:
+
+- A static actor, or one not `bMovable`, stays where it is (false), except in
+  the editor.
+- Unless `noCheck`: an actor that collides with the world -- or has
+  `bCollideWhenPlacing`, off clients -- is fitted in near the spot
+  (`FindSpot`, `0x10398480`: in the captures it moved the player 7 to 15
+  units, clear of a ceiling or a floor); no fit, false. Then, unless a test,
+  the encroachment check at the spot, with touches (`CheckEncroachment`,
+  `0x1039a350`): an actor there that blocks it and whose `EncroachingOn`
+  agrees stops the move (false); those it no longer overlaps are untouched,
+  and those there that do not block it touched.
+- Unless a test, whatever stands on it is unbased (`SetBase(None)`, with the
+  event) and it is marked `bJustTeleported`, so physics does not take the
+  jump for speed.
+- `Location` and `OldLocation` both become the spot, and its zone is found
+  again ([below](#the-zone-an-actor-is-in)) -- silently for a test.
+
+The engine's own moves: a trailer follows its owner with `noCheck`
+(`physTrailer`, `0x103d7850`); `AIDirectionReachable` puts the pawn back as a
+test with `noCheck`; Deus Ex's particle iterator moves its proxy with neither
+([deusex-dll.md](deusex-dll.md)).
+
+### The zone an actor is in
+
+`SetActorZone(actor, test, forceRefresh)` (`0x1039b940`):
+
+- A deleted actor is skipped; the level's own info is always in its own
+  zone. `forceRefresh` first puts the actor -- and a pawn's feet and head --
+  in the level's zone, with no events.
+- The zone at its location replaces the old. When they differ, unless a
+  test: the old zone's `ActorLeaving`, then the actor's `ZoneChange` -- while
+  `Region` still holds the zone being left, which scripts compare with the
+  new (a `Decoration` or an `Inventory` splashes only coming out of dry) --
+  then `Region` is set, then the new zone's `ActorEntered`.
+- A pawn's feet (its location less its collision height) and head (plus
+  `EyeHeight`) the same way, each with `FootZoneChange` or `HeadZoneChange`
+  before it is set; then, off clients, its `PlayerReplicationInfo`'s
+  `PlayerZone`.
+
+That is all: Deus Ex's scripts do the rest -- pain zones' `PainTime`
+(`Pawn.FootZoneChange` and `HeadZoneChange`), stray inventory in a
+`bNoInventory` zone (`ZoneInfo.ActorEntered` gives it 1.5 seconds) and
+`bDestructive` (decorations and fragments).
+
 ## Traces
 
 - **What an actor collides as** (`AActor::GetPrimitive`, `0x1034c9a0`): its

@@ -112,7 +112,10 @@ setting of this class, and nothing in the game reads it.
     front and back alike, turned into Galaxy's pan: at most seven-eighths of
     the way to one side, and nearer the middle for a sound within a tenth of
     its radius. `ReverseStereo` swaps it; with `UseSurround`, a sound behind
-    gets the surround pan;
+    gets the surround pan. Measured (a beep 234 units off, its radius 4,000,
+    90° to the right): the left channel 5.1 dB under the right; straight
+    ahead, each 1.8 dB under the right one's at the side -- the power of the
+    two channels together the same both ways;
   - its [obstruction](#sounds-behind-walls), then its [volume](#volume);
   - **Doppler,** for an ambient sound only: the pitch times 1 − the actor's
     speed away from the view target ÷ `DopplerSpeed`, kept to 0.5–2;
@@ -193,6 +196,11 @@ gives none. The reverb is set again only when it changes. 21 zones in 16
 maps have it: Battery Park, the Mole People, Brooklyn Bridge Station, the
 airfield, the NSF headquarters, the ship, parts of Hong Kong, the intro and
 the endgame (the data).
+
+Measured in Battery Park's `ZoneInfo5` (two echoes, at 40 and 68 ms and
+`Gain` 150 and 70; cutoff 6,000 Hz): a gunshot rings about 2 s before
+falling 60 dB under its peak, and 0.5 to 1.5 s after the peak it is 32 dB
+under its first 0.45 s; outside the zone the shot ends with the sample.
 
 ## Hardware and the console
 

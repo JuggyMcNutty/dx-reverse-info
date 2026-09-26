@@ -40,6 +40,11 @@ warp zones and the sky.
 - **`DrawFrame`** draws the world's surfaces with their decals, then the
   sprites that were kept, translucent ones last, then the coronas.
 
+The sky's frame looks out from the zone's `SkyZone`, turned as the viewer is
+and then by the sky zone's own rotation, so the sky's scenery turns the other
+way (Liberty Island's sky zone is turned 5,080, 28°: seen in captures of both
+engines, 2026-09-26; the code is not read).
+
 ## Which actors are drawn
 
 `SetupDynamics` goes through every actor of the level, each frame. It passes
