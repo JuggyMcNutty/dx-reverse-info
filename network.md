@@ -35,6 +35,12 @@ servers speaks this protocol to the bit.
 
 ## Joining
 
+A server listens once a map is opened with `?listen` (`ULevel::Listen`,
+`0x1039e7c0`): the net driver `[Engine.Engine]`'s `NetworkDevice` names binds
+the URL's port -- before the game's `InitGame`, which sees a listen server --,
+and the `[Engine.GameEngine]` `ServerActors` are spawned: the beacon, the query
+answerer, the master servers' uplinks.
+
 The control channel carries lines of text. The server's side is
 `ULevel::NotifyReceivedText` (`0x1039f780`), the client's the pending level's
 (`UNetPendingLevel`, `0x1040a880`).
@@ -58,7 +64,11 @@ The control channel carries lines of text. The server's side is
    `PreLogin` (script) may refuse: `FAILURE` and its message, `FAILCODE` and
    its code (the client's menu takes it: a password asked for), and the
    connection closed. Otherwise `WelcomePlayer` (`0x1039f500`): a `USES
-   GUID= PKG= FLAGS= SIZE= GEN=` line per package the level needs, `WELCOME
+   GUID= PKG= FLAGS= SIZE= GEN=` line per package the level needs -- the
+   map's own, then what it imports, depth first (each package's imports, in
+   its import table's order, straight after it), less the ones flagged
+   server-side only (Deus Ex's `IpDrv`, `IpServer`, `UWindow`, `UBrowser`) --,
+   `WELCOME
    LEVEL=` (the map) `LONE=` (`bLonePlayer`), and `STATICRATE` and
    `DYNAMICRATE` from the settings.
 5. **Client:** a file channel for each package it lacks, when the server
