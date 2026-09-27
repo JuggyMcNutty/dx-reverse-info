@@ -87,8 +87,10 @@ the workspace's.
   path in a worker of its own and names the session, which every other call
   then takes as `database`; up to four are open at once. A worker outlives the
   session and saves and exits after ten idle minutes; `idb_close` saves and
-  exits at once. A database is open in one place at a time: the supervisor
-  adopts one that IDA's window has open rather than open it twice.
+  exits at once. With `save: false` it leaves the working files behind, and
+  the next `idb_open` opens them rather than the `.i64` -- delete them to go
+  back to the saved database. A database is open in one place at a time: the
+  supervisor adopts one that IDA's window has open rather than open it twice.
 - **Types.** [`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) gives a
   database the layout of every native class, struct and enum, from the
   script source in the game's packages, and checks each class against the size
