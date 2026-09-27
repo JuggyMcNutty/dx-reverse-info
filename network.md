@@ -422,7 +422,11 @@ an actor sent to keep has no copy and is compared with its defaults.
   `Actor`, `Pawn`, `PlayerPawn`, `Mover`, `ZoneInfo`, the two replication infos
   and `Inventory`), and each replicated script property whose value differs
   from what the client last got and whose replication statement holds (the
-  statement its `RepOwner` names, each evaluated once a call). A reference to a dynamic actor the client has no channel for yet
+  statement its `RepOwner` names, each evaluated once a call). The classes
+  with a native list declare `nativereplication`, and the class net cache
+  leaves their own properties out of the script replication
+  (`UPackageMap::GetClassNetCache`, Core `0x1012c160`), so their statements
+  are never evaluated -- the [native lists](#the-native-lists) decide. A reference to a dynamic actor the client has no channel for yet
   compares as None, so it goes once there is one; one that went before the
   client could resolve it is cleared from the copy, so it goes again. An
   always-relevant inventory item sends its script classes' values in its
@@ -503,6 +507,32 @@ autonomous) runs its state code and timers only: it moves by the client's
 `ServerMove`s. Anything else ticks as a standalone game's; a viewport's own
 player is spawned with the remote role simulated (`UGameEngine::Init`,
 `LoadMap`), a client's with autonomous.
+
+### The native lists
+
+Each is its class's replication statements written in C++ (Engine.dll,
+2026-09-27): a value goes when it differs from what the client last got
+and the condition holds, all only on the server (`Role` the authority).
+`Mover` (`0x10365320`), `ZoneInfo` (`0x103657a0`) and `GameReplicationInfo`
+(`0x10366960`) are their statements exactly. The others differ:
+
+- **`Actor`** (`0x103618c0`): `SimAnim`, `AnimMinRate` and `bAnimNotify` go
+  with `AnimSequence` -- a mesh, and a remote role up to simulated proxy
+  unless owned with `bClientAnim`, or a demo recording --, UE1's statement;
+  Deus Ex's script gives `SimAnim` and `AnimMinRate` below simulated proxy
+  and `bAnimNotify` at it. The blended animations its script added
+  (`BlendAnimSequence`, `SimBlendAnim`, `BlendAnimMinRate`) are in no list and
+  never go.
+- **`Pawn`** (`0x10363bc0`): `PlayerRestartState` is in no list and never
+  goes, though its statement names it for the owner.
+- **`PlayerPawn`** (`0x103649d0`): the owner's list also names
+  `bNeverAutoSwitch`, which no statement names -- so it has no replication
+  index, and its change sends whatever has the first.
+- **`PlayerReplicationInfo`** (`0x10365ca0`): `Actor`'s list only in the
+  first bunch (`bNetInitial`).
+- **`Inventory`** (`0x10367450`): an always-relevant item past its first
+  bunch sends `bHidden` alone; and one not owned by the client, a simulated
+  proxy with an `AmbientSound`, sends its `Location` too.
 
 ## Deus Ex's additions
 
