@@ -111,7 +111,12 @@ and the surface has one:
 - **Screen flash** (`EndFlash`): with `FlashScale` at 0.5 and `FlashFog`
   black nothing is drawn; otherwise one full-screen translucent quad in the
   fog's colour, its alpha `min(2 x FlashScale, 1)` -- the pain and pickup
-  flashes.
+  flashes. The two values are the game engine's (`Engine.dll`'s
+  `UGameEngine::Draw`, `0x1038f110`): the viewport's player's `FlashScale`
+  halved and its `FlashFog`, each clamped to 0-1 with a fourth component
+  of 0 -- 0.5 and black when the client's `ScreenFlashes` is off, unless
+  the level is a net game (`NetMode` not standalone). A player's
+  `FlashScale` of 1, its resting value, draws nothing.
 - **Meshes and sprites** (`DrawGouraudPolygon`): the vertex's light colour
   becomes the diffuse (times the modulation compensation); a modulated draw
   is untinted white. Tiles (`DrawTile`) carry one colour the same way.
