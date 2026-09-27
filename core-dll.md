@@ -126,7 +126,13 @@ nothing, `GetString` returns an empty string, and `AddTimingData`
   no values -- the properties keep their defaults -- and is made when one is
   written (`FConfigCacheIni::Find`, only a write creating one: the SDK's
   `Core/Inc/FConfigCacheIni.h`): a mod's `config(DXMTL)` classes run on a
-  client with no `DXMTL.ini`.
+  client with no `DXMTL.ini`. A key that is there with no value is read
+  all the same: the cache finds it, and the property's `ImportText` takes
+  the empty text -- a string empty, a name None, an object or class None (no
+  object has an empty name: `0x10166e20`), a float 0 (`appAtof`); an int,
+  byte or bool keeps what it had, its text neither a number nor a known
+  word (the token reader gives an empty token, `0x10164cb0`). So a game
+  ini's `ServerName=` is a server's name, empty.
 - **`ResetConfig()`** (`0x1013e8c0`, which calls `UObject::ResetConfig` at
   `0x10151ac0` with the object's class). The class's section is copied key by
   key from `Default.ini`, for a `System` class, or `DefUser.ini`, for a `User`
