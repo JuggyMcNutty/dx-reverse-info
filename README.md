@@ -41,7 +41,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library -- channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 | `Fire.dll` | package Fire: the fractal textures -- fire, water (lit, or bending another texture) and ice -- that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
 
-Beside them in the workspace's `System/`, copied in by the owner
+Beside them in `gamefiles/System/`, copied in by the owner
 (2026-09-24) and not the game's:
 
 - **`RGalaxy.dll`** is `Galaxy.dll` with 8 bytes changed: 7 rename its package
@@ -56,10 +56,10 @@ Beside them in the workspace's `System/`, copied in by the owner
 
 ## Working on the binaries
 
-The work happens in the Port Ex Machina workspace, where this repository is
-cloned as `re/` beside the game install (`gamefiles/`) and the reference
-material (`reference/`); the paths below that are not this repository's are
-the workspace's.
+The work happens beside the Port Ex Machina workspace: this repository is
+cloned as `dx-reverse-info/` in the parent folder of its repositories, beside
+the game install (`gamefiles/`) and the reference material (`reference/`);
+the paths below that are not this repository's are that parent folder's.
 
 - **IDA runs headless, in the distrobox.** Windows IDA 9.4 is installed in
   the Lutris prefix (`~/Games/umu/umu-default`), and
@@ -71,11 +71,11 @@ the workspace's.
   Proton's `wine` directly. Once per machine: the prefix's Python gets IDA's
   `idapro` wheel (IDA's `idalib\python`), the container gets
   `lib32-glibc` (this wine starts every program through its 32-bit loader),
-  and `claude mcp add --scope local ida -- "$PWD/re/tools/ida/idalib-mcp.sh"`,
-  run in the workspace, registers it, with the plugin's own
-  `plugin:ida-pro-mcp:idalib` (a Linux idalib, which is not here) disabled in
-  `/mcp`. The script enables `py_eval` and `py_exec_file`. IDA sees the
-  workspace as `X:\Documents\projects\port-ex-machina` and the whole
+  and `claude mcp add --scope local ida -- "$PWD/dx-reverse-info/tools/ida/idalib-mcp.sh"`,
+  run in the parent folder, where Claude Code starts, registers it, with the
+  plugin's own `plugin:ida-pro-mcp:idalib` (a Linux idalib, which is not here)
+  disabled in `/mcp`. The script enables `py_eval` and `py_exec_file`. IDA
+  sees the parent folder as `X:\Documents\projects\deusex` and the whole
   filesystem as `Z:\`,
   so a script in any scratch directory runs through `py_exec_file`. `py_eval`
   keeps its top-level names as locals, which a function or comprehension

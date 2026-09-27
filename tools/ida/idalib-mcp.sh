@@ -3,8 +3,9 @@
 # server. Runs in this distrobox, never on the host: the Windows IDA and its
 # Python live in the Lutris prefix, driven by the same Proton wine Lutris runs
 # IDA with, so a GUI IDA open at the same time shares its wineserver.
-# Register: claude mcp add --scope local ida -- "$PWD/tools/ida/idalib-mcp.sh"
-# (docs/re/README.md#working-on-the-binaries).
+# Register, in the folder Claude Code starts in:
+# claude mcp add --scope local ida -- "$PWD/dx-reverse-info/tools/ida/idalib-mcp.sh"
+# (README.md#working-on-the-binaries).
 set -eu
 
 : "${IDA_PREFIX:=$HOME/Games/umu/umu-default}"

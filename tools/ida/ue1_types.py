@@ -892,8 +892,9 @@ def ida_main():
 
 
 def workspace_gamefiles():
-    """The workspace's gamefiles/: $DX_ROOT's, or the first found above this
-    script (this repository is cloned as re/ in the workspace)."""
+    """The game install beside the repositories: $DX_ROOT's gamefiles/, or the
+    first found above this script (this repository is cloned as
+    dx-reverse-info/ beside it)."""
     if os.environ.get("DX_ROOT"):
         return os.path.join(os.environ["DX_ROOT"], "gamefiles")
     d = os.path.dirname(os.path.abspath(__file__))
