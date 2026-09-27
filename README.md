@@ -39,6 +39,7 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `D3DDrv.dll` | the Direct3D 7 display driver: gamma, the light maps' brightness on screen, fog, detail textures, and each pass's blending -- the look's reference | [`d3ddrv-dll.md`](d3ddrv-dll.md) | read |
 | `IpDrv.dll` | package IpDrv: the sockets -- the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library -- channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
+| `Fire.dll` | package Fire: the fractal textures -- fire, water (lit, or bending another texture) and ice -- that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
 
 Beside them in the workspace's `System/`, copied in by the owner
 (2026-09-24) and not the game's:
