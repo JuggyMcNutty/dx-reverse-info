@@ -148,6 +148,18 @@ nothing, `GetString` returns an empty string, and `AddTimingData`
   section of that name -- the bindings are in `[Engine.Input]` -- so nothing
   is copied, and the input objects only read their bindings from `User.ini`
   again: the player's bindings stay.
+- **The console's `GET` and `SET`** (`UObject::StaticExec`, `0x101531b0`),
+  which the game's menus read and write their settings with. The class is
+  found by its name in any package loaded -- the menus name `DeusExMPGame`,
+  `DXMapList`, `Player`, not their packages --, the property by its name.
+  `GET` gives the class default's first element as the ini writes it, with
+  no quotes: a string bare, an object its class and path name
+  (`Texture'Engine.S_Actor'`) or `None`, a bool `True` or `False`, an enum
+  byte its value's name. `SET` takes the rest of the line, spaces and all,
+  as the value (`GlobalSetProperty`, `0x101523a0`): every object of the
+  class or a subclass reads it, each then told of the change
+  (`PostEditChange`), then the class's defaults, and the class's config is
+  saved.
 
 ## The script interpreter
 
