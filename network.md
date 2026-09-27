@@ -37,9 +37,19 @@ servers speaks this protocol to the bit.
 
 A server listens once a map is opened with `?listen` (`ULevel::Listen`,
 `0x1039e7c0`): the net driver `[Engine.Engine]`'s `NetworkDevice` names binds
-the URL's port -- before the game's `InitGame`, which sees a listen server --,
-and the `[Engine.GameEngine]` `ServerActors` are spawned: the beacon, the query
-answerer, the master servers' uplinks.
+the URL's port -- before the game's `InitGame`, which sees a listen server
+(dedicated without a client) --, and the game engine's `ServerActors` are
+spawned, from the section of the class `[Engine.Engine]`'s `GameEngine` names
+(`[DeusEx.DeusExGameEngine]`): each a class and then `Key=Value` settings of
+its config properties -- the LAN beacon (`IpDrv.UdpBeacon`, answering
+`REPORT` and `REPORTQUERY` on port 8,777), the query answerer
+(`IpServer.UdpServerQuery`, GameSpy's `\basic\`, `\info\`, `\rules\` and
+`\players\` on the first free port after the game's), and the master
+servers' uplinks (`IpServer.UdpServerUplink`). The level's
+`NextSwitchCountdown` is set to `ServerTravelPause`. The level's
+`EngineVersion` and `MinNetVersion`, which the query answerer reports and
+the Join screens compare, are Deus Ex's 1100; its `ComputerName` is the
+machine's (Windows' computer name).
 
 The control channel carries lines of text. The server's side is
 `ULevel::NotifyReceivedText` (`0x1039f780`), the client's the pending level's
@@ -111,8 +121,8 @@ a file (a drive letter); a `:` further on, before any `.`, ends a protocol;
 `//` may come before the host. The host is the text up to a `/`, when it has
 a `.` past its first character not followed by the map's or a save's
 extension (`dx`, `dxs`); after a `:` in it comes the port -- `[URL]`'s `Port`,
-7,790, without one --, and after the `/` the map, the default map without
-one. The Join screens join with the console's `open` and the address typed
+7,790, without one, as any URL's port --, and after the `/` the map, the
+default map without one. The Join screens join with the console's `open` and the address typed
 or picked (Join LAN adds `?lan`).
 
 ## Packets
