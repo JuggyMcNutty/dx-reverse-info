@@ -74,10 +74,14 @@ who senses what and calls the listeners' script.
   `DestroyActor` (`0x10382760`): the actor's events are marked for deletion,
   and it stops being any listener's best sender.
 - **What it holds.** 256 hash buckets of event types (`XAIEventType`: a name,
-  kept in name order within its bucket). Each type lists its senders
-  (`XAISenderEvent`, one per actor raising it) and its receivers
-  (`XAIReceiverEvent`, one per actor listening), and every receiver is also in
-  one ring the manager walks. All are objects in the level.
+  in the bucket of its hash's low byte -- UE1's `appStrihash`
+  ([names](core-dll.md#names-hashed-and-compared)) -- and kept in name order
+  within it by `appStricmp`; `FindEvent`, `0x103834b0`). Each type lists its
+  senders (`XAISenderEvent`, one per actor raising it) and its receivers
+  (`XAIReceiverEvent`, one per actor listening), each list in the order its
+  events came, and every receiver is also in one ring the manager walks: a
+  circle, a new receiver put before the one the manager resumes at. All are
+  objects in the level.
 - **Deleting is deferred.** An event is marked (`SafeDelete`, `0x10383780`),
   and `CleanupEvents` (`0x10383d80`) unlinks and deletes the marked ones
   outside `AIProcess`. Event types stay for the level's life.
@@ -160,6 +164,31 @@ In the game's script, `ScriptedPawn` listens for `WeaponDrawn`, `WeaponFire`,
 `MegaFutz`. Its score callbacks drop some senders (a friend's loud noise, an
 enemy's drawn weapon or distress), and callbacks such as `HandleShot` and
 `HandleLoudNoise` react on `Begin` and `Pulse`.
+
+### Saved
+
+`Serialize` (`0x103825f0`), after the manager's properties: the level;
+`refProcessing`, `deleteCount` and `currentSlot`, 4 bytes each (the first
+two asserted 0, a save deleting the marked events first); the receiver the
+ring resumes at; then each bucket's first type. Each type, sender and
+receiver is an object of its own -- `Engine.AIEventType`,
+`Engine.AISenderEvent` and `Engine.AIReceiverEvent` in a save's imports --
+owned by the manager and named by its class and a count
+(`AIReceiverEvent105`). Their fields, after their properties (they have
+none):
+
+- **A type:** its name; its hash, the whole `appStrihash`; its first sender
+  and first receiver; the bucket's next type.
+- **A sender or receiver:** its type, its actor, whether it is being
+  destroyed (4 bytes), and its list's next event.
+- **A sender,** then: the four numbers of each of its 16 slots, then its four
+  current levels, as floats.
+- **A receiver,** then: its callback and score callback (names); whether a
+  call is due (4 bytes) and the state for it (a byte); the four checks and
+  whether its event is on (4 bytes each); the best score (a float) and the
+  best sender; the first slot its next turn weighs (4 bytes: the slot that
+  became current after its last turn); the ring's next and previous
+  receivers, one alone its own neighbour. Its `XAIParams` are not saved.
 
 ## The senses
 
@@ -448,6 +477,26 @@ from `RenderIteratorClass`, runs it and draws its items
 
 The protocol -- joining, packets, channels, replication and remote calls --
 is in [`network.md`](network.md).
+
+## Latent functions
+
+A latent function's native starts the wait and puts in the state frame's
+`LatentAction` the number of the native that polls it, which a save keeps
+([a state frame saved](core-dll.md#events-and-probes)): `AActor`'s `Sleep`
+384, `FinishAnim` 385 and `FinishInterpolation` 302 (registered at
+`0x103e0070` and on), `APawn`'s `MoveTo` 501, `MoveToward` 503, `StrafeTo`
+505, `StrafeFacing` 507, `TurnTo` 509, `TurnToward` 511 and `WaitForLanding`
+528.
+
+## A saved level
+
+`ULevelBase::Serialize` (`0x1039c5f0`), after the level's properties: the
+actors -- their count, twice, then each -- and the URL it was loaded by:
+protocol, host, map, portal, options, port and whether it is valid.
+`ULevel::Serialize` (`0x1039d560`) then adds the BSP model, the reach specs,
+the level's time as a float, the first deleted actor, 16 text blocks, and
+the travel info: a count, then each key and value (package versions 61 and
+62 wrote the keys and the values as two lists).
 
 ## Small
 

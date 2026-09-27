@@ -232,9 +232,12 @@ every column to its margins.
 `XFlagBase`: the player's flags, what missions and conversations set and
 test.
 
-- **Storage** (`FindName`, `0x10024e60`): 64 buckets, by a CRC of the flag's
-  name in upper case. Each is a chain kept in order of hash, then type, so
-  there is no limit to the flags. A flag is an object inside the flag base.
+- **Storage** (`FindName`, `0x10024e60`): 64 buckets, by the low six bits
+  of the flag's name hashed with UE1's `appStrihash`
+  ([names](core-dll.md#names-hashed-and-compared); checked against the 75
+  flags of four saves, 2026-09-27). Each is a chain kept in order of the
+  hash, compared as a signed number, then of type, so there is no limit to
+  the flags. A flag is an object inside the flag base.
 - **Setting** (`SetBool`, `0x10023c60`, and the other types alike):
   `Set*(name, value, bAdd, expiration)`, bAdd true and expiration -1 by
   default. It sets the flag, adding it with bAdd, and stamps its expiration

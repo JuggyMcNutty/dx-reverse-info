@@ -95,6 +95,10 @@ nothing, `GetString` returns an empty string, and `AddTimingData`
   packages the live servers send (ANNA, DXNMS) point their classes'
   `ScriptText` at exports named None, of class `Class`, with no flags and no
   data.
+- **What a save writes.** Every export of the original's saves carries the
+  three context flags beside those a load reads: an actor 0x2070001 --
+  transactional, with a state frame --, the save info 0x70004 (public), the
+  event manager's parts 0x70000 (seen, 2026-09-27).
 - **A package's file** (`appFindPackageFile`, `0x10148ec0`). A name ending in
   `.dll` is none. The name as given, if a file of it exists; else each of
   `[Core.System]`'s `Paths` -- the path up to its `*`, the name, then the
@@ -235,6 +239,16 @@ How the original runs UnrealScript, for comparison with the fork's VM
   function for the probe and the state does not ignore it. For a name that is
   not a probe, both only log a warning.
 - **State code** is run by `Engine.dll`; `UObject::ProcessState` is empty.
+- **A state frame saved** (`UObject::Serialize`, for an object with one):
+  the node whose code runs, the state the object is in, the probe mask (8
+  bytes), the latent action -- the number of the native polling it
+  ([Engine's](engine-dll.md#latent-functions)) --, and with a node the
+  code's offset in it, -1 for none. An object in no state has its class for
+  both nodes, as `InitExecution` (`0x10150750`) starts the frame, every
+  probe on; in a state, as the original's saves have it (2026-09-27), the
+  state node is the most derived of its name and the code node the state
+  its label was found in -- a pickup in `DeusExPickup.Pickup` runs
+  `Inventory.Pickup`'s code.
 
 ## The natives
 
@@ -259,6 +273,17 @@ The rest are UE1's own. Where the fork differs is in
   (`0x10139080`) draws points in the cube from −1 to 1 until one is inside the
   unit sphere, then scales it to length 1: a direction with none favoured.
   `Normal` of a zero vector is zero.
+
+## Names hashed and compared
+
+- **`appStrihash`**, UE1's inline hash with case ignored: from 0, each UTF-16
+  character, upper-cased if a to z, taken low byte then high byte into
+  `h = (h >> 8) ^ GCRCTable[(h ^ byte) & 0xFF]`. `GCRCTable` is the CRC table
+  of the polynomial 0x04C11DB7, most significant bit first. The event
+  manager's buckets and the flag base's use it
+  ([events](engine-dll.md#the-manager), [flags](extension-dll.md#flags)).
+- **`appStricmp`** (`0x10123560`) is the C library's `_wcsicmp`, which folds
+  A to Z to lower case: an underscore sorts before the letters.
 
 ## The database
 
