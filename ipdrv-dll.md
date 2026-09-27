@@ -98,9 +98,18 @@ mode, receive by events, no socket (`0x10702480`).
   (`GenerateSecretKey`, `0x107017f0`: Unreal, Unreal Tournament and an old
   version); for any other name it is six spaces, so Deus Ex's answer needs no
   secret.
-- **A server's side** is script too, `IpServer.u`'s `UdpServerUplink`
-  (heartbeats to the addresses in `DeusEx.ini`) and `UdpServerQuery`
-  (answering queries).
+- **A server's side** is script too, `IpServer.u`'s `UdpServerQuery`
+  (answering queries) and `UdpServerUplink`: once its master server's
+  address resolves, a heartbeat, `\heartbeat\<query port>\gamename\deusex`,
+  then another each `UpdateMinutes`, from the query port's next; the master
+  then asks the query port. It runs only with its config `DoUplink` set --
+  `[IpServer.UdpServerUplink] DoUplink=True`, or on its `ServerActors`
+  line, whose settings are in before its `PreBeginPlay` --: without it, it
+  stops as it begins (`DoUplink is not set.  Not connecting to Master
+  Server.`), as the GOG build's ini leaves it, so a game hosted from the
+  menus is never listed. Its check for a listen server is commented out in
+  the script: set, a listen server announces itself too, dedicated or
+  not.
 - **Epic's master server** is here as a commandlet
   (`UMasterServerCommandlet`, settings in `MasterServer.ini`): it takes
   servers' heartbeats over UDP, checks each with its own challenge, and lists

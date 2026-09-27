@@ -45,7 +45,8 @@ its config properties -- the LAN beacon (`IpDrv.UdpBeacon`, answering
 `REPORT` and `REPORTQUERY` on port 8,777), the query answerer
 (`IpServer.UdpServerQuery`, GameSpy's `\basic\`, `\info\`, `\rules\` and
 `\players\` on the first free port after the game's), and the master
-servers' uplinks (`IpServer.UdpServerUplink`). The level's
+servers' uplinks (`IpServer.UdpServerUplink`, which announce the server
+only with `DoUplink` set: [the master server](ipdrv-dll.md#the-master-server)). The level's
 `NextSwitchCountdown` is set to `ServerTravelPause`. The level's
 `EngineVersion` and `MinNetVersion`, which the query answerer reports and
 the Join screens compare, are Deus Ex's 1100; its `ComputerName` is the
