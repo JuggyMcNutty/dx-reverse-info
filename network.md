@@ -213,6 +213,38 @@ player's `ShowProgress` while that time is ahead: Deus Ex's opens
   field `NETSPEED` writes (the connection takes `ConfiguredLanSpeed`, the
   next one, for `?LAN`).
 
+## Server travel
+
+A server moves its game to another map, and its clients follow (seen
+between the two engines, 2026-09-27):
+
+1. **The level's `ServerTravel(URL, bItems)`** (script; the game engine's
+   `SERVERTRAVEL <url>` calls it, and a game's own map change): Deus Ex's
+   does nothing in a standalone game; otherwise, unless a travel is already
+   set, `NextURL` and `bNextItems` are set and the game's
+   `ProcessServerTravel` runs -- or, with no game, `NextSwitchCountdown` 0.
+2. **`GameInfo.ProcessServerTravel`** (script): `ClientTravel(URL,
+   TRAVEL_Relative, bItems)` to each remote player's pawn -- a replicated
+   call --, `PreClientTravel` for the host's own, whose `Skin`, `Face`,
+   `Team`, `Name` and `Class` a listen server appends to `NextURL`; a game
+   that is not networked switches at once (countdown 0).
+3. **The server** refuses no one but takes no one new while `NextURL` is
+   set: `NotifyAcceptingConnection` ignores a new client's packets
+   (`Server <level> refused`). Once `NextSwitchCountdown` -- the
+   `ServerTravelPause` 4 s it was given when the map began listening --
+   runs out (`UGameEngine::Tick`): `Server switch level: <url>`, the
+   players' travel info taken when `bNextItems` is set, and a browse to
+   `NextURL` relative to the last URL, whose options -- `?listen`, the
+   game -- it keeps; the old net driver goes with its level, closing the
+   clients' connections, and the new map listens again.
+4. **A client**: the `ClientTravel` browses relative to its last URL --
+   the server's address, the next map --, a new join that the server
+   ignores until it listens again, the handshake's first packets sent
+   again meanwhile. When the old level's connection closes, the client
+   browses `?failed` and goes to its Entry level (`Failed; returning to
+   Entry`), showing no failure while the join is pending; the join then
+   loads the next map.
+
 ## Addresses
 
 A URL names a server in what comes before its options (`?`) and portal
