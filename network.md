@@ -142,7 +142,8 @@ as many bits as the maximum needs (`FBitWriter::WriteInt`).
   `0x103fae80`) -- a client's `HELLO` while the server comes up.
 - **A reliable bunch** already had is dropped. An unreliable one opens a
   channel only if it closes it too: an actor sent once, to keep
-  (`bNetTemporary`).
+  (`bNetTemporary`). A channel the other side opens is open and acknowledged
+  here from its opening bunch, whose packet it keeps as its open's.
 - **Timing:** a packet goes out at the end of a tick that sent a bunch;
   otherwise, with the acks' second copies (written every tick), when nothing
   has for `KeepAliveTime`. A connection with nothing in for
@@ -306,8 +307,10 @@ its own number -- passes this first. A simulated or dumb proxy runs only
 functions marked simulated. A function marked for the net goes to the other
 side instead of running when its condition holds -- the first declaration's,
 from its class's replication block, evaluated for the actor: from the server
-to the client whose player owns the actor, from a client to the server, and
-from a client only on an actor the server gave it a channel for. It goes as
+to the client whose player owns the actor (its top owner a player pawn whose
+`Player` is a net connection) -- a channel opened for the actor, and the
+actor sent first, if that client has none --, from a client to the server,
+and from a client only on an actor the server gave it a channel for. It goes as
 its field number and its parameters (a bool its bit, any other a bit for
 whether it is not zero, then its value), reliable as the function is marked;
 an unreliable one is dropped when the connection has no room.
