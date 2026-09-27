@@ -122,9 +122,10 @@ After a pawn's mesh, `DrawActorSprite` draws:
 `DrawFrame` keeps up to 32 coronas from frame to frame, each with a
 brightness from 0 to 1:
 
-- **Which lights:** those shining into the viewer's own leaf of the BSP -- the
-  static lights that reach it (its `iPermeating` list) and the dynamic lights
-  in it -- with `bCorona` and a `Skin` texture.
+- **Which lights:** those shining into the leaf of the BSP the viewport's
+  actor stands in (its `Region.iLeaf`, not the eye's) -- the static lights
+  that reach it (its `iPermeating` list) and the dynamic lights in it --
+  with `bCorona` and a `Skin` texture.
 - **Seen** (`CoronaTest`, `0x10b1bc00`) when the line from the eye to the
   light meets no level geometry or mover, and no pawn or other actor but the
   viewer's own pawn.
@@ -133,8 +134,12 @@ brightness from 0 to 1:
   or goes, in about a third of a second, and is dropped at 0.
 - **Drawn** at the light's place on screen, if in front of the eye: a square
   a fifth of the view's width times the light's `DrawScale`, whatever the
-  distance, translucent, in the colour of its hue and saturation times the
-  brightness.
+  distance -- `UCanvas::DrawIcon` of the whole `Skin`, translucent --, in
+  the colour of its hue whitened by its saturation, times the brightness:
+  the hue's colour from its sector of 85 (red to green, green to blue,
+  blue to red, the last over 84), plus `LightSaturation` / 255 of what it
+  lacks of white. Worked out in `DrawFrame` itself (`0x10b1a2d0`), not by
+  `FGetHSV`, whose light colour is dimmer.
 
 ## Mesh detail
 
