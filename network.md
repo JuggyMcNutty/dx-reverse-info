@@ -146,8 +146,10 @@ as many bits as the maximum needs (`FBitWriter::WriteInt`).
 - **Timing:** a packet goes out at the end of a tick that sent a bunch;
   otherwise, with the acks' second copies (written every tick), when nothing
   has for `KeepAliveTime`. A connection with nothing in for
-  `ConnectionTimeout` (`InitialConnectTimeout` until its player is in)
-  closes (`Tick`, `0x10404a40`). Sending stops for the tick when the bytes
+  `ConnectionTimeout` (`InitialConnectTimeout` until it is open and its
+  player in; a server's connection is open from a client's first packet,
+  [`UTcpNetDriver::TickDispatch`](ipdrv-dll.md)) closes (`Tick`,
+  `0x10404a40`). Sending stops for the tick when the bytes
   queued pass the connection's rate (`IsNetReady`).
 - **Frames:** a client runs at most its connection's speed over 64 frames a
   second -- 40 at 2,600 --, a server at `NetServerMaxTickRate`
@@ -188,14 +190,23 @@ Each tick, for each connection with a player and room to send, the server
 picks what to send (`ULevel::ServerTickClient`, `0x103a3500`):
 
 - **The viewer:** where the player's view is (`PlayerCalcView`); every other
-  tick, where it will be in 0.9 s, then 0.4 s, at its velocity, up to a wall.
+  tick, where it will be in 0.9 s -- 0.4 s every fourth tick -- at its and
+  its base's velocity, up to a wall.
 - **The candidates:** each actor with a remote role once a tick -- every
   dynamic actor, and a static one if `bAlwaysRelevant` -- when its
-  `NetUpdateFrequency` says an update is due (the actors spaced 0.023 s
-  apart); sorted by priority (`0x103a4350`): the actor's net priority for the
-  time since its last update (`SpawnPrioritySeconds` for one not yet sent),
-  times 3 plus the cosine of its direction from the view, `bNetOptional`
-  ones last.
+  `NetUpdateFrequency` says an update is due: the whole number of updates
+  since the connection's last replication changed, each actor's clock 0.023 s
+  on from the one before it. An actor a client was sent to keep
+  (`bNetTemporary`) is never one again for that client.
+- **Priority** (`0x103a4350`): the actor's `GetNetPriority` -- its
+  `NetPriority` times the time since its last complete update
+  (`SpawnPrioritySeconds` for one without a channel, so an unsent actor does
+  not rise) -- times 3 plus the cosine between the player's view direction
+  and the actor's direction from the viewer, in 65,536ths; `bNetOptional`
+  ones 100,000 lower. A walking player's pawn (`APawn::GetNetPriority`,
+  `0x103c5ff0`) takes, for the time, twice the distance between where it will
+  be in half the lag and where the client's copy would be by then, over its
+  `GroundSpeed`, plus half the time. The candidates go highest first.
 - **Relevant or not** (`0x103a3120`), from the most important down, while the
   connection takes more: always if `bAlwaysRelevant`; if owned (up its
   `Owner`s) by the player or its view target, or one of them; if it has an
@@ -207,21 +218,42 @@ picks what to send (`ULevel::ServerTickClient`, `0x103a3500`):
 - **Deus Ex's `AdditionalViews`:** a player's other viewpoints count as
   viewers too -- but the loop tries the first of the three, three times.
 - **Channels:** a relevant actor whose class the client knows gets an actor
-  channel; one irrelevant for `RelevantTimeout` loses it, and the client
-  destroys its copy.
+  channel, and is replicated when the channel has room; one irrelevant for
+  `RelevantTimeout` loses it, and the client destroys its copy. A destroyed
+  actor's channels close (`UNetDriver::NotifyActorDestroyed`, `0x10409d70`).
 
-`UActorChannel::ReplicateActor` (`0x103fead0`) then writes what changed:
+`UActorChannel::ReplicateActor` (`0x103fead0`) then writes what changed,
+against a copy of what this client last got (`SetChannelActor`,
+`0x103fd620`): the class's defaults to begin with, less its config values --
+cleared, so that they always go, the client's own config being its own --;
+an actor sent to keep has no copy and is compared with its defaults.
 
 - **The first bunch** (`bNetInitial`): a static or no-delete actor by
   reference -- the client has it from the map --, any other by class and
-  location, for the client to spawn.
-- **Roles:** `bNetOwner` is whether the connection's player owns the actor; an
-  autonomous proxy the client does not own goes as a simulated one.
+  location, for the client to spawn. It is reliable, except for an actor sent
+  to keep, whose one unreliable bunch opens and closes the channel; the
+  actor is then one of the connection's sent temporaries -- until the channel
+  goes with its open never acknowledged, when it can go again.
+- **Roles:** `bNetOwner` is whether the connection's player owns the actor
+  (its top owner that player's pawn); an autonomous proxy goes as a simulated
+  one unless the client owns it or it has no instigator (or its instigator
+  was last sent as owned). `Role` and `RemoteRole` each go under the other's
+  field number, the roles as the client has them. `bSimulatedPawn` is a pawn
+  sent as a simulated proxy.
 - **Properties:** those the native list gives (`GetOptimizedRepList`, for
   `Actor`, `Pawn`, `PlayerPawn`, `Mover`, `ZoneInfo`, the two replication infos
   and `Inventory`), and each replicated script property whose value differs
-  from what the client last got and whose class's condition holds (script,
-  run once a call). What is lost is sent again.
+  from what the client last got and whose replication statement holds (the
+  statement its `RepOwner` names, each evaluated once a call). A reference to a dynamic actor the client has no channel for yet
+  compares as None, so it goes once there is one; one that went before the
+  client could resolve it is cleared from the copy, so it goes again. An
+  always-relevant inventory item sends its script classes' values in its
+  first bunch only (`AInventory::ShouldDoScriptReplication`, `0x10367e00`).
+- **Losses:** each element's last packet and whether it was reliable are kept;
+  a lost unreliable one is sent again with the next, and once the client
+  acknowledges the channel's open, so is all that went unreliably before it.
+- **A full bunch** keeps the rest for the next tick; the time since the last
+  update runs on until one goes complete.
 
 **Receiving** (`UActorChannel::ReceivedBunch`, `0x103fd980`): a new channel's
 first bunch names the actor, or its class and place; that actor is spawned
@@ -253,6 +285,21 @@ and a spawned actor gets `PostNetBeginPlay` after its first.
   (`UActorChannel::Destroy`, `0x103fd120`), unless it was sent to keep
   (`bNetTemporary`).
 
+**On a server** a client's bunch is taken with the roles as the client has
+them: a property value or a call only when its replication statement then
+holds and the client owns the actor -- anything else is read and dropped
+("unwanted").
+
+**Animation** goes packed into `SimAnim` (the `PostNetReceive` scale above),
+set where the animation starts rather than when replicated: `PlayAnim`
+(`0x103e0160`) sets all four, an unchanged one's last frame nudged up by 1 so
+that it still goes; `LoopAnim` (`0x103e05e0`) all four with the last frame
+negative, or, on the loop already playing, the rate and last frame, nudged
+alike; `TweenAnim` (`0x103e0bd0`) the frame and tween with no rate or last
+frame; and a one-shot
+animation that ends on an actor with a lower remote role than simulated (and
+not a weapon) sets the frame and rate where it stopped.
+
 **Remote functions** (`AActor::ProcessRemoteFunction`, `0x103e5d90`): every
 call of an actor's script function in a net game -- and of a native without
 its own number -- passes this first. A simulated or dumb proxy runs only
@@ -271,7 +318,11 @@ off the ground by a trace 8 units down and not flying or in water, gaining
 half the zone's gravity -- and runs its `Tick`: no state code, timers or
 physics. A dumb proxy only falls. The local player's pawn runs its input,
 `PlayerInput`, `PlayerTick`, state code and timers, but its physics only in
-its moves (`AutonomousPhysics`). Anything else ticks as a standalone game's.
+its moves (`AutonomousPhysics`). A client's pawn on the server (remote role
+autonomous) runs its state code and timers only: it moves by the client's
+`ServerMove`s. Anything else ticks as a standalone game's; a viewport's own
+player is spawned with the remote role simulated (`UGameEngine::Init`,
+`LoadMap`), a client's with autonomous.
 
 ## Deus Ex's additions
 
