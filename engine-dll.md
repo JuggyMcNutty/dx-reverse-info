@@ -187,6 +187,17 @@ enemy's drawn weapon or distress), and callbacks such as `HandleShot` and
 
 ## Moving
 
+- **Walking over the floor** (`APawn::physWalking`, `0x103ca540`): a
+  walking pawn floats. Standing still on the same base, a line 20 units
+  down from the middle of its cylinder's bottom that finds the floor 4.1 to
+  4.6 away leaves it be. Otherwise a box trace of its cylinder, down
+  `MaxStepHeight` + 2, measures the floor: with none in reach, or the same
+  base 2.4 or nearer, one nearer than 1.9 lifts the pawn to 2.1; with a
+  farther or another base it moves down onto it and takes what it stands
+  on for its base -- for the world the `LevelInfo`. Those distances are the
+  traces' own, short of the floor by their backoff ([traces](#traces)):
+  the box trace's a tenth of its length, so a pawn with `MaxStepHeight` 25
+  stands 4.8 over the floor -- measured 4.75 at Liberty Island's start.
 - **`RandomBiasedRotation(centralYaw, yawDistribution, centralPitch,
   pitchDistribution)`** (`0x1036d030`): a random rotation about the central
   one, yaw up to half a turn (32,768) either way and pitch up to a quarter
@@ -311,6 +322,11 @@ That is all: Deus Ex's scripts do the rest -- pain zones' `PainTime`
 
 ## Traces
 
+- **Backoff** (`UModel::LineCheck`, `0x103f3c20`): a hit on the BSP is
+  given short of the surface -- a line's 0.5 units, a box's a tenth of the
+  trace's length, or 0.1 units for a trace shorter than one -- the rest of
+  the move not taken. A script's `Trace` straight down finds the floor half
+  a unit above it.
 - **What an actor collides as** (`AActor::GetPrimitive`, `0x1034c9a0`): its
   brush, else its mesh, else the engine's cylinder of its collision size --
   so a mover with no brush (`09_NYC_ShipBelow` has one) collides as a
