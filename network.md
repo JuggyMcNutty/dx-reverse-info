@@ -177,6 +177,17 @@ and `Received '<name>'`. The pending level is told either way
 success clears the package's `PKG_Need` and asks for the next. A failed
 download's temporary file is left for the cache's next cleaning.
 
+**Going** (`UGameEngine::LoadMap`, `0x1038c1f0`): a package stays loaded
+while anything uses it, and a map load collects the garbage once the new
+map is in (`CollectGarbage`, keeping what is native): a server's
+downloads go at the next map that does not use them -- the menu's map
+after a `DISCONNECT` --, so another server's package of that name loads in
+their place. Its version is checked as the map loads, before that
+collection (`GetPackageLinker`'s GUID), so -- read, not tried -- joining
+that other server straight from the first one's level, or from the Entry
+level a lost server left, would find the old version still loaded:
+`Package '<name>' version mismatch`.
+
 ## What the player sees of a join
 
 `UGameEngine::SetProgress` (`0x10389e00`) sets the first viewport's
