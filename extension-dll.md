@@ -114,6 +114,12 @@ are `exec` exports.
   - lays the tree out again.
 - **`DeusExHUD`** overrides the event to lay the HUD out again as its parts
   come and go, the InfoLink and the log among them.
+- **The pointer** (`XRootWindow::PaintWindows`, `0x1003ac18`) is drawn,
+  last, while a window takes the mouse -- every modal one does -- and the
+  root's `bCursorVisible` holds: set as the root starts (`Init`), cleared
+  and set again by `ShowCursor`. The game hides it while a conversation
+  plays (but for its choices), a key waits to be bound, the credits roll,
+  and its multiplayer HUD and message window are up.
 
 ### Window sounds
 
