@@ -891,11 +891,23 @@ def ida_main():
         print("  warning:", w)
 
 
+def workspace_gamefiles():
+    """The workspace's gamefiles/: $DX_ROOT's, or the first found above this
+    script (this repository is cloned as re/ in the workspace)."""
+    if os.environ.get("DX_ROOT"):
+        return os.path.join(os.environ["DX_ROOT"], "gamefiles")
+    d = os.path.dirname(os.path.abspath(__file__))
+    while os.path.dirname(d) != d:
+        if os.path.isdir(os.path.join(d, "gamefiles")):
+            return os.path.join(d, "gamefiles")
+        d = os.path.dirname(d)
+    return "gamefiles"
+
+
 def host_main(argv):
     import argparse
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    here = os.path.dirname(os.path.abspath(__file__))
-    ap.add_argument("--game", default=os.path.join(here, "..", "..", "gamefiles"))
+    ap.add_argument("--game", default=workspace_gamefiles())
     ap.add_argument("--emit", metavar="FILE")
     ap.add_argument("--sizes", action="store_true")
     ap.add_argument("--check", nargs="+", metavar="DLL")

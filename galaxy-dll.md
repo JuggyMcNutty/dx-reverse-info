@@ -97,7 +97,7 @@ setting of this class, and nothing in the game reads it.
   within its radius (25 × (`SoundRadius` + 1)) of the view target, and not
   already on a channel, is played in the ambient slot at `AmbientFactor` ×
   `SoundVolume` ÷ 255, with pitch `SoundPitch` ÷ 64. The fork does the same
-  scan ([where a frame goes](../../ports/trimui-smartpro/README.md#where-a-frame-goes)).
+  scan ([where a frame goes](https://github.com/JuggyMcNutty/deusex-launcher/blob/trimui-smartpro/ports/trimui-smartpro/README.md#where-a-frame-goes)).
 - **Ambient sounds update.** One out of radius, whose actor's sound changed,
   or with the view not live, stops. The rest take their actor's radius and
   pitch again, and twice the starting volume. **An actor with a light** has

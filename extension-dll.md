@@ -25,7 +25,7 @@ It registers the 36 classes it exports. 34 match the layout of their script;
 declares the classes' native arrays, and ConSys's, as `DynamicArray`: three
 ints named `Num`, `Max` and `Ptr` that are a `TArray`'s data, count and
 capacity, whatever the names say.
-[`tools/ida/ue1_types.py`](../../tools/ida/ue1_types.py) types them as
+[`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) types them as
 `TArray`s.
 
 ## Classes
@@ -358,7 +358,7 @@ What the game shows under a menu, by the player's UI background option
   characters, a part a call. No script calls it.
 - **No script calls** `GC`'s `PushGC`, `PopGC`, `CopyGC` and `Intersect`,
   `ClipWindow`'s unit sizes, or the 22 `ComputerWindow` natives the fork
-  stubs ([not needed](natives.md#not-needed-for-single-player)).
+  stubs ([not needed](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md#not-needed-for-single-player)).
 
 ## The database
 

@@ -21,7 +21,7 @@ It registers one class, `URender` (244 bytes), which is C++ only, as is all
 it works on: the scene node, sprites, span buffers, BSP nodes and zones. The
 SDK has their headers (`Engine/Inc/UnRender.h`, and Render's own
 `RenderPrivate.h` and `UnSpan.h`), and
-[`tools/ida/render_types.py`](../../tools/ida/render_types.py) declares them
+[`tools/ida/render_types.py`](tools/ida/render_types.py) declares them
 in the database. As in `Engine.dll`, an export is a jump to the code.
 
 The SDK's header marks one Deus Ex change: each sprite keeps its actor's
@@ -260,7 +260,7 @@ interference, rotor), and whether its brightness wavers from texel to texel
 
 `gamefiles/System/Render.dll.i64` has the script types, the UTF-16 strings,
 the initializers' names and the renderer's C++ types from
-[`tools/ida/render_types.py`](../../tools/ida/render_types.py), which also
+[`tools/ida/render_types.py`](tools/ida/render_types.py), which also
 types `URender`'s methods; declares the texture, light map and cache
 structures; and names the sprite's constructor and `Setup`, the light
 manager's methods and helpers, and the globals of the weapon triangle and of

@@ -2,7 +2,7 @@
 
 The original's display driver: `UD3DRenderDevice`, the Direct3D 7 render
 device the game shipped with and the one its look was tuned on. Read for the
-roadmap's on-screen milestone ([decided 4](../../agent.md#decided)): gamma,
+roadmap's on-screen milestone ([decided 4](https://github.com/JuggyMcNutty/port-ex-machina/blob/main/agent.md#decided)): gamma,
 the light maps' brightness on screen, fog, detail textures, and the blending
 every pass uses -- the reference a reimplemented look is judged against.
 How it was read: [working on the binaries](README.md#working-on-the-binaries).

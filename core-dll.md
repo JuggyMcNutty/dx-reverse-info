@@ -109,7 +109,7 @@ nothing, `GetString` returns an empty string, and `AddTimingData`
 ## The script interpreter
 
 How the original runs UnrealScript, for comparison with the fork's VM
-([where a frame goes](../../ports/trimui-smartpro/README.md#where-a-frame-goes)).
+([where a frame goes](https://github.com/JuggyMcNutty/deusex-launcher/blob/trimui-smartpro/ports/trimui-smartpro/README.md#where-a-frame-goes)).
 
 ### The code and its tokens
 
@@ -184,7 +184,7 @@ How the original runs UnrealScript, for comparison with the fork's VM
 ## The natives
 
 The rest are UE1's own. Where the fork differs is in
-[not as the original](natives.md#implemented-not-as-the-original); the details:
+[not as the original](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md#implemented-not-as-the-original); the details:
 
 - **To a string:** a float is `%f`, a vector `%f,%f,%f`, a rotator
   `%i,%i,%i` of its values as they are, a bool the localized `True` or

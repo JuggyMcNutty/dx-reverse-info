@@ -4,7 +4,7 @@ How the original plays over a network: read from `Engine.dll`, which holds the
 protocol -- connections, channels, replication and the joining handshake. The
 sockets under it, the script's links and the master server are `IpDrv.dll`'s
 ([`IpDrv.dll`](ipdrv-dll.md)). What the fork has of any of it:
-[multiplayer](natives.md#multiplayer).
+[multiplayer](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md#multiplayer).
 
 Deus Ex's network code is Unreal Tournament's of its day -- native
 replication lists and the world-stats challenge among it --, engine version

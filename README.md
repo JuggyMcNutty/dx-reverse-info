@@ -1,16 +1,24 @@
-# Reverse engineering
+# dx-reverse-info
 
-What was read from the original game's binaries, and how. Two efforts:
+Deus Ex's original binaries, reverse-engineered: what `DeusEx.exe` and the
+game's DLLs do, written down as behaviour in our own words with the addresses,
+offsets and names it was read from. It is the record
+[Port Ex Machina](https://github.com/JuggyMcNutty/port-ex-machina) works
+from. None of the game's files are here, and no decompiled code
+([what goes in](#working-on-the-binaries)). Two efforts:
 
-- **The launcher.** `System/DeusEx.exe` was reverse-engineered before any of
-  the launcher was written, so the launcher started from known behaviour:
-  [`launcher.md`](launcher.md). Complete.
+- **The launcher.** `System/DeusEx.exe` was reverse-engineered before any
+  launcher of ours was written: [`launcher.md`](launcher.md). Complete.
+  [deusex-launcher](https://github.com/JuggyMcNutty/deusex-launcher)'s `main`
+  recreates it almost 1:1.
 - **The game's DLLs.** The original C++ behind Deus Ex's natives, read to find
-  what Surreal Engine lacks or has wrong and to port it -- patch 0034 was the
-  first ([what the fork changes](../ENGINE.md#what-the-fork-changes)). Each
-  DLL is read ([the binaries](#the-binaries)); `Render.dll` as far as a
-  feature's drawing lives there, and its mesh detail and lighting. What the engine lacks, and the work that
-  would fill it: [`natives.md`](natives.md).
+  what Surreal Engine lacks or has wrong and to port it into
+  [VibeEngine](https://github.com/JuggyMcNutty/VibeEngine) -- patch 0034 was
+  the first ([what the fork changes](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/ENGINE.md#what-the-fork-changes)).
+  Each DLL is read ([the binaries](#the-binaries)); `Render.dll` as far as a
+  feature's drawing lives there, and its mesh detail and lighting. What the
+  engine still lacks of them, and the work that would fill it, is VibeEngine's
+  [`NATIVES.md`](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md).
 
 ## The binaries
 
@@ -47,9 +55,14 @@ Beside them in the workspace's `System/`, copied in by the owner
 
 ## Working on the binaries
 
+The work happens in the Port Ex Machina workspace, where this repository is
+cloned as `re/` beside the game install (`gamefiles/`) and the reference
+material (`reference/`); the paths below that are not this repository's are
+the workspace's.
+
 - **IDA runs headless, in the distrobox.** Windows IDA 9.4 is installed in
   the Lutris prefix (`~/Games/umu/umu-default`), and
-  [`tools/ida/idalib-mcp.sh`](../../tools/ida/idalib-mcp.sh) runs
+  [`tools/ida/idalib-mcp.sh`](tools/ida/idalib-mcp.sh) runs
   ida-pro-mcp's `idalib` supervisor there as Claude Code's `ida` MCP server,
   over stdio, under the Proton wine Lutris runs IDA with (so IDA's window and
   the workers share one wineserver). Nothing runs on the host: umu and
@@ -57,11 +70,12 @@ Beside them in the workspace's `System/`, copied in by the owner
   Proton's `wine` directly. Once per machine: the prefix's Python gets IDA's
   `idapro` wheel (IDA's `idalib\python`), the container gets
   `lib32-glibc` (this wine starts every program through its 32-bit loader),
-  and `claude mcp add --scope local ida -- "$PWD/tools/ida/idalib-mcp.sh"`
-  registers it, with the plugin's own `plugin:ida-pro-mcp:idalib` (a Linux
-  idalib, which is not here) disabled in `/mcp`. The script enables `py_eval`
-  and `py_exec_file`. IDA sees this tree as
-  `X:\Documents\projects\port-ex-machina` and the whole filesystem as `Z:\`,
+  and `claude mcp add --scope local ida -- "$PWD/re/tools/ida/idalib-mcp.sh"`,
+  run in the workspace, registers it, with the plugin's own
+  `plugin:ida-pro-mcp:idalib` (a Linux idalib, which is not here) disabled in
+  `/mcp`. The script enables `py_eval` and `py_exec_file`. IDA sees the
+  workspace as `X:\Documents\projects\port-ex-machina` and the whole
+  filesystem as `Z:\`,
   so a script in any scratch directory runs through `py_exec_file`. `py_eval`
   keeps its top-level names as locals, which a function or comprehension
   defined there cannot see: put the code in a function, or in a file.
@@ -74,7 +88,7 @@ Beside them in the workspace's `System/`, copied in by the owner
   session and saves and exits after ten idle minutes; `idb_close` saves and
   exits at once. A database is open in one place at a time: the supervisor
   adopts one that IDA's window has open rather than open it twice.
-- **Types.** [`tools/ida/ue1_types.py`](../../tools/ida/ue1_types.py) gives a
+- **Types.** [`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) gives a
   database the layout of every native class, struct and enum, from the
   script source in the game's packages, and checks each class against the size
   the DLL registers for it. Run it in IDA (File > Script file, or the MCP's
@@ -85,17 +99,17 @@ Beside them in the workspace's `System/`, copied in by the owner
   `UEventManager`, `DDeusExGameEngine`) has no script and so no layout from it;
   its SDK header has its members, packed to 4 bytes: a `QWORD` or `DOUBLE` is
   not aligned to 8 (`ULevel::TimeSeconds` is at 0xdc). `Render.dll`'s types
-  are all C++, and [`tools/ida/render_types.py`](../../tools/ida/render_types.py)
+  are all C++, and [`tools/ida/render_types.py`](tools/ida/render_types.py)
   declares them from those headers ([`Render.dll`](render-dll.md#the-binary)).
   Extension's and ConSys's native arrays are typed as `TArray`s
   ([why](extension-dll.md#the-binary)).
 - **Strings.** This build is Unicode: its strings are UTF-16, and IDA takes
   many for 8-bit ones, which the decompiler shows as nonsense.
-  [`tools/ida/utf16_strings.py`](../../tools/ida/utf16_strings.py), run after
+  [`tools/ida/utf16_strings.py`](tools/ida/utf16_strings.py), run after
   the types, redefines them; a function decompiled before then needs
   decompiling again. The MCP's own preview of a string (the `refs` of
   `decompile`) still shows a UTF-16 one as nonsense: the database is right.
-- **Names.** [`tools/ida/ue1_names.py`](../../tools/ida/ue1_names.py) names
+- **Names.** [`tools/ida/ue1_names.py`](tools/ida/ue1_names.py) names
   the functions a UE1 DLL registers its classes and natives from, which IDA
   leaves as `sub_...`, and the class object of each class the DLL does not
   export (`Engine.dll`'s AI events), with the name its export would have. So
@@ -144,8 +158,8 @@ Beside them in the workspace's `System/`, copied in by the owner
 
 | File | Contents |
 |---|---|
-| [`launcher.md`](launcher.md) | `DeusEx.exe`: anchors, struct sizes, findings, what the launcher kept and dropped |
+| [`launcher.md`](launcher.md) | `DeusEx.exe`: anchors, struct sizes, findings |
 | [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md), [`cli-flags.md`](cli-flags.md), [`ini-keys.md`](ini-keys.md), [`porting-notes.md`](porting-notes.md), [`types/launch.h`](types/launch.h), [`live-verification.md`](live-verification.md) | the launcher's details ([its index](launcher.md)) |
 | [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md), [`render-dll.md`](render-dll.md), [`ipdrv-dll.md`](ipdrv-dll.md), [`galaxy-dll.md`](galaxy-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
-| [`natives.md`](natives.md) | what Surreal Engine lacks of the original, what the player sees of it, and the work -- from [`tools/natives_audit.py`](../../tools/natives_audit.py) and play |
 | [`network.md`](network.md) | how the original plays over a network: joining, packets, replication, remote calls |
+| [`tools/ida/`](tools/ida/) | the IDA scripts: types, strings, names ([above](#working-on-the-binaries)); `idalib-mcp.sh`, the headless server |
