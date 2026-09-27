@@ -295,9 +295,12 @@ as many bits as the maximum needs (`FBitWriter::WriteInt`).
   `0x10404a40`). Sending stops for the tick when the bytes
   queued pass the connection's rate (`IsNetReady`).
 - **Frames:** a client runs at most its connection's speed over 64 frames a
-  second -- 40 at 2,600 --, a server at `NetServerMaxTickRate`
-  (`LanServerMaxTickRate` with `-lanplay`), 10 to 120
-  (`UGameEngine::GetMaxTickRate`, `0x1038fc60`).
+  second -- 40 at 2,600 --, a dedicated server (the game started with
+  `-SERVER`, no client: [the command line](cli-flags.md)) at
+  `NetServerMaxTickRate` (`LanServerMaxTickRate` with `-lanplay`), 10 to
+  120 (`UGameEngine::GetMaxTickRate`, `0x1038fc60`); a listen server as
+  fast as its client draws. A dedicated server has no window, player or
+  console of its own, and its map listens without `?listen`.
 
 ## Numbering
 
