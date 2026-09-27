@@ -203,6 +203,15 @@ player's `ShowProgress` while that time is ahead: Deus Ex's opens
   above, the upgrade menu. No net driver for the URL (`UGameEngine::Browse`,
   `0x1038ad30`): `Networking Failed` and the error for 6 s. A browse to a
   server cancels a join already pending.
+- **Lost.** A client level whose server connection closes
+  (`ULevel::TickNetClient`, `0x103a3030`), or which the server sends
+  `FAILURE` after the join (`ULevel::NotifyReceivedText`), browses
+  `?failed` (`?entry` alike, less the message): `Browse` logs `Failed;
+  returning to Entry`, drops the level's net driver, makes the Entry level
+  the one played with no level action and spawns a player there for each
+  viewport; with no join pending, `Connection failed` shows for 6 s. The
+  next map's load destroys that player, as it does each viewport's actor
+  where it stands.
 - **The game engine's commands** (`UGameEngine::Exec`, `0x1038a030`):
   `CANCEL`, with a join pending, `Cancelled Connect Attempt` for 2 s, else
   the progress cleared, then the pending level deleted (`CancelPending`,
