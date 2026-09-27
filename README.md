@@ -47,21 +47,33 @@ Beside them in the workspace's `System/`, copied in by the owner
 
 ## Working on the binaries
 
-- **IDA runs under Proton** (Windows IDA 9.4 via umu, in-IDA HTTP server on
-  `127.0.0.1:13337` plus a Linux-side proxy). `idalib` headless mode is
-  impossible here. If the MCP tools go dark mid-session that bridge broke, not
-  the analysis. IDA sees this tree as `X:\Documents\projects\port-ex-machina`
-  and the whole filesystem as `Z:\`, so a script in any scratch directory runs
-  through `py_exec_file`. `py_eval` keeps its top-level names as locals, which
-  a function or comprehension defined there cannot see: put the code in a
-  function, or in a file.
+- **IDA runs headless, in the distrobox.** Windows IDA 9.4 is installed in
+  the Lutris prefix (`~/Games/umu/umu-default`), and
+  [`tools/ida/idalib-mcp.sh`](../../tools/ida/idalib-mcp.sh) runs
+  ida-pro-mcp's `idalib` supervisor there as Claude Code's `ida` MCP server,
+  over stdio, under the Proton wine Lutris runs IDA with (so IDA's window and
+  the workers share one wineserver). Nothing runs on the host: umu and
+  Proton's own launcher drop a program's stdin, so the script calls that
+  Proton's `wine` directly. Once per machine: the prefix's Python gets IDA's
+  `idapro` wheel (IDA's `idalib\python`), the container gets
+  `lib32-glibc` (this wine starts every program through its 32-bit loader),
+  and `claude mcp add --scope local ida -- "$PWD/tools/ida/idalib-mcp.sh"`
+  registers it, with the plugin's own `plugin:ida-pro-mcp:idalib` (a Linux
+  idalib, which is not here) disabled in `/mcp`. The script enables `py_eval`
+  and `py_exec_file`. IDA sees this tree as
+  `X:\Documents\projects\port-ex-machina` and the whole filesystem as `Z:\`,
+  so a script in any scratch directory runs through `py_exec_file`. `py_eval`
+  keeps its top-level names as locals, which a function or comprehension
+  defined there cannot see: put the code in a function, or in a file.
 - **One database per binary**, beside it: `gamefiles/System/DeusEx.exe.i64`
   and the like, unpacked while open -- the `.id0`, `.id1`, `.id2`, `.nam` and
   `.til` files beside it are working files, and the `.i64` is only written on
-  save. Backups in `reference/idb-backup/`. The bridge serves whichever
-  database IDA has open, so one binary is worked on at a time. It picks its
-  IDA when it starts: a DLL opened in a second IDA window is served on the
-  next port (13338), and the bridge stays with the first window.
+  save. Backups in `reference/idb-backup/`. `idb_open` opens one by its `X:\`
+  path in a worker of its own and names the session, which every other call
+  then takes as `database`; up to four are open at once. A worker outlives the
+  session and saves and exits after ten idle minutes; `idb_close` saves and
+  exits at once. A database is open in one place at a time: the supervisor
+  adopts one that IDA's window has open rather than open it twice.
 - **Types.** [`tools/ida/ue1_types.py`](../../tools/ida/ue1_types.py) gives a
   database the layout of every native class, struct and enum, from the
   script source in the game's packages, and checks each class against the size
@@ -81,7 +93,7 @@ Beside them in the workspace's `System/`, copied in by the owner
   many for 8-bit ones, which the decompiler shows as nonsense.
   [`tools/ida/utf16_strings.py`](../../tools/ida/utf16_strings.py), run after
   the types, redefines them; a function decompiled before then needs
-  decompiling again. The MCP bridge's own preview of a string (the `refs` of
+  decompiling again. The MCP's own preview of a string (the `refs` of
   `decompile`) still shows a UTF-16 one as nonsense: the database is right.
 - **Names.** [`tools/ida/ue1_names.py`](../../tools/ida/ue1_names.py) names
   the functions a UE1 DLL registers its classes and natives from, which IDA
