@@ -281,6 +281,13 @@ as many bits as the maximum needs (`FBitWriter::WriteInt`).
 - **Reliable bunches** are delivered in order: up to 128 wait for a gap to
   fill (`ReceivedRawBunch`, `0x103fb230`), duplicates are dropped, and a lost
   one is sent again.
+- **Merging** (`UChannel::SendBunch`, `0x103fb6b0`): a channel's bunch goes
+  into the last one sent, one header for both, when that one is the same
+  channel's and still ends the packet being built -- no ack written since
+  (`SendAck` stops it), no `FlushNet` either -- and the two fit the packet
+  with 9 bytes to spare; a reliable one keeps its record and sequence
+  number. Actor updates, text and remote calls may merge; a file's bunches
+  and a channel's close never do.
 - **Acks:** a packet is acknowledged as soon as its number is read, before
   its bunches; each acknowledgement goes again with the next packet's first
   new one.
