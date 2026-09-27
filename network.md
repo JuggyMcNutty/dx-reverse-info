@@ -69,8 +69,13 @@ The control channel carries lines of text. The server's side is
    challenge) `URL=` the travel URL without the server's address or a
    `game=` option: the map (the default one when the address named none)
    and its options (`Name`, `Class`, `Team`, `Skin`, `Face`, `OverrideClass`,
-   `PASSWORD`); with stats on, `Checksum=` an MD5 of the name and the stats
-   password (`ngWorldSecret`), or `NoChecksum` without one.
+   `PASSWORD` -- those the player has: from the game's `User.ini`, whose
+   `[DefaultPlayer]` holds `Name` and `Class`, a login carries only those);
+   with stats on (`STATS=1`: the server's game's `bWorldLog`), `Checksum=`
+   the MD5 of the viewport player's `PlayerReplicationInfo.PlayerName` then
+   its `ngWorldSecret`, each as UTF-16 without the terminator, in 32
+   lowercase hex digits -- `Checksum=NoChecksum` when the password is
+   empty; without stats, nothing (`0x1040a880`).
 4. **Server:** a wrong response gets `FAILURE CHALLENGE`. Then the game's
    `PreLogin` (script) may refuse: `FAILURE` and its message, `FAILCODE` and
    its code (the client's menu takes it: a password asked for), and the
