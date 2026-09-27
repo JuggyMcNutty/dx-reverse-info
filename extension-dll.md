@@ -347,6 +347,11 @@ What the game shows under a menu, by the player's UI background option
   `0x10003400`) move the focus to the next or previous tab group; the root
   window's script calls them for Tab and Shift+Tab. `GetTabGroupWindow`
   (`0x1004c560`) is the nearest tab group at or above a window.
+- **No width is no limit.** `XGC::ParseLine` (`0x10029ae0`), which breaks
+  the lines `GetTextExtent` (`0x10027bb0`) measures and `DrawText` draws,
+  takes a width of 0 or less as 500,000: `GetTextExtent(0, ...)` measures
+  each line whole, as the multiplayer message window measures its progress
+  lines before drawing them in a box of that width.
 - **`GetTickOffset`** (`0x1004fda0`): the real time since the windows were
   last ticked.
 - **Text windows.** `ResetLines` (`0x10046310`) and `ResetMinWidth`

@@ -85,13 +85,48 @@ nothing, `GetString` returns an empty string, and `AddTimingData`
 (`0x10120100`) only writes its arguments to the log. Its only users are
 `DeusExPlayer`'s debug console commands.
 
+## Packages and linkers
+
+- **An export for no context is never made** (`ULinkerLoad::CreateExport`,
+  `0x1012e230`). An export is made only when its flags share one of the
+  linker's context flags -- `RF_LoadForClient`, `RF_LoadForServer`,
+  `RF_LoadForEdit` as the game runs --; a reference to any other reads as
+  None. No stock package has one. Source-protected mods do: the anti-cheat
+  packages the live servers send (ANNA, DXNMS) point their classes'
+  `ScriptText` at exports named None, of class `Class`, with no flags and no
+  data.
+- **A package's file** (`appFindPackageFile`, `0x10148ec0`). A name ending in
+  `.dll` is none. The name as given, if a file of it exists; else each of
+  `[Core.System]`'s `Paths` -- the path up to its `*`, the name, then the
+  path's extension -- and, with a GUID asked for (a net game's package), the
+  cache last: `<CachePath>\<GUID>` and `CacheExt`, the GUID `%08X` of its four
+  words. First exactly, then again with each folder's names compared in any
+  case (logged `Case-insensitive search: <name> -> <file>`). A file found in
+  the cache has its date brought up to now (`appUpdateFileModTime`), so it
+  is not purged as unused. On the paths the name alone finds it, whatever
+  its GUID: a different file of the same name there fails the join as a
+  version mismatch ([downloads](network.md#downloads)).
+- **The cache's files.** `appCreateTempFilename` (`0x10149790`): `<path>\`
+  and `%04X.tmp` of a counter that runs through the session, the first that
+  holds nothing (a missing or empty file). `appCleanFileCache`
+  (`0x1016cb60`), which the game engine's `Init` calls: every `*.tmp` in
+  `CachePath` deleted (`Deleting temporary file: %s`), then, when
+  `PurgeCacheDays` is set, every `*` `CacheExt` file older than that many
+  days (`Purging outdated file from cache: %s (%i days old)`). The GOG
+  build's ini: `CachePath=..\Cache`, `CacheExt=.uxx`, `PurgeCacheDays=30`.
+
 ## Configuration
 
 - **Reading** (`LoadConfig`, `0x10150d60`). A class's `config` properties are
   read, its base class's first, each from the section named after the class
   being read -- so a subclass's section overrides its base's -- and a
   `globalconfig` one from the section of the class that declares it. The file
-  is the class's config: `System` the system ini, `User` `User.ini`.
+  is the class's config: `System` the system ini, `User` `User.ini`, any
+  other name that name's `.ini` in `System`. A file that is not there gives
+  no values -- the properties keep their defaults -- and is made when one is
+  written (`FConfigCacheIni::Find`, only a write creating one: the SDK's
+  `Core/Inc/FConfigCacheIni.h`): a mod's `config(DXMTL)` classes run on a
+  client with no `DXMTL.ini`.
 - **`ResetConfig()`** (`0x1013e8c0`, which calls `UObject::ResetConfig` at
   `0x10151ac0` with the object's class). The class's section is copied key by
   key from `Default.ini`, for a `System` class, or `DefUser.ini`, for a `User`

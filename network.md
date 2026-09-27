@@ -74,15 +74,19 @@ The control channel carries lines of text. The server's side is
    `PreLogin` (script) may refuse: `FAILURE` and its message, `FAILCODE` and
    its code (the client's menu takes it: a password asked for), and the
    connection closed. Otherwise `WelcomePlayer` (`0x1039f500`): a `USES
-   GUID= PKG= FLAGS= SIZE= GEN=` line per package the level needs -- the
-   map's own, then what it imports, depth first (each package's imports, in
-   its import table's order, straight after it), less the ones flagged
-   server-side only (Deus Ex's `IpDrv`, `IpServer`, `UWindow`, `UBrowser`) --,
-   `WELCOME
+   GUID= PKG= FLAGS= SIZE= GEN=` line per package of the server's list,
+   made as the map opened (`UGameEngine::BuildServerMasterMap`,
+   `0x10388b10`) -- the map's own, then each of
+   the `ServerPackages` in the game engine's section (none in the GOG
+   build's ini; each logged `Server Package: <name>`), then the package of
+   the game's class; each followed by what it imports, depth first (each
+   package's imports, in its import table's order, straight after it); none
+   twice, and none flagged server-side only (Deus Ex's `IpDrv`, `IpServer`,
+   `UWindow`, `UBrowser`) --, `WELCOME
    LEVEL=` (the map) `LONE=` (`bLonePlayer`), and `STATICRATE` and
    `DYNAMICRATE` from the settings.
-5. **Client:** a file channel for each package it lacks, when the server
-   allows downloads; with all in hand, the map loaded (below), then `HAVE
+5. **Client:** each package it lacks downloaded, one at a time
+   ([downloads](#downloads)); with all in hand, the map loaded (below), then `HAVE
    GUID= GEN=` for each package whose generation here differs from the
    server's `GEN=` (the server counts only what the client's has), and `JOIN`
    -- not in a single player's game (`LONE=1`). `NETSPEED` again whenever the
@@ -91,9 +95,10 @@ The control channel carries lines of text. The server's side is
 6. **Server:** spawns the player (`SpawnPlayActor`, the game's `Login`, as an
    autonomous proxy), or answers `FAILURE` and the reason.
 
-A client refused (`FAILURE`) goes back to its menu with `?failed`; a
+A client refused (`FAILURE`) or told `UPGRADE` stays in the level it was
+in, shown why ([what the player sees](#what-the-player-sees-of-a-join)); a
 `FAILCODE` goes to the console's `ConnectFailure` with the URL less its
-password, for the menu to ask again; `UPGRADE` ends the join. `USERFLAG` sets
+password, for the menu to ask again. `USERFLAG` sets
 a number of the connection's either way; `DYNAMICRATE` and `STATICRATE` the
 client keeps each as a time between updates -- 1 s over the rate, 0.01 s to
 1 s, none for 0 -- which Deus Ex's `ReplicateMove` paces the player's moves
@@ -112,6 +117,100 @@ by.
   view's show flags and render map set, possessed by the viewport
   (`SetPlayer`, and `Possess`), input reset, `LevelAction` back to none, the
   connection open.
+
+## Downloads
+
+**Which** (the client's `WELCOME`, `UNetPendingLevel::NotifyReceivedText`):
+each `USES` package is looked for with its GUID
+([a package's file](core-dll.md#packages-and-linkers)) -- on the paths by
+its name, else in the cache by its GUID --, and one not found, with no
+`<name>.dll` either, is needed (`PKG_Need`, `0x8000`, added to its flags).
+One needed while the client's `AllowDownloads` is off, or whose `FLAGS` lack
+`AllowDownload` (`0x1`), ends the join: `Downloading '<name>' not allowed`,
+the connection closed. Otherwise the first needed one is asked for and the
+join counts as welcomed; its map loads when none is needed any more. A file
+found whose GUID is not the server's -- a same-named package on the paths
+-- fails the join as the map loads: `Package '<name>' version mismatch`
+(Core's `PackageVersion`).
+
+**Asking** (`UNetConnection::ReceiveFile`, `0x10405490`): a file channel
+(type 3), named after the package, and in one reliable bunch the GUID's four
+words; with no channel free, the download fails with `ChAllocate`.
+
+**Sending** (`UFileChannel::ReceivedBunch`, `0x103ffff0`, a server's side):
+the GUID is looked up in the connection's package list among the packages
+flagged `AllowDownload`, the only ones whose file is known
+(`FPackageInfo`'s `URL`); the level asked (`NotifySendingFile`: a server's
+lets its clients have any -- `Client requested file: Allowed` --, a client's
+refuses a server); the file opened, logged `Sending '<file>'` (`NetSend`).
+Anything else is logged `Received invalid file request` (`NetInvalid`) and
+answered with an empty bunch that closes the channel. Then each tick
+(`UFileChannel::Tick`, `0x10400780`), while the channel's reliable buffer
+has room -- the rate left out (`IsNetReady(1)`) --, a reliable bunch of as
+much of the file as the packet has room for (`MaxSendBytes`: the packet's
+bits less its header, its trailer and a bunch header's 64, in bytes), the
+packet sent after each; the bunch that ends the file closes the channel. A
+file channel on either side has its connection send a packet every tick
+(`TimeSensitive`), so the client's acks keep the server's buffer draining.
+
+**Receiving** (the same functions, a client's side): the first bunch opens
+a temporary file in `CachePath`, the folder made first
+([the cache's files](core-dll.md#packages-and-linkers)), logged `Receiving
+package '<name>'`; each bunch's bytes go into it, and the player is shown
+`Receiving '<name>' (F10 Cancels)` and `Size <n>K, Complete <n>%` for 4 s
+(`Engine.int`'s `ReceiveFile` and `ReceiveSize`; the size the `USES`
+line's). A failed open or write closes the channel with `NetOpen` or
+`NetWrite`. When the channel goes (`UFileChannel::Destroy`,
+`0x10400a40`): nothing received is `Server refused to send '<name>'`
+(`NetRefused`), a size other than the `USES` line's is `NetSize`, a failed
+move `NetMove`; else the file is moved to `<CachePath>\<GUID>.uxx` -- the
+extension written in, not `CacheExt` -- and the player is shown `Success`
+and `Received '<name>'`. The pending level is told either way
+(`NotifyReceivedFile`, `0x1040bda0`): an error fails the join
+(`Downloading package '<name>' failed: <error>`, the first error kept); a
+success clears the package's `PKG_Need` and asks for the next. A failed
+download's temporary file is left for the cache's next cleaning.
+
+## What the player sees of a join
+
+`UGameEngine::SetProgress` (`0x10389e00`) sets the first viewport's
+player's `ProgressMessage[0]` and `[1]`, their `ProgressColor`s white, and
+`ProgressTimeOut` to the level's time plus the seconds given; -1 s calls
+the player's `ShowUpgradeMenu` first. The console's `Tick` calls the
+player's `ShowProgress` while that time is ahead: Deus Ex's opens
+`MultiplayerMessageWin`, which draws the two lines centred in blue and sends
+`CANCEL` for F10.
+
+- **Connecting.** While a join is pending, each frame drawn
+  (`UpdateConnectingMessage`, `0x10388900`, from `UGameEngine::Draw`): when
+  no progress shows, `Connecting (F10 Cancels):` and
+  `deusex://<host>/<map>` (`ConnectingText`, `ConnectingURL`) for 60 s.
+- **Failing.** A pending level with an error (`UGameEngine::Tick`,
+  `0x1038fe90`): `Connection failed` and the error for 4 s, logged
+  `Pending connect to '<url>' failed; <error>`, and the pending level
+  deleted; the level plays on. Its own tick (`0x1040c170`) makes a closed
+  connection's error `Connection failed`; a map failing to load as the
+  client's shows the same with the load's error. The server's `FAILURE`:
+  first `Rejected By Server` and its text for 10 s, the error `Rejected By
+  Server: <text>`, the connection closed. `UPGRADE` with a `MINVER` of 1,100
+  or less: `Connection failed` and `Server's version is outdated` for 6 s;
+  above, the upgrade menu. No net driver for the URL (`UGameEngine::Browse`,
+  `0x1038ad30`): `Networking Failed` and the error for 6 s. A browse to a
+  server cancels a join already pending.
+- **The game engine's commands** (`UGameEngine::Exec`, `0x1038a030`):
+  `CANCEL`, with a join pending, `Cancelled Connect Attempt` for 2 s, else
+  the progress cleared, then the pending level deleted (`CancelPending`,
+  `0x1038ac50`); `DISCONNECT`, travel to `dx.dx` (Deus Ex's
+  `DeusExPlayer.DisconnectPlayer` sends it -- the menu's disconnect, and the
+  game's `ForceDisconnect`); `RECONNECT`, travel to the last URL.
+- **The viewport's** (`UViewport::Exec`, `0x10373a60`): `NETSPEED <rate>`
+  keeps the rate as `[Engine.Player]`'s `ConfiguredInternetSpeed` (saved),
+  and on a server joined without `?LAN`, with a rate of 500 or more, sets
+  the connection's speed, held to the driver's `MaxClientRate`, and the
+  viewport's, and sends `NETSPEED <rate>`. `LANSPEED` does the same for a
+  `?LAN` server -- and keeps its rate as `ConfiguredInternetSpeed` too, the
+  field `NETSPEED` writes (the connection takes `ConfiguredLanSpeed`, the
+  next one, for `?LAN`).
 
 ## Addresses
 
@@ -343,6 +442,14 @@ player is spawned with the remote role simulated (`UGameEngine::Init`,
   relevant, seen or not.
 - **`PlayerPawn.AdditionalViews[3]`:** more viewpoints for relevancy, of which
   only the first works.
+- **The client's classes checked** (the game's script, `DeusEx.u`): a joined
+  player's pawn is called to check its console's class and its root
+  window's -- `VerifyConsole(Engine.Console)`,
+  `VerifyRootWindow(DeusEx.DeusExRootWindow)`, exact classes, no subclass
+  --, and one that fails tells the server's game, which calls back
+  `ForceDisconnect("Invalid Console class, disconnecting")` (or `RootWindow`):
+  the line added to the console, then `DisconnectPlayer`. Every server with
+  a `DeusExGameInfo` game does it, the modded ones too.
 
 ## The database
 
