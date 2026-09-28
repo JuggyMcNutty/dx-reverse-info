@@ -570,6 +570,9 @@ the travel info: a count, then each key and value (package versions 61 and
   +0x94, +0x98), which applies it at once instead of at the next tick
   ([`Galaxy.dll`](galaxy-dll.md#volume)).
 - **`GetPlayerPawn()`**: the first viewport's actor.
+- **`FGetHSV(hue, saturation, value)`** (`0x103ec8d0`): the colour of a
+  light and of a zone's ambient light, as the renderer lights with it
+  ([`Render.dll`](render-dll.md#lighting)).
 - **`IsOverlapping(other)`** (`0x10369430`): collision cylinders overlap; a
   brush or the level never does.
 - **`GetMeshTexture(texnum)`** (`0x103e17c0`): the actor's skin of that

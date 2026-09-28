@@ -271,8 +271,8 @@ shape, `LE_None`'s.
   (`MergeLight`, `0x10b03040`), a torch waver dims each texel by a random
   amount of up to 5%, a fire waver up to 20%, and a watery shimmer up to
   40%. The random numbers are a table of 256 drawn afresh each frame
-  (`0x10b13080`, from the level's time), the shimmer's a table of its own
-  that eases toward fresh draws 35 times a second.
+  (`TickRandoms`, `0x10b13080`, from the level's time), the shimmer's a
+  table of its own that eases toward fresh draws 35 times a second.
 - **A texel's byte**, 0 to 127 a channel. The map starts at the zone's
   ambient light, `FGetHSV`'s colour times 64, rounded down. A light's
   shadow bits are unpacked into bytes (`ShadowFromBits`): each texel the
@@ -281,12 +281,13 @@ shape, `LE_None`'s.
   are lit --, a row taking its first bit again to the left of the map and
   its last byte's last bit to the right, the first and last rows standing
   for the rows beyond them; a light without shadow bits (a moving one) is
-  127 all over. Its shape: the plain one (`0x10b03360`) is a table of
-  (2v³ − 3v² + 1) ÷ v over d² ÷ r² in 4096ths, v = d ÷ r, times the light's
-  height over the surface's plane ÷ r -- so (1 − 3v² + 2v³) times the
-  cosine of the light's angle to the surface --, times the shadow byte,
-  rounded; the spotlight's (`0x10b04f80`) the same times ((cos − c) ÷
-  (1 − c))² inside its cone, c = 1 − `LightCone` ÷ 256, rounded down. The
+  127 all over. Its shape: the plain one (`SpatialPlain`, `0x10b03360`) is
+  a table of (2v³ − 3v² + 1) ÷ v over d² ÷ r² in 4096ths, v = d ÷ r, times
+  the light's height over the surface's plane ÷ r -- so (1 − 3v² + 2v³)
+  times the cosine of the light's angle to the surface --, times the
+  shadow byte, rounded; the spotlight's (`SpatialSpotlight`, `0x10b04f80`)
+  the same times ((cos − c) ÷ (1 − c))² inside its cone, c = 1 −
+  `LightCone` ÷ 256, rounded down. The
   illumination i, 0 to 254, goes through the light's table (`SetupLight`):
   i × its colour and brightness in 65536ths, rounded down, at most 127. The
   lights add up, each channel held to 127.
