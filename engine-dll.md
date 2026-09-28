@@ -375,19 +375,42 @@ That is all: Deus Ex's scripts do the rest -- pain zones' `PainTime`
 
 ## Traces
 
-- **Backoff** (`UModel::LineCheck`, `0x103f3c20`): a hit on the BSP is
-  given short of the surface -- a line's 0.5 units, a box's a tenth of the
-  trace's length, or 0.1 units for a trace shorter than one -- the rest of
-  the move not taken. A script's `Trace` straight down finds the floor half
-  a unit above it.
+- **Backoff** (`UModel::LineCheck`, `0x103f3c20`): a hit on the BSP -- the
+  level's, or a mover's brush, its normal turned by the mover's rotation --
+  is given short of the surface -- a line's 0.5 units, a box's a tenth of
+  the trace's length, or 0.1 units for a trace shorter than one --, its
+  time held to 0 to 1, the rest of the move not taken. A line's hit lies
+  on the line; a box's time starts at 2, so a hull the box enters up to
+  twice the trace's length is found, and a hit the backoff brings under 1
+  counts -- one up to a tenth of the trace past its end -- where one still
+  at 1 is none. A script's `Trace` straight down finds the floor half a
+  unit above it.
+- **The box check's hulls** (`0x103f42f0`, set up at `0x103f18e0`): in each
+  solid leaf the box reaches, its convex hull's planes pushed out by the
+  box (|nx·ex| + |ny·ey| + |nz·ez|); then, for the level's hulls only, the
+  planes of the hull's box -- a tenth of a unit bigger at both ends in Z
+  and toward −X and −Y, and as much smaller at +X and +Y --; then bevels
+  at its edges. A box that starts inside the hull is stopped at once (time
+  0) when, traced back along its line, it entered less than a trace's
+  length back -- as when its centre is still in front of the plane it
+  overlaps and it heads in -- and otherwise passes, as when it heads out of
+  a floor it has sunk into. The walk down the tree tests both ends' boxes
+  grown by a tenth against each node's plane.
 - **An actor's cylinder** (`UPrimitive::LineCheck`, `0x103d8af0`), the
   line's box added to it: hit where the line comes in, through a cap or
-  the side. A line that starts inside -- within its height, and its radius
-  with a unit's slack (the start's distance from the axis squared, less
-  the radius squared, under 1) -- is stopped at once, at its start, when
-  it heads in toward the axis (the line's run across, dotted with the
-  start's offset from the axis, under −0.1), and passes out freely
-  otherwise: a trace straight down from inside a pawn does not hit it.
+  the side, within the trace, the hit given a thousandth of the trace
+  short (its time less 0.001, held to 0 to 1). A line that starts inside --
+  within its height, and its radius with a unit's slack (the start's
+  distance from the axis squared, less the radius squared, under 1) -- is
+  stopped at once, at its start, when it heads in toward the axis (the
+  line's run across, dotted with the start's offset from the axis, under
+  −0.1), and passes out freely otherwise: a trace straight down from
+  inside a pawn does not hit it. An actor with a mesh collides the same
+  way (`UMesh::LineCheck`, `0x103a6d10`, passes it on).
+- **`FastTrace(TraceEnd, TraceStart)`** (`0x103e35e0`): whether the line is
+  clear of the level's BSP, the segment itself and nothing past it
+  (`UModel::FastLineCheck`, `0x103f3280`) -- movers and other actors not
+  asked.
 - **Which surface a level hit gives**: the node the check meets the level
   at -- the first of its plane's coplanar nodes, whichever of their
   polygons the line crossed (seen: `TraceTexture`'s textures along 107
