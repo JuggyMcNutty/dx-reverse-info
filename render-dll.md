@@ -305,8 +305,8 @@ shape, `LE_None`'s.
   the BSP, the moving lights in it, and the lights it had last frame (kept in
   the cache under the actor, up to 16). Each counts once a frame, and only
   if its `bSpecialLit` is the actor's. Its strength at the actor's centre is
-  (1 − distance / radius) × its brightness (a cylinder light counts with
-  three quarters of its brightness and radius).
+  (1 − distance / radius) × its `LightBrightness`, the byte (a cylinder
+  light counts with three quarters of its brightness and radius).
 - **The pick**, strongest first: static lights until 8 are taken, the others
   while fewer than 8 lights in all are, and none below an eighth of the
   strongest taken.
@@ -320,10 +320,11 @@ shape, `LE_None`'s.
   angle to the light (nothing beyond about 77°, 2.5 facing it), and a
   highlight, 6 × cos² of the angle between the eye and the light's reflection
   at the vertex when the reflection heads toward the eye, both times
-  (1 − distance / radius) and the light's colour. The sum is scaled by 1.4 ×
-  `ScaleGlow`, and the zone's ambient light and the actor's `AmbientGlow`
-  (255 pulses) added, each channel at most 1. An unlit draw (`PF_Unlit`) is
-  mid-grey.
+  (1 − distance / radius) and the light's colour, the light maps' (colour
+  and brightness above). The sum is scaled by 1.4 × `ScaleGlow`, and the
+  zone's ambient light in `FGetHSV`'s colour and the actor's `AmbientGlow` ÷
+  255 added -- 255 pulses, 0.25 + 0.2 sin(8 t) of the viewport's time --,
+  each channel at most 1. An unlit draw (`PF_Unlit`) is mid-grey.
 
 ## The database
 
