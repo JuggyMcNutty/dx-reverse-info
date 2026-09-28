@@ -36,7 +36,11 @@ warp zones and the sky.
 - **`OccludeFrame`** calls `SetupDynamics` (`0x10b22d90`), which makes a
   sprite for each actor to draw and a dynamic light for each light in view,
   then `OccludeBsp` (`0x10b173d0`), which walks the BSP front to back and
-  keeps each sprite some part of which is left visible.
+  keeps each sprite some part of which is left visible
+  ([which actors are drawn](#which-actors-are-drawn)). It passes over a
+  surface seen from behind, but for a zone portal or a two-sided one; a
+  portal passes what shows through it to the span buffer of the zone
+  beyond.
 - **`DrawFrame`** draws the world's surfaces with their decals, then the
   sprites that were kept, translucent ones last, then the coronas.
 
@@ -63,6 +67,23 @@ over one that is:
 Each other actor gets one sprite. A light with a type, brightness and radius
 that is neither `bStatic` nor `bNoDelete`, or is `bDynamicLight`, becomes a
 dynamic light when its radius reaches into the view.
+
+**A sprite kept** (`FDynamicSprite`, `0x10b233c0`; its `Setup`,
+`0x10b23910`): its screen rectangle -- a sprite's texture at its size and
+place, a mesh's render box through `BoundVisible` -- in whole pixels and at
+least a row tall, at the depth of the actor's location; that rectangle set
+back in the world at that depth is its proxy. It starts at the BSP's root as
+a raster of the rectangle's rows, which the walk filters at each node it
+comes to (`0x10b23e30`): the part on each side of the node's plane goes on to
+that child, the raster cut along the line where the plane crosses the
+proxy. A part that comes to an empty leaf (UE1's `ChildOutside`) waits in
+the node's list for that side, in order of depth, and is tested there
+(`0x10b24740`) -- before the node's surfaces on the viewer's side, after
+them on the far side -- against that leaf's zone's span buffer: what of the
+zone shows through the portals seen so far, less what the walk has drawn in
+front of it. A part in a solid leaf is dropped, and so is all that came
+down into a subtree whose bounds are hidden. A sprite with a part showing
+keeps those spans and is drawn, which stamps its render time (below).
 
 ## Render iterators
 
