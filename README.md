@@ -143,6 +143,11 @@ the paths below that are not this repository's are that parent folder's.
   control's class, id, style and rectangle, and the font -- with nothing but
   Python. `Window.dll` has the launcher's wizard and its pages, `DeusEx.exe`
   the splash ([page layouts](wizard.md#page-layouts)).
+- **The original launcher runs under wine here too**, in the IDA prefix:
+  [`tools/wine/wizard-capture.sh`](tools/wine/wizard-capture.sh) captures every
+  page of its wizard, driven by Win32 messages from inside a virtual desktop,
+  and puts the install's files back after
+  ([the second run](live-verification.md#the-second-run-every-page-2026-09-27)).
 - **A native's `exec` function holds the defaults of its optional
   parameters**: each is set before its argument is read. Upstream's natives
   take them as `std::optional`, and a default is not always false
@@ -174,3 +179,4 @@ the paths below that are not this repository's are that parent folder's.
 | [`network.md`](network.md) | how the original plays over a network: joining, packets, replication, remote calls |
 | [`tools/ida/`](tools/ida/) | the IDA scripts: types, strings, names ([above](#working-on-the-binaries)); `idalib-mcp.sh`, the headless server |
 | [`tools/pe/`](tools/pe/) | `dialogs.py`: a Windows binary's dialog templates as text, without IDA ([above](#working-on-the-binaries)) |
+| [`tools/wine/`](tools/wine/) | `wizard-capture.sh` and `wizard_drive.py`: the original launcher's wizard, captured page by page under wine ([above](#working-on-the-binaries)) |

@@ -20,7 +20,8 @@ How the binaries are worked on is in [the index](README.md#working-on-the-binari
 | [`types/launch.h`](types/launch.h) | struct definitions + size ledger |
 | [`live-verification.md`](live-verification.md) | the live Proton run: confirmed, corrected, added |
 
-Five phases, cross-verified, one live run under Proton. Complete.
+Five phases, cross-verified, two live runs under Proton -- the second through every page
+([`live-verification.md`](live-verification.md)). Complete.
 
 ## The binary
 
@@ -106,8 +107,9 @@ deleted on clean exit. If it survives, the next launch shows RecoveryMode.
 **⚠ Shipped bug — three safe-mode checkboxes are dead.** Of eight `BM_GETCHECK`
 sites, five read the *same* control (`+0xB0`, `IDC_No3DSound`). So ticking
 "Disable 3D sound hardware" silently also applies `-nohard -noddraw
--defaultres`, and `No3DVideo`, `Window` and `Res` do nothing. Static analysis
-only — never observed live. A recreation wires all eight correctly; the port
+-defaultres`, and `No3DVideo`, `Window` and `Res` do nothing. Observed live
+too ([`live-verification.md`](live-verification.md#the-second-run-every-page-2026-09-27)).
+A recreation wires all eight correctly; the port
 branches' launcher dropped safe mode, because Surreal Engine honours none of
 its flags (row 1 of
 [what it changes](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-x86_64/docs/LAUNCHER.md#what-it-changes-from-the-original)).

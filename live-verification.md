@@ -1,8 +1,10 @@
-# Live verification run
+# Live verification runs
 
-Static analysis checked against the real binary running under Proton, 2026-09-21.
+Static analysis checked against the real binary running under Proton: the first run,
+2026-09-21, below, and the second, every page of the wizard, 2026-09-27
+([below](#the-second-run-every-page-2026-09-27)).
 
-**Setup.** `umu-run` into the existing `umu-default` prefix
+**Setup (the first run).** `umu-run` into the existing `umu-default` prefix
 (`Proton-CachyOS Latest`). The install was restored to its shipped state afterwards;
 `DeusEx.ini` is byte-identical to the backup in `reference/ini-backup/`.
 
@@ -115,11 +117,35 @@ quirk, not launcher behaviour — but it is worth knowing, because **the log win
 created unconditionally on every launch** (`launch-flow.md` §4), so when it fails the
 game cannot start at all.
 
+## The second run: every page (2026-09-27)
+
+For deusex-launcher's `main`, which is compared against these captures. Inside the
+distrobox, with the Proton build's own `wine` in the IDA prefix and a 1024×768 virtual
+desktop: [`tools/wine/wizard-capture.sh`](tools/wine/wizard-capture.sh) runs
+`DeusEx.exe` with `-firstrun`, `-changevideo` and `-safe`, and then with no flags, and
+[`tools/wine/wizard_drive.py`](tools/wine/wizard_drive.py), inside the same desktop, works
+each page by Win32 messages to its controls and saves the window as the screen shows it
+with its controls' rectangles. The install's files the runs write are put back after.
+The captures stay outside the repositories, in `reference/original-wizard/`.
+
+| Claim | Where documented | Evidence |
+|---|---|---|
+| `-safe` opens SafeMode, captioned "Deus Ex Safe Mode" | `wizard.md` entry tree | the page, with Cancel alone at the bottom |
+| A stale `Running.ini` with nothing running opens RecoveryMode | `wizard.md` entry tree | "Deus Ex Recovery Mode", after the CD prompt's Cancel below had left one |
+| SafeMode says "…it was not shut down properly…" for `-safe` too | `wizard.md` SafeMode | the same prompt on both pages |
+| SafeOptions opens with every box ticked but Reset | `wizard.md` SafeOptions | the boxes' states |
+| **The three dead checkboxes** | `wizard.md` shipped bug | with "Disable 3D sound hardware" cleared and the next three ticked, the relaunch ran as `DeusEx.exe -nosound -nommx -nokni -nok6 -nojoy`: no `-nohard`, `-noddraw` or `-defaultres` |
+| The relaunch carries only the safe flags | `wizard.md` SafeOptions | the same command line |
+| A cancelled wizard deletes `Running.ini` | `launch-flow.md` §9 | the file was gone after `-firstrun` and `-changevideo` were cancelled |
+| The CD prompt: title, text, OK and Cancel, no icon; Cancel leaves `Running.ini` | `launch-flow.md` §8 | with `CdPath` pointed at a missing folder for the run |
+| The splash is `..\Help\Logo.bmp` at its own size, centred, until the engine is up | `launch-flow.md` §3 | a 512×410 window at the desktop's centre, behind the CD prompt; with a wizard to show it closes within a second |
+| The Renderer list: certified and software devices, or all five sorted; the certified one chosen | `wizard.md` Renderer | Direct3D (detection certified it under wine) and Software Rendering; with "Show all devices", 3dfx Glide, Direct3D, OpenGL, S3 MeTaL, Software, Direct3D still chosen |
+| Driver shows the detected card | `wizard.md` Driver | "AMD Radeon RX 6700 XT", with the web link as a blue underlined button |
+| Detail's lines | `wizard.md` Detail | High sound quality, High detail player skins, High detail textures (its quotes stripped), Standard video resolution |
+| The frame's buttons | `wizard.md` the frame | Back from the second page on, Finish never, "Run!" on FirstTime and SafeOptions, no Next on SafeMode |
+| The templates' layout, scaled | `wizard.md` page layouts | every control at its dialog units × (1.5, 1.625): the window 530×436 with a 524×411 client area; Next at 183, 384, 75 × 23 |
+
 ## Not verified
 
-- The SafeMode / RecoveryMode entry paths (`-safe`, stale `Running.ini`).
-- The safe-mode re-exec and its flag string — **including the three-dead-checkboxes bug**,
-  which remains a static-analysis finding only. It is well evidenced (eight
-  `BM_GETCHECK` sites, five reading `+0xB0`, struct size confirmed by `GMalloc(1012)`),
-  but has not been observed live.
-- `GetNext` chain past the Renderer page (Driver / Detail / FirstTime).
+- The forwarding receiver: a second launch handing a running game its command line.
+- `MainLoop` (`0x10914630`), and the splash staying up through a real start of the engine.

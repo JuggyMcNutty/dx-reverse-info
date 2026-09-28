@@ -309,7 +309,9 @@ Verified in raw disassembly (not a decompiler artifact) — eight `BM_GETCHECK` 
 
 Offsets `+0x128`, `+0x1A0`, `+0x218` — checkboxes **#3 No3DVideo, #4 Window, #5 Res** —
 are **never read**. The SDK's source has the same five reads of box #2, so
-the bug was written, not compiled in.
+the bug was written, not compiled in. Observed live: with #2 cleared and #3–#5
+ticked, the relaunch got none of their flags
+([`live-verification.md`](live-verification.md#the-second-run-every-page-2026-09-27)).
 
 Consequences in the shipped game:
 

@@ -124,5 +124,6 @@ without a debugger:
 - Run with `-changevideo` → renderer page only.
 - Leave a stale `Running.ini` → recovery wizard on next launch.
 - `-testrendev=D3DDrv.D3DRenderDevice` → writes `Detected.ini`, exits without launching.
-- Tick *"Disable 3D sound hardware"* in safe mode → observe `-nohard -noddraw -defaultres`
-  on the relaunched process's command line (would confirm the shipped bug — **not yet run**).
+- Clear *"Disable 3D sound hardware"* in safe mode, with the next three ticked → the
+  relaunched process's command line has none of `-nohard`, `-noddraw`, `-defaultres` (the
+  shipped bug; confirmed, [`live-verification.md`](live-verification.md#the-second-run-every-page-2026-09-27)).
