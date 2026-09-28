@@ -85,6 +85,23 @@ front of it. A part in a solid leaf is dropped, and so is all that came
 down into a subtree whose bounds are hidden. A sprite with a part showing
 keeps those spans and is drawn, which stamps its render time (below).
 
+- **A mesh's render box** (`UMesh::GetRenderBoundingBox`, `Engine.dll`
+  `0x103a6850`): the boxes of its animation's frame and the next -- frame
+  (`AnimFrame` + 1) × the sequence's frames, rounded down, round the
+  sequence --, or the whole mesh's box while `AnimFrame` is below 0 or the
+  sequence is not the mesh's; less the mesh's origin, times its scale and
+  the draw scale (1.5 for a `bParticles` actor), grown by a unit, turned by
+  the mesh's `RotOrigin` and the actor's rotation and set at its location
+  plus `PrePivot`.
+- **`BoundVisible`** (`0x10b162e0`) makes it a rectangle: the whole frame
+  with the viewer inside the box; otherwise the corners' projections,
+  running to the frame's edge on each side some corner is beyond, and none
+  when every corner is behind the viewer or beyond one side; each edge the
+  pixel it falls in, the right and bottom ones left out. A mesh whose
+  location is behind the viewer gets no sprite at all. A sprite's rectangle
+  is its texture's size times the draw scale round where its location
+  lands, rounded up, none nearer than a unit.
+
 ## Render iterators
 
 An actor with a `RenderIteratorClass`, while the game runs, is drawn as the
