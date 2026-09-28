@@ -213,6 +213,33 @@ none):
   `AIVisibility` uses it, and no script calls it.
 - **`AICanSee`** (`0x103c6ab0`) and **`AIVisibility`** (`0x1036bca0`): ported
   by patch 0034 ([its message](https://github.com/JuggyMcNutty/VibeEngine/commit/b5d08853dbf4e24894d56942c07a5a743438e824)).
+- **`LineOfSightTo(Other, bUseLOSFlag, bIgnoreDistance)`** (`0x103beb50`):
+  UT's, with a third flag that lifts every distance limit. Beyond a reach
+  it answers no: for a player looking, (Visibility + 16) × 0.015 of 5,000
+  units for a pawn (the factor held to 1) and 4,000 for what is none; for
+  another pawn, the same of 4,000 and 3,000 -- or, with `bUseLOSFlag` and
+  `Other` not its enemy, its `SightRadius` times Visibility / 128, held to
+  4,000 for a player and 3,464 for another, nothing outside its
+  `PeripheralVision`, and the distance scaled up toward that edge and by
+  the height between.
+  Then lines from its eyes, each a `FastLineCheck`: its enemy it sees
+  along one to the enemy's middle, noting where each stood; anything else
+  beyond 1,000 units only along that line -- a pawn beyond half the reach
+  not at all, unless `bLOSflag` is set, and half the time not at all when
+  the looker is no player; nearer, to 0.8 of `Other`'s height over its
+  middle, and failing that, within 500 units and for a pawn, to two of its
+  cylinder's four corners at its middle's height -- the nearest and the
+  farthest left out, both measured from the world's origin, as UT's code
+  measures them, and with `bUseLOSFlag` each other one tried. The script's
+  `LineOfSightTo(Other, bIgnoreDistance)` calls it without the LOS flag
+  (`0x103bce10`), `CanSee(Other)` with it and no lifting (`0x103ba5d0`).
+- **`PlayerCanSeeMe`** (`0x103ba640`): whether any local player -- each
+  viewport's, standalone; each pawn's in a net game -- sees the actor
+  (`TestCanSeeMe`, `0x103ba8a0`): the player's view target sees it; else
+  it must lie within (collision radius + 3.6) × 100,000 squared units, and
+  -- unless the view is behind -- within 60 degrees of the view's line,
+  either way along it (the cosine squared), and then the player's
+  `LineOfSightTo` it.
 
 ## Moving
 
