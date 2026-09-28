@@ -216,7 +216,28 @@ its brightness now), and its effect's entry in `GLightEffects`
 (`0x10b2a0f0`): the function that shapes it, whether that shape changes over
 time (searchlight, slow and fast wave, cloud cast, shock, disco,
 interference, rotor), and whether its brightness wavers from texel to texel
-(torch and fire waver, watery shimmer).
+(torch and fire waver, watery shimmer). The torch and fire wavers, the
+watery shimmer, warp, the omni bump map and the unused slot have the plain
+shape, `LE_None`'s.
+
+- **The colour** is Engine.dll's `FGetHSV` (`0x103ec8d0`) at full value:
+  the value makes a brightness of 0.7 b / (√b + 0.01), b = 1.4 × value ÷
+  255, at most 1 (0.82 at 255); the hue is two neighbouring primaries
+  mixed, 85 steps apart round the wheel; the saturation mixes it toward
+  white, 255 all white. A palette light (`LT_TexturePaletteOnce`, `Loop`)
+  takes its skin's palette colour's direction instead.
+- **The brightness** is `LightBrightness` ÷ 255, shaped by the type in
+  `GlobalLighting` (`0x10b05e90`) and kept to 0-1, then times the level's
+  `Brightness` (a `LevelInfo` property, 1 on Liberty Island). A pulse is
+  0.6 + 0.39 sin, a subtle pulse 0.9 + 0.09 sin, of 35 turns a second over
+  `LightPeriod` (at least 1) from `LightPhase`'s 256ths of a turn; a blink
+  is out when its turn count, in 65536ths, is odd -- by the frame, at any
+  frame rate --; a flicker draws a random number each frame, out below one
+  half, else that fraction; a strobe is out every other frame; a palette
+  light goes through its palette over its life once (`1 − LifeSpan ÷` the
+  default's, times 255) or at 35 turns a second over the period, times
+  (2 red + 3 green + blue) ÷ 1536 × 2.8 of the entry. Galaxy calls it too,
+  for a light's ambient sound ([each frame](galaxy-dll.md#each-frame)).
 
 ### Light maps
 
@@ -248,10 +269,32 @@ interference, rotor), and whether its brightness wavers from texel to texel
   whose shape changes keeps its unpacked shadows there and has its shape run
   again; a moving light is run without shadows. As a light is added
   (`MergeLight`, `0x10b03040`), a torch waver dims each texel by a random
-  amount of up to 5%, and a fire waver up to 20%.
+  amount of up to 5%, a fire waver up to 20%, and a watery shimmer up to
+  40%. The random numbers are a table of 256 drawn afresh each frame
+  (`0x10b13080`, from the level's time), the shimmer's a table of its own
+  that eases toward fresh draws 35 times a second.
+- **A texel's byte**, 0 to 127 a channel. The map starts at the zone's
+  ambient light, `FGetHSV`'s colour times 64, rounded down. A light's
+  shadow bits are unpacked into bytes (`ShadowFromBits`): each texel the
+  bits around it through the kernel 24 40 24 / 40 64 40 / 24 40 24, a row
+  at a time, 255 × the row's weights ÷ 320 rounded down -- 254 where all
+  are lit --, a row taking its first bit again to the left of the map and
+  its last byte's last bit to the right, the first and last rows standing
+  for the rows beyond them; a light without shadow bits (a moving one) is
+  127 all over. Its shape: the plain one (`0x10b03360`) is a table of
+  (2v³ − 3v² + 1) ÷ v over d² ÷ r² in 4096ths, v = d ÷ r, times the light's
+  height over the surface's plane ÷ r -- so (1 − 3v² + 2v³) times the
+  cosine of the light's angle to the surface --, times the shadow byte,
+  rounded; the spotlight's (`0x10b04f80`) the same times ((cos − c) ÷
+  (1 − c))² inside its cone, c = 1 − `LightCone` ÷ 256, rounded down. The
+  illumination i, 0 to 254, goes through the light's table (`SetupLight`):
+  i × its colour and brightness in 65536ths, rounded down, at most 127. The
+  lights add up, each channel held to 127.
 - **To the device.** A map holds a byte a channel, up to 127. The render
   device gets the static map, which it holds already, or the dynamic map,
-  marked changed (`bRealtimeChanged`) for it to upload whole.
+  marked changed (`bRealtimeChanged`) for it to upload whole; `D3DDrv` shows
+  a byte as 1/128 of the texture's brightness
+  ([the light maps' brightness](d3ddrv-dll.md#the-light-maps-brightness)).
 
 ### Meshes
 
