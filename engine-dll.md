@@ -409,8 +409,25 @@ That is all: Deus Ex's scripts do the rest -- pain zones' `PainTime`
   way (`UMesh::LineCheck`, `0x103a6d10`, passes it on).
 - **`FastTrace(TraceEnd, TraceStart)`** (`0x103e35e0`): whether the line is
   clear of the level's BSP, the segment itself and nothing past it
-  (`UModel::FastLineCheck`, `0x103f3280`) -- movers and other actors not
-  asked.
+  (`UModel::FastLineCheck`, `0x103f3280`), other actors not asked. The BSP
+  holds the movers' polygons too while the level runs -- UE1's moving-brush
+  tracker files them in (`GNewBrushTracker`, `0x1037c860`) --, so a closed
+  door stops it: seen at 16 of Liberty Island's doors (2026-09-28). The
+  same check answers `LineOfSightTo`, `CanHear`, `pointReachable`, the path
+  searches and network relevance; `actorReachable` looks with a line check
+  of the level and movers instead.
+- **`VisibleActors(BaseClass, Actor, Radius, Loc)`** (`0x103e5260`): each
+  actor in the level's list, not hidden, of the class, whose location lies
+  within `Radius` of `Loc` (strictly; a radius of 0, the default, no
+  limit), with `FastLineCheck` clear from `Loc` to it.
+- **`VisibleCollidingActors(BaseClass, Actor, Radius, Loc,
+  bIgnoreHidden)`** (`0x103e55b0`): each actor the collision hash holds --
+  movers too -- whose location lies within `Radius` of `Loc`
+  (`FCollisionHash::ActorRadiusCheck`, `0x103589e0`; a radius of 0, the
+  default, is 1000), of the class, passed over when hidden only if
+  `bIgnoreHidden`, with `FastLineCheck` clear from `Loc` to it, asked as
+  the iteration comes to it. `HurtRadius` uses it, and Deus Ex's own
+  `bIgnoreLOS` takes `RadiusActors` instead.
 - **Which surface a level hit gives**: the node the check meets the level
   at -- the first of its plane's coplanar nodes, whichever of their
   polygons the line crossed (seen: `TraceTexture`'s textures along 107
