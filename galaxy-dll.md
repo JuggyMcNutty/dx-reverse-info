@@ -45,16 +45,16 @@ also written out inline where they are used.
 | Setting | Default | What it does |
 |---|---|---|
 | `UseDirectSound` | True | DirectSound output, else WinMM (as `-nodsound` gives) |
-| `UseFilter` | True | cosine interpolation when a sound is resampled, else the nearest sample |
+| `UseFilter` | True | asks the mixer to interpolate a sound resampled up; its SSE routine interpolates linearly either way ([the mixer](#the-mixer)) |
 | `UseStereo` | True | stereo output, else mono |
-| `UseSurround` | False | a sound behind the listener gets Galaxy's surround pan |
+| `UseSurround` | False | a sound behind the listener plays centred, its right side inverted |
 | `ReverseStereo` | False | left and right swapped |
 | `UseDigitalMusic`, `UseCDMusic` | True, False | the level's tracker music; CD audio |
 | `UseReverb` | True | each zone's reverb ([reverb](#reverb)) |
 | `Use3dHardware` | False | A3D or EAX hardware, when found and `-no3dsound` is not given |
 | `LowSoundQuality` | False | read by the engine as it loads each sound: 16-bit ones become 8-bit, and ones at 22,050 Hz or more are halved in rate (`Engine.dll`, `0x1036f040`) |
 | `Latency` | 40 | the output's mix-ahead in milliseconds |
-| `OutputRate` | 44100Hz | the mixing rate, 8,000 to 48,000 Hz |
+| `OutputRate` | 44100Hz | the mixing rate, 8,000 to 48,000 Hz; the reverb's delays are whole samples of it |
 | `EffectsChannels` | 16 | the voices for sounds |
 | `MusicVolume`, `SoundVolume`, `SpeechVolume` | 153, 204, 255 | the Sound options' sliders |
 | `AmbientFactor` | 0.7 | the scale of ambient sounds' volume |
@@ -106,16 +106,22 @@ setting of this class, and nothing in the game reads it.
   `GlobalLighting`, which gives a steady light 1 -- then at most 1.
 - **Every channel,** unless its voice has finished (then it is cleared):
   - its place becomes its actor's, and its priority is worked out again;
-  - its **fall-off** is 1 − distance ÷ radius, from the listener: linear,
-    silent at the radius;
+  - its **fall-off** is 1 − distance ÷ radius, from the listener -- the
+    view's own place, the coordinates `Update` is handed: linear, silent at
+    the radius;
   - its **pan** is the angle of the sound from straight ahead, left or right,
-    front and back alike, turned into Galaxy's pan: at most seven-eighths of
-    the way to one side, and nearer the middle for a sound within a tenth of
-    its radius. `ReverseStereo` swaps it; with `UseSurround`, a sound behind
-    gets the surround pan. Measured (a beep 234 units off, its radius 4,000,
-    90° to the right): the left channel 5.1 dB under the right; straight
-    ahead, each 1.8 dB under the right one's at the side -- the power of the
-    two channels together the same both ways;
+    front and back alike -- atan2 of its distance to the right and the
+    absolute of its distance ahead, in the view's axes --, scaled by the
+    distance over a tenth of the radius for a sound within that, turned
+    into Galaxy's pan of 0 (left) to 32,767 (right): 16,383 + the angle ×
+    28,671.125 ÷ π, at most seven-eighths of the way to one side.
+    `ReverseStereo` swaps it; with `UseSurround`, a sound behind gets 49,152,
+    the surround pan. The mixer makes it the sides' gains
+    ([the mixer](#the-mixer)). Measured (a beep 234 units off, its radius
+    4,000, 90° to the right, so its angle scaled to 0.585 of 90°): the left
+    channel 5.1 dB under the right; straight ahead, each 1.8 dB under the
+    right one's at the side -- the power of the two channels together the
+    same both ways, as the gains give;
   - its [obstruction](#sounds-behind-walls), then its [volume](#volume);
   - **Doppler,** for an ambient sound only: the pitch times 1 − the actor's
     speed away from the view target ÷ `DopplerSpeed`, kept to 0.5–2;
@@ -140,17 +146,47 @@ a function.
 ### Volume
 
 A voice's volume is the sound's volume × its fall-off × its obstruction × the
-balance of the sliders, at most full and at least 1/256 of it.
+balance of the sliders, at most full (32,767) and at least 1/256 of it.
 
-- **The sliders.** Galaxy's sample volume is the louder of `SoundVolume` and
-  `SpeechVolume` (`SetVolumes`, `0x106061b0`). Speech -- a sound in the talk
+- **The sliders.** Galaxy's sample volume is 127 × the louder of
+  `SoundVolume` and `SpeechVolume` (`SetVolumes`, `0x106061b0`), which the
+  mixer squares ([the mixer](#the-mixer)). Speech -- a sound in the talk
   slot -- is scaled by the speech slider ÷ the sound slider when the sound
   slider is the louder, and the other sounds the other way round; so each
-  plays at its own slider. When the two are equal, both are scaled by the
-  slider a second time: at half each, everything plays at a quarter.
+  plays at its own slider times the louder one -- at the game's 204 and
+  255, the other sounds at 0.8 and speech at 1, times the mixer's 0.97.
+  When the two are equal, both are scaled by the slider a second time: at
+  half each, everything plays at about an eighth.
 - **Instantly.** `SetInstantSoundVolume`, `SetInstantSpeechVolume` and
   `SetInstantMusicVolume` (`0x106063d0`, `0x106064f0`, `0x10606610`) set the
   slider and the volumes at once, for the menu's sliders as they move.
+
+### The mixer
+
+The library's own (`0x10614920`, run every `Latency` ÷ 2 by the output's
+timer): the voices mixed at `OutputRate` into a dry and a reverb buffer,
+with their gains worked out again every millisecond or so from what
+`Update` last set; the reverb run over its buffer into the dry one; the
+result saturated to 16 bits and added, saturating, to the music's.
+
+- **A voice's gains.** The voice's volume × the sample volume squared --
+  twice 127 × the louder slider, squared, over 32,768, and the voice's own
+  full volume of 32,258, so 0.969 with a slider full -- × each side's share
+  of the pan: the square root of pan ÷ 32,767 for the right, of the rest for
+  the left, from a table of 32,768 (`glxInit`, `0x1060df30`). Centred, each
+  side is 0.707 of the voice; at the most, seven-eighths over, 0.968 and
+  0.250. The reverb gets each side at 127/128 of it. The surround pan plays
+  centred with the right side's gains negated.
+- **Resampling.** A voice steps through its sample at its rate × pitch in
+  whole hertz, as a 16.16 fraction of `OutputRate`. The routine chosen for a
+  CPU with SSE and stereo output -- a modern one (`0x10622730`, copied in
+  by `0x106231d1`) -- interpolates linearly between a sample and the next,
+  with 15-bit weights, whatever `UseFilter` asks; the cosine table of 16
+  steps at `0x1063da5c` is built for the other routines' 8-bit samples.
+- **Loops** come from a WAV's `smpl` chunk (`0x10619940`): its first loop's
+  start and end, the end the first sample not played again; the ping-pong
+  type plays back and forth. A sample ends when the voice passes its last
+  frame, reading zeros beyond it.
 
 ## Lip sync
 
@@ -191,16 +227,32 @@ mouth shape and writes it to the pawn's `nextPhoneme`, which the script's
 With `UseReverb`, when the zone of the player's view target has
 `bReverbZone`, its settings become Galaxy's reverb for every sound:
 `MasterGain` ÷ 255 the volume, `CutoffHz` (to 44,100) the damping of highs,
-and six echoes, each `Delay` × 2 ms (1–340 ms) at `Gain` ÷ 255. Another zone
-gives none. The reverb is set again only when it changes. 21 zones in 16
-maps have it: Battery Park, the Mole People, Brooklyn Bridge Station, the
-airfield, the NSF headquarters, the ship, parts of Hong Kong, the intro and
-the endgame (the data).
+and six echoes, each `Delay` × 2 ms (1–340 ms) at `Gain` ÷ 255 (held to
+0.001–0.999, so an echo of `Gain` 0 is there too, at 0.001). Another zone
+gives none. The reverb is set again only when it changes, starting from
+silence. 21 zones in 16 maps have it: Battery Park, the Mole People,
+Brooklyn Bridge Station, the airfield, the NSF headquarters, the ship, parts
+of Hong Kong, the intro and the endgame (the data).
+
+How it sounds (`glxSetSampleReverb`, `0x106113d0`; with SSE the setup at
+`0x106109f0` and the routine at `0x10622d33`, MMX and 3DNow! routines
+besides, none at all without MMX): three stages of stereo allpass filters,
+the left of each stage one echo and the right the next. An echo of delay d
+-- whole samples of `OutputRate` -- and gain g is a filter of coefficient
+c = 1 − g: its line takes the input plus c times the delayed line through a
+one-pole lowpass, and it passes on −c times the input plus (1 − c²) times the
+delayed line -- so a strong echo is nearly a plain delay, a weak one passes
+the sound on nearly as it came, ringing faintly. The lowpass is
+y += a(x − y) with a = √((v + 2)v) − v, v = 1 − cos(2π × cutoff ÷ rate). The
+last stage's output feeds back into the first, left and right swapped, at
+half with the sound coming in, and is added to the dry sound at the volume.
 
 Measured in Battery Park's `ZoneInfo5` (two echoes, at 40 and 68 ms and
 `Gain` 150 and 70; cutoff 6,000 Hz): a gunshot rings about 2 s before
 falling 60 dB under its peak, and 0.5 to 1.5 s after the peak it is 32 dB
-under its first 0.45 s; outside the zone the shot ends with the sample.
+under its first 0.45 s; outside the zone the shot ends with the sample. The
+structure above, run over the original's own shot from outside the zone,
+gives 1.97 s and 32.4 dB, and its peak 0.5 dB down as the original's is.
 
 ## Hardware and the console
 
@@ -227,5 +279,6 @@ and by hand: `UGalaxyAudioSubsystem` and its channel record `FPlayingSound` as
 read here, `UViewport`'s first members from the SDK's `UnCamera.h`, and
 Galaxy's own structures and function prototypes from the SDK's `GALAXY.H`
 (whose licence keeps them out of this repository). The library's functions
-are named from their assertion texts, with the lip sync's helpers and the
-music's globals. Each function above carries a one-line comment.
+are named from their assertion texts, with the lip sync's helpers, the
+music's globals, and the mixer's and the reverb's SSE routines as read
+here. Each function above carries a one-line comment.
