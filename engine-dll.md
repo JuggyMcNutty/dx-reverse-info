@@ -254,6 +254,40 @@ none):
   traces' own, short of the floor by their backoff ([traces](#traces)):
   the box trace's a tenth of its length, so a pawn with `MaxStepHeight` 25
   stands 4.8 over the floor -- measured 4.75 at Liberty Island's start.
+- **Moving toward a spot** (`APawn::moveToward`, `0x103be250`), a tick of
+  `MoveTo` or `MoveToward`: the spot is reached within 16 units across
+  (walking, the height ignored; else within the pawn's height, at least 48,
+  up or down), when the move's time is out, or for a pawn target within
+  both radii and 0.8 of `MeleeRange`. Else the acceleration is set straight
+  at the spot at the full `AccelRate` -- a glider (`bCanGlide`, not
+  `bCanStrafe`, flying or swimming) along its facing --; a pawn moving over
+  100 units a second has it steered by (its velocity's direction − the
+  spot's) × (1 − their cosine) × speed × 0.2 taken off; within 1.4 of
+  `AvgPhysicsTime` of travel of the spot the speed is halved once
+  (`bReducedSpeed`) and held to 200 units a second over the speed. An item
+  target within the pawn's radius and height is touched. Falling, a pawn
+  steers only where gravity is under 0.9 of its zone's default, and
+  arrives 100 units under the spot.
+- **The latent moves** (`execMoveTo` `0x103bceb0`, `execMoveToward`
+  `0x103bd150`; their polls `0x103bd060`, `0x103bd370`): the call clears
+  `bReducedSpeed`, takes the speed held to 0 to `MaxDesiredSpeed`, times
+  the move (`setMoveTimer`: 1 + 1.3 × distance over the physics' speed
+  times `DesiredSpeed`, 0.5 with no speed; 1.2 s toward a pawn), and takes
+  the first step at once. Each tick after, the destination is the
+  target's place (a flyer's 0.7 of a pawn's height higher), and a pawn
+  with `bAdvancedTactics` walking has its `AlterDestination` event turn it
+  before the step -- Deus Ex's NPCs walking around what they bumped; a
+  pawn target's speed is kept as it was, and one in water is given up by
+  a pawn that cannot swim. `APawn::performPhysics` counts the move's time
+  down and keeps `AvgPhysicsTime` at 0.8 of itself and 0.2 of the tick
+  (`0x103c9c37`).
+- **The speed** (`APawn::calcVelocity`, `0x103cd7a0`): an acceleration
+  over `AccelRate` -- over 0.3 of it for a player walking (`bIsWalking`) --
+  is cut to it; one under it is left.
+- **The next node** (`APawn::findPathToward`, `0x103db3f0`): once the
+  route is found, the node after its first is taken instead when it lies
+  within 120 units up or down (or the pawn stands at the first), clear of
+  the level from the eyes, and reachable.
 - **`RandomBiasedRotation(centralYaw, yawDistribution, centralPitch,
   pitchDistribution)`** (`0x1036d030`): a random rotation about the central
   one, yaw up to half a turn (32,768) either way and pitch up to a quarter
