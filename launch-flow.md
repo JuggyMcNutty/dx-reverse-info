@@ -44,7 +44,7 @@ a line that arrives before then -- during the wizard -- does nothing.
 |---|---|---|
 | `GIsGuarded = 1`, `GIsClient = 1` | `0x10908CE8` | |
 | `appInit(...)` | `0x10908D23` | package, cmdline, `GMalloc`, `GLog`, `GError`, `GWarn`, `GFileManager`, `FConfigCacheIni_Factory` (`0x10915080`), `RequireConfig=1` |
-| `-make` rejected | `0x10908D6A` | fatal: *"'DeusEx -make' is obsolete, use 'ucc make' now"* |
+| `-make` rejected | `0x10908D6A` | fatal: *"'DeusEx -make' is obsolete, use 'ucc make' now"*, in the error handler's box -- titled Window.int `[Errors] Critical`, the message followed by a blank line and "History: " -- and the process ends with 1 |
 | `GIsServer = 1` | `0x10908D79` | always |
 | `GIsClient = !ParseParam("SERVER")` | `0x10908D97` | |
 | `GIsEditor = 0`, `GIsScriptable = 1` | `0x10908DC0` | |

@@ -10,9 +10,10 @@
 # but the desktop window appears on their screen. The scenarios, in order:
 # -firstrun through every page, -changevideo, -safe through SafeOptions to a
 # relaunch that stops at the CD prompt (CdPath pointed nowhere for the run;
-# its command line saved as safe-relaunch.txt), and the RecoveryMode page the
-# prompt's Cancel leaves behind. The files the original writes -- DeusEx.ini,
-# User.ini, Detected.*, DeusEx.log, Running.ini -- are put back as they were.
+# its command line saved as safe-relaunch.txt), the RecoveryMode page the
+# prompt's Cancel leaves behind, and -make's error box. The files the
+# original writes -- DeusEx.ini, User.ini, Detected.*, DeusEx.log,
+# Running.ini -- are put back as they were.
 #
 # Wine is the Proton build the IDA tools use, in the same prefix, which has
 # the Python the driver runs on (tools/ida/idalib-mcp.sh). The captures are
@@ -72,3 +73,4 @@ wait
 echo "relaunched as: $(cat "$out/safe-relaunch.txt")"
 
 run recovery
+run make

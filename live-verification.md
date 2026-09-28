@@ -122,7 +122,8 @@ game cannot start at all.
 For deusex-launcher's `main`, which is compared against these captures. Inside the
 distrobox, with the Proton build's own `wine` in the IDA prefix and a 1024×768 virtual
 desktop: [`tools/wine/wizard-capture.sh`](tools/wine/wizard-capture.sh) runs
-`DeusEx.exe` with `-firstrun`, `-changevideo` and `-safe`, and then with no flags, and
+`DeusEx.exe` with `-firstrun`, `-changevideo` and `-safe`, then with no flags, then with
+`-make`, and
 [`tools/wine/wizard_drive.py`](tools/wine/wizard_drive.py), inside the same desktop, works
 each page by Win32 messages to its controls and saves the window as the screen shows it
 with its controls' rectangles. The install's files the runs write are put back after.
@@ -138,12 +139,13 @@ The captures stay outside the repositories, in `reference/original-wizard/`.
 | The relaunch carries only the safe flags | `wizard.md` SafeOptions | the same command line |
 | A cancelled wizard deletes `Running.ini` | `launch-flow.md` §9 | the file was gone after `-firstrun` and `-changevideo` were cancelled |
 | The CD prompt: title, text, OK and Cancel, no icon; Cancel leaves `Running.ini` | `launch-flow.md` §8 | with `CdPath` pointed at a missing folder for the run |
-| The splash is `..\Help\Logo.bmp` at its own size, centred, until the engine is up | `launch-flow.md` §3 | a 512×410 window at the desktop's centre, behind the CD prompt; with a wizard to show it closes within a second |
+| The splash is `..\Help\Logo.bmp` at its own size, centred, until the engine is up | `launch-flow.md` §3 | a 512×410 window at the desktop's centre, behind the CD prompt, its frame over the bitmap's edges; with a wizard to show it closes within a second. Wine shows the picture colour-reduced: many pixels a step of 8 off the file's |
 | The Renderer list: certified and software devices, or all five sorted; the certified one chosen | `wizard.md` Renderer | Direct3D (detection certified it under wine) and Software Rendering; with "Show all devices", 3dfx Glide, Direct3D, OpenGL, S3 MeTaL, Software, Direct3D still chosen |
-| Driver shows the detected card | `wizard.md` Driver | "AMD Radeon RX 6700 XT", with the web link as a blue underlined button |
+| Driver shows the detected card | `wizard.md` Driver | "AMD Radeon RX 6700 XT", with the web link as a blue underlined button, in Arial at 12 pixels rather than the page's MS Sans Serif |
 | Detail's lines | `wizard.md` Detail | High sound quality, High detail player skins, High detail textures (its quotes stripped), Standard video resolution |
 | The frame's buttons | `wizard.md` the frame | Back from the second page on, Finish never, "Run!" on FirstTime and SafeOptions, no Next on SafeMode |
-| The templates' layout, scaled | `wizard.md` page layouts | every control at its dialog units × (1.5, 1.625): the window 530×436 with a 524×411 client area; Next at 183, 384, 75 × 23 |
+| The templates' layout, scaled | `wizard.md` page layouts | every control at its dialog units × (1.5, 1.625), each of x, y, width and height rounded on its own: the window 530×436 with a 524×411 client area; Next at 183, 384, 75 × 23 |
+| `-make` is fatal | `launch-flow.md` §2 | a "Critical Error" box, the error icon, the message, a blank line and "History: " with nothing after, OK alone; the process ended with 1 |
 
 ## Not verified
 

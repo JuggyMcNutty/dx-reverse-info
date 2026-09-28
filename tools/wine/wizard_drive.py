@@ -339,6 +339,18 @@ def scenario_splash():
     settle(p)
 
 
+def scenario_make():
+    p = launch(["-make"])
+    box = find_window(lambda h: pid_of(h) == p.pid and class_of(h) == "#32770", 30)
+    if not box:
+        log("no error box"); return
+    capture(box, "40-make-error")
+    ok = child_by_id(box, 1) or child_by_id(box, 2)
+    if ok:
+        user32.SendMessageW(ok, BM_CLICK, 0, 0)
+    settle(p)
+
+
 def scenario_recovery():
     p = launch([])
     w = wizard(p, "Deus Ex Recovery Mode")
