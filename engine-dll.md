@@ -316,6 +316,30 @@ none):
   `0x1039a350`): an actor there that blocks it and whose `EncroachingOn`
   agrees stops the move (false); those it no longer overlaps are untouched,
   and those there that do not block it touched.
+- **`FindSpot(extent, spot, bCheckActors, bCheckFirst)`**, the extent the
+  collision box's (radius, radius, height): with `bCheckFirst`, a spot where
+  the box fits already is kept. Otherwise the spot is pushed out of the
+  walls (`AdjustSpot`, `0x10398360`: a line from the spot toward a point,
+  level and movers; hit at time t, the spot goes back along the wall's
+  normal by (1.05 − t) times the line's length) toward −X, −Y and −Z,
+  then +X, +Y and +Z, each by the box's reach on that axis; where the box
+  fits then, that is the spot. Else it is pushed the
+  same way toward the box's eight corners, each line |extent| + 2 long, and
+  kept if it moved no more than √1.5 times |extent| and the box fits there;
+  otherwise no spot. `FarMoveActor` passes neither flag; `SpawnActor`
+  passes `bCheckFirst`.
+- **What blocks what** (`AActor::IsBlockedBy`, and the same test in
+  `CheckEncroachment`): the world and brushes block an actor that collides
+  with the world, by their `bBlockPlayers` for a player's pawn (a
+  `PlayerPawn` with a `Player`) and `bBlockActors` otherwise; two actors
+  block each other when each blocks the other's kind, a projectile counting
+  as a player. `CheckEncroachment` checks only an actor that collides with
+  actors or blocks (or a brush); after the `EncroachingOn` questions, each
+  actor there that blocks it hears `EncroachedBy`.
+- **Spawning** (`ULevel::SpawnActor`, `0x10394f60`) fits the new actor in the
+  same way, then, after `PostBeginPlay` and unless `bNoCollisionFail`, checks
+  its encroachment without touches: stopped, it is destroyed and the spawn
+  fails.
 - Unless a test, whatever stands on it is unbased (`SetBase(None)`, with the
   event) and it is marked `bJustTeleported`, so physics does not take the
   jump for speed.
