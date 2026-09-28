@@ -356,6 +356,18 @@ That is all: Deus Ex's scripts do the rest -- pain zones' `PainTime`
   trace's length, or 0.1 units for a trace shorter than one -- the rest of
   the move not taken. A script's `Trace` straight down finds the floor half
   a unit above it.
+- **An actor's cylinder** (`UPrimitive::LineCheck`, `0x103d8af0`), the
+  line's box added to it: hit where the line comes in, through a cap or
+  the side. A line that starts inside -- within its height, and its radius
+  with a unit's slack (the start's distance from the axis squared, less
+  the radius squared, under 1) -- is stopped at once, at its start, when
+  it heads in toward the axis (the line's run across, dotted with the
+  start's offset from the axis, under −0.1), and passes out freely
+  otherwise: a trace straight down from inside a pawn does not hit it.
+- **Which surface a level hit gives**: the node the check meets the level
+  at -- the first of its plane's coplanar nodes, whichever of their
+  polygons the line crossed (seen: `TraceTexture`'s textures along 107
+  lines on Liberty Island, 2026-09-28).
 - **What an actor collides as** (`AActor::GetPrimitive`, `0x1034c9a0`): its
   brush, else its mesh, else the engine's cylinder of its collision size --
   so a mover with no brush (`09_NYC_ShipBelow` has one) collides as a
