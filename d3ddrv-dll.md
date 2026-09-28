@@ -41,20 +41,28 @@ Brightness is a display gamma ramp, not arithmetic in the frame:
 What decides how bright a lit wall is:
 
 - A light map arrives as `TEXF_RGBA7` -- a byte a channel holding 0 to 127
-  ([the maps](render-dll.md#light-maps)). On upload the driver scales the
-  texels to saturation against the map's cached maximum colour
-  (`FTextureInfo::CacheMaxColor`), and carries the inverse in the stage's
-  modulation colour, whose base scale is **1/128** -- so the two together
-  make a light map byte worth a 128th each of doubled light: **64 is unit
-  brightness, 127 doubles the texture**.
-- With `UseMultitexture` the base texture and its light map draw in one
-  pass, the light map on stage 1 as a plain modulate; the per-stage scales
-  collapse into one diffuse colour (`UpdateModulation`), where the doubling
-  lives. Without, the base draws first and the light map is a second pass
-  in the modulated blend below, which doubles on its own.
-- One devices' path (`wMaxTextureBlendStages` reporting a single stage with
-  a flag the driver keeps) selects the texture alone on stage 0 while
-  light-mapping, so the diffuse is not applied twice.
+  ([the maps](render-dll.md#light-maps)) -- and is uploaded as 2c/255 of
+  full brightness for a byte c. In 16-bit textures (`Use32BitTextures`
+  off, the game's setting) the texels are scaled to saturation against
+  the map's cached maximum colour (`FTextureInfo::CacheMaxColor`, which
+  keeps twice each channel's largest byte), through X1R5G5B5 tables that
+  `Init` (`0x100029b0`) makes, and that maximum, a 255th a step, is the
+  stage's modulation colour; 32-bit textures double each byte and keep a
+  modulation of 1.
+- With `UseMultitexture` (on in the game's ini) a surface without a macro
+  texture draws in one pass: the light map on stage 1 as a plain modulate
+  (`D3DTOP_MODULATE`), the stages' modulation colours multiplied into the
+  vertices' diffuse. So **128 is unit brightness**: a light map dims a
+  texture or leaves it, never brightens it. Without -- the option off, or
+  a surface with a macro texture --, the base draws first and the light
+  map is a second pass in the modulated blend below, which doubles: **64
+  is unit, 127 doubles the texture**. Measured under the harness
+  (2026-09-28, Liberty Island's start): a two-pass frame 1.6 times as
+  bright as a one-pass one on every lit surface -- twice, the frames' gamma
+  of 1.5 taken out --, the unlit ones alike; `OpenGLDrv`'s frames are the
+  one-pass ones'.
+- On a 3dfx Voodoo3 (found by its device ID in `SetRes`) stage 0 takes the
+  texture alone while light-mapping, so the diffuse is not applied twice.
 
 ## Blending
 
@@ -78,8 +86,8 @@ Two kinds, as the engine hands them over:
 - **Fog maps** (a zone's volumetric lighting): a surface with a `FogMap`
   draws it as an extra pass in the `PF_Highlighted` blend -- the fog's
   colour added over the scene, what lies behind dimmed by the fog's alpha.
-  A fog map is `TEXF_RGBA7` like a light map, through the same 1/128
-  modulation. **A surface with a fog map skips its detail texture**: the
+  A fog map is `TEXF_RGBA7` like a light map, uploaded the same way, a
+  byte c worth 2c/255. **A surface with a fog map skips its detail texture**: the
   fog pass takes the detail pass's place.
 - **Vertex fog** (`UseVertexFog`, for meshes and sprites): a draw flagged
   `PF_RenderFog` that is neither translucent nor modulated puts the
