@@ -100,9 +100,13 @@ nothing, `GetString` returns an empty string, and `AddTimingData`
   transactional, with a state frame --, the save info 0x70004 (public), the
   event manager's parts 0x70000 (seen, 2026-09-27).
 - **A package's file** (`appFindPackageFile`, `0x10148ec0`). A name ending in
-  `.dll` is none. The name as given, if a file of it exists; else each of
-  `[Core.System]`'s `Paths` -- the path up to its `*`, the name, then the
-  path's extension -- and, with a GUID asked for (a net game's package), the
+  `.dll` is none. The name as given, if a file of it exists in the working
+  directory -- the game's `System` folder --; else each of
+  `[Core.System]`'s `Paths`: the path up to its `*` and the name alone,
+  then with the path's extension. So a file with no extension named as a
+  package stands for it: a Linux binary called `DeusEx` beside `DeusEx.exe`
+  is taken for the `DeusEx` package, and the game stops at its start
+  ("ReadFile beyond EOF", 2026-09-27). With a GUID asked for (a net game's package), the
   cache last: `<CachePath>\<GUID>` and `CacheExt`, the GUID `%08X` of its four
   words. First exactly, then again with each folder's names compared in any
   case (logged `Case-insensitive search: <name> -> <file>`). A file found in

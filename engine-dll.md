@@ -448,8 +448,9 @@ the rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
 
 ## Stasis and render time
 
-- **`LastRenderTime`**: `Engine.dll` sets it only when an actor spawns, to
-  −10 s; the renderer keeps it, and a zone's
+- **`LastRenderTime`**: `Engine.dll` sets it to −10 s when an actor spawns,
+  and for every actor as a level starts ([a level's tick](#a-levels-tick));
+  the renderer keeps it, and a zone's
   ([render time](render-dll.md#render-time)). `LastRendered()` (`0x1036de30`)
   is the time since, not below 0.
 - **`DistanceFromPlayer`**: `ULevel::Tick` sets it for every dynamic actor
@@ -520,6 +521,34 @@ the travel info: a count, then each key and value (package versions 61 and
   failed: " or "Start failed: " and the reason. There is no cheat check: this
   is what a line forwarded to the running game runs
   ([the receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+
+## A level's tick
+
+- **A level's start** (`UGameEngine::LoadMap`, `0x1038c1f0`), for a level
+  not yet begun (`bBegunPlay` unset): the level's time set to 0, then the
+  game's `InitGame`, every actor's `PreBeginPlay` and `BeginPlay`, each
+  actor's zone, every actor's `LastRenderTime` set to −10 s -- whatever its
+  map kept --, then `PostBeginPlay`, `SetInitialState` and the actors'
+  bases. A level already begun -- from a save, or returned to -- keeps its
+  own time and render times.
+- **The time** (`ULevel::Tick`, `0x103a51a0`): the frame's time, times the
+  level's `TimeDilation`, is added to the level's time, paused or not.
+  The actors -- and the players' input and the event manager -- are given
+  that time held between 0.005 and 0.4 s.
+- **Unpaused** (`Pauser` empty): each dynamic actor's `DistanceFromPlayer`
+  ([below](#stasis-and-render-time)), then each dynamic actor's `Tick`,
+  once, in the list's order; one whose owner has not yet ticked this frame
+  waits in a list, ticked after the pass once its owner has. Then the event
+  manager ([each frame](#each-frame-aiprocess-0x10384080)). An actor
+  ticked carries the level's mark in `bTicked`, which the level flips after
+  each tick; the mark only tells whether an owner has ticked, and nothing is
+  passed over for its own mark -- a level's first tick ticks every actor
+  its map loaded.
+- **Paused:** the players' input, and the actors with `bAlwaysTick`.
+- **An actor's tick** (`AActor::Tick`, `0x103a1aa0`), ticking as a
+  standalone game's ([by role](network.md#replication)): nothing
+  else in stasis; its animation; then its script `Tick`, its state code,
+  its timer, its `LifeSpan` and its physics, in that order.
 
 ## Small
 
