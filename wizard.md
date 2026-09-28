@@ -86,7 +86,9 @@ is Window.dll's `WWizardDialog`: a stack of pages over one dialog (104).
 - **Its logo** is `..\Help\LogoSmall.bmp`, loaded into the static at the top
   left without checking it loaded. The GOG install has no such file, so the
   band above the page stays empty there; the SDK's `Help/` has it, 500×77.
-- **Its icon** is `DeusEx.exe`'s icon group 128.
+- **Its icon** is `DeusEx.exe`'s icon group 128, the executable's only
+  one: a 32×32 of 16 and one of 256 colours, and a 16×16 of 16, plain
+  DIBs with their masks, every pixel in.
 - **Four buttons** along the bottom, Back, Next, Finish and Cancel, each
   shown only while its page gives it a text: Back from the second page on
   (Window.int `BackButton`, "< &Back"); Next with the page's own text, by
