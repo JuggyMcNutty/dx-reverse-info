@@ -40,6 +40,8 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `IpDrv.dll` | package IpDrv: the sockets -- the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library -- channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 | `Fire.dll` | package Fire: the fractal textures -- fire, water (lit, or bending another texture) and ice -- that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
+| `WinDrv.dll` | the Windows client and viewport: the game's window, DirectDraw, DirectInput, the joystick, which render device a viewport opens with | [`windrv-dll.md`](windrv-dll.md) | its command-line flags |
+| `Window.dll` | the Win32 widgets and dialog templates of the launcher and the editor | [`wizard.md`](wizard.md#page-layouts) | the launcher's dialog templates, as data |
 
 Beside them in `gamefiles/System/`, copied in by the owner
 (2026-09-24) and not the game's:
@@ -136,6 +138,11 @@ the paths below that are not this repository's are that parent folder's.
   to the code, from incremental linking, to follow. `objdump -d -M intel
   --start-address=... --stop-address=...` gives a function, and its calls into
   `Core.dll` resolve through the import table (`appAtan`, `FVector::Rotation`).
+- **Dialog templates** are resources, data rather than code:
+  [`tools/pe/dialogs.py`](tools/pe/dialogs.py) prints a binary's -- each
+  control's class, id, style and rectangle, and the font -- with nothing but
+  Python. `Window.dll` has the launcher's wizard and its pages, `DeusEx.exe`
+  the splash ([page layouts](wizard.md#page-layouts)).
 - **A native's `exec` function holds the defaults of its optional
   parameters**: each is set before its argument is read. Upstream's natives
   take them as `std::optional`, and a default is not always false
@@ -163,6 +170,7 @@ the paths below that are not this repository's are that parent folder's.
 |---|---|
 | [`launcher.md`](launcher.md) | `DeusEx.exe`: anchors, struct sizes, findings |
 | [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md), [`cli-flags.md`](cli-flags.md), [`ini-keys.md`](ini-keys.md), [`porting-notes.md`](porting-notes.md), [`types/launch.h`](types/launch.h), [`live-verification.md`](live-verification.md) | the launcher's details ([its index](launcher.md)) |
-| [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md), [`render-dll.md`](render-dll.md), [`ipdrv-dll.md`](ipdrv-dll.md), [`galaxy-dll.md`](galaxy-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
+| [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md), [`render-dll.md`](render-dll.md), [`d3ddrv-dll.md`](d3ddrv-dll.md), [`ipdrv-dll.md`](ipdrv-dll.md), [`galaxy-dll.md`](galaxy-dll.md), [`fire-dll.md`](fire-dll.md), [`windrv-dll.md`](windrv-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
 | [`network.md`](network.md) | how the original plays over a network: joining, packets, replication, remote calls |
 | [`tools/ida/`](tools/ida/) | the IDA scripts: types, strings, names ([above](#working-on-the-binaries)); `idalib-mcp.sh`, the headless server |
+| [`tools/pe/`](tools/pe/) | `dialogs.py`: a Windows binary's dialog templates as text, without IDA ([above](#working-on-the-binaries)) |

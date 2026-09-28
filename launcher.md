@@ -47,6 +47,12 @@ and `Window/Inc/Window.h`), so struct layouts were *read*, not guessed — the
 binary's assert strings name those exact paths. And `System/Startup.int` is the
 launcher's own string table, naming every wizard page and control.
 
+Two more came later, for `main` of the launcher, which recreates this almost
+1:1. One of those headers, `Engine/Inc/UnEngineWin.h`, is the source of
+`InitEngine`, the splash and all six pages, and matches the binary wherever the
+two were compared ([`wizard.md`](wizard.md)). And the pages' layouts are data,
+`Window.dll`'s dialog templates ([`wizard.md`](wizard.md#page-layouts)).
+
 ## Confirmed anchors
 
 | Address | Meaning |
@@ -124,5 +130,3 @@ read (`HKLM\software\mpath\mplayer\main`), and `.ICD`→`.EXE` rewriting in
 - The SafeMode/RecoveryMode entry paths and the safe-mode re-exec, live.
 - The three-dead-checkboxes bug, live. Well evidenced statically.
 - `MainLoop` (`0x10914630`) in depth — a launcher replaces it wholesale.
-- `Window.dll` dialog *templates* (geometry, styles, tab order) — out of scope;
-  needed only for a pixel-faithful recreation.

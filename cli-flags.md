@@ -15,6 +15,10 @@ The `appStrfind` cases are the surprising ones: `readini` and the four
 single-instance bypass tokens match *anywhere in the command line*, including inside
 a map name or URL.
 
+Most checks read the command line `appInit` keeps, without the program's path. Three
+read the one Windows gives, path and all: the four bypass tokens, and the splash's
+`-log`, `-server` and `TestRenDev` ([`launch-flow.md`](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+
 ## Flags
 
 | Flag | Parser | Read at | Effect |
@@ -49,8 +53,18 @@ a map name or URL.
 `WConfigPageSafeOptions__GetNext` (`0x10911C00`) re-executes the binary with a
 subset of these. They are consumed by the engine and drivers, not by `Launch`:
 
-`-nosound`, `-no3dsound`, `-nohard`, `-noddraw`, `-defaultres`,
-`-nommx`, `-nokni`, `-nok6`, `-nojoy`
+| Flag | Read by | Effect |
+|---|---|---|
+| `-nosound` | `Engine.dll`, `UEngine::InitAudio` | no audio subsystem: no sound, no music ([`engine-dll.md`](engine-dll.md#starting-the-game-engine)) |
+| `-no3dsound` | `Galaxy.dll`, `Init` | no A3D or EAX sound hardware ([`galaxy-dll.md`](galaxy-dll.md#settings)) |
+| `-nohard` | `WinDrv.dll`, `UWindowsViewport::OpenWindow` | the software renderer instead of `GameRenderDevice` ([`windrv-dll.md`](windrv-dll.md#the-flags)) |
+| `-noddraw` | `WinDrv.dll`, `UWindowsClient::Init` | no DirectDraw: the software renderer, when it is the one used, has no fullscreen mode and runs in a window |
+| `-defaultres` | `WinDrv.dll`, `UWindowsClient::Init` | 640×480, windowed and fullscreen |
+| `-nommx`, `-nokni`, `-nok6` | `Core.dll`, `appPlatformInit` | the CPU's MMX, KNI (SSE) and 3DNow! left unused ([`core-dll.md`](core-dll.md#the-platforms-start)) |
+| `-nojoy` | `WinDrv.dll`, `UWindowsClient::PostEditChange` | no joystick |
 
 See the shipped-bug note in [`wizard.md`](wizard.md) — in the original, only
 `-nosound`, `-nommx -nokni -nok6` and `-nojoy` are driven by their own checkbox.
+
+A run the SafeMode page's Run button starts keeps `-safe` on its command line,
+and `WinDrv.dll` reads that too: no DirectInput ([`windrv-dll.md`](windrv-dll.md#the-flags)).

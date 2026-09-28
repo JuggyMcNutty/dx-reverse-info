@@ -165,6 +165,17 @@ nothing, `GetString` returns an empty string, and `AddTimingData`
   (`PostEditChange`), then the class's defaults, and the class's config is
   saved.
 
+## The platform's start
+
+`appPlatformInit` (`0x1016d720`), the Windows half of `appInit`
+(`UnVcWin32.cpp`): `GSys`, the memory and working-set figures, the CPU's speed
+(which `CPUSPEED=` overrides), the page size and processor count, and the
+CPU's features by `cpuid`. MMX, KNI (SSE) and 3DNow! are each recorded
+(`GIsMMX`, `GIsKatmai`, `GIs3DNow`) only when the CPU has it and the command
+line lacks `-nommx`, `-nokni` and `-nok6` respectively. Galaxy's mixer picks
+its routines by them ([Galaxy](galaxy-dll.md#hardware-and-the-console)); no
+other DLL was checked for them.
+
 ## The script interpreter
 
 How the original runs UnrealScript, for comparison with the fork's VM

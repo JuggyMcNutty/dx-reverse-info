@@ -52,7 +52,8 @@ Each of these is a Win32 dependency that needs a replacement or a decision.
 Biggest single item. The launcher constructs `WWizardDialog`, `WWizardPage`,
 `WListBox`, `WButton`, `WCoolButton`, `WLabel`, `WEdit`, `WUrlButton` — all thin
 wrappers over Win32 controls, with dialog templates stored as **resources inside
-`Window.dll`** and loaded via `hInstanceWindow`.
+`Window.dll`** and loaded via `hInstanceWindow` (their layouts:
+[`wizard.md`](wizard.md#page-layouts)).
 
 None of this survives a port. The replacement needs six screens; the control inventory
 and IDs are in [`wizard.md`](wizard.md), and every user-visible string is already
@@ -84,7 +85,8 @@ skip the handoff, or `-changevideo` on a running game would be swallowed.
 ### 5. Splash screen
 
 `LoadFileToBitmap` on a `.bmp` from `Window.dll`. Trivial to replace; the asset is
-`<Package>Logo.bmp` or `..\Help\Logo.bmp`.
+`..\Help\<Package>Logo.bmp` or `..\Help\Logo.bmp`, shown in `DeusEx.exe`'s dialog 119
+([`launch-flow.md`](launch-flow.md#3-splash-screen-0x10908e930x10909205)).
 
 ### 6. ANSI/Unicode dual paths
 

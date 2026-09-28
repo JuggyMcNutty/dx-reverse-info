@@ -10,7 +10,9 @@ Every claim cites the address it was read from. Imagebase `0x10900000`.
 
 Runs **before** any engine init, and is skipped entirely if the command line contains
 any of `Server`, `NewWindow`, `changevideo`, `TestRenDev` (substring match via
-`appStrfind`, `0x10908A97`–`0x10908AE5`).
+`appStrfind`, `0x10908A97`–`0x10908AE5`). This check reads the command line as Windows
+gives it, the program's own path included, so an install path holding one of the four
+words skips forwarding too.
 
 Otherwise:
 
@@ -23,7 +25,18 @@ Otherwise:
    lpData = <rest of command line> }`.
 4. Clear `GIsStarted`, `return 0` — this process exits without starting the engine.
 
+"Past argv[0]" is past the first space: a program path quoted because it holds spaces
+is cut inside itself, and what is sent starts with the rest of the path.
+
 > The running instance opens the requested URL/map; the second process is only a messenger.
+
+**The receiver** is the running instance's log window (`WLog`, Window.dll; the SDK's
+`Window/Inc/Window.h`). On `WM_COPYDATA` it logs `WM_COPYDATA: <line>`, runs `TakeFocus`
+(the game's window to the front, [§7](#7-console-commands--launchexec__exec-0x10913650)),
+then `Open <first token>` unless that token starts with `-`
+([`OPEN`](engine-dll.md#starting-the-game-engine)). It runs them on the engine, which
+the log window is only given when the main loop starts (`MainLoop`, `0x10914630`):
+a line that arrives before then -- during the wizard -- does nothing.
 
 ## 2. Engine bootstrap (`0x10908CDB`–`0x10909205`)
 
@@ -40,12 +53,23 @@ Otherwise:
 
 ## 3. Splash screen (`0x10908E93`–`0x10909205`)
 
-Bitmap path: `<appPackage()>Logo.bmp`, falling back to `..\Help\Logo.bmp` if the first
-does not exist (`GFileManager->FileSize`, `0x1090907F`).
+Bitmap path: `..\Help\<Package>Logo.bmp` -- `..\Help\DeusExLogo.bmp` -- built as
+`..\Help` joined with the package name, then `Logo.bmp` (`0x10908F4F`–`0x10908F7D`),
+falling back to `..\Help\Logo.bmp` if the first does not exist
+(`GFileManager->FileSize`, `0x1090907F`).
 
 Shown via `InitSplash` (`0x10901AA0`) **unless** any of: `-log`, `-server`,
-or `TestRenDev` present (`0x1090917B`–`0x109091FD`). Both halves of this condition were
-confirmed live — see [`live-verification.md`](live-verification.md).
+or `TestRenDev` present (`0x1090917B`–`0x109091FD`). Like forwarding, these three
+checks read the whole command line, the program's path included. Both halves of this
+condition were confirmed live — see [`live-verification.md`](live-verification.md).
+
+The splash is `DeusEx.exe`'s own dialog 119, opened on a thread of its own: a popup
+with a dialog frame, kept off the taskbar (a tool window), holding one bitmap control.
+Its template's image is the exe's bitmap #101, a 583×70 "DEUS EX" banner, which the
+file's bitmap replaces. In the SDK's source the window is sized to the bitmap,
+centred on the screen, and put on top once, then released. It closes while the
+wizard shows and reopens after ([§5](#5-initengine-0x1090a050)), and closes for good
+once there is an engine ([§9](#9-main-loop-and-shutdown-0x109097eb-onward)).
 
 > ⚠ **A missing splash bitmap is fatal.** The fallback is applied without checking that
 > `..\Help\Logo.bmp` exists (`0x109090A4`). If neither bitmap is present, `InitSplash`
@@ -77,9 +101,14 @@ Returns a constructed `UGameEngine*`, or `0` to abort startup. See
 5. If `FirstRun < 220` → migrate savegames (§6).
 6. `-consolecommand=<cmd>` → run through `GExec`, then **return 0** (never launches).
 7. `-testrendev=<class>` → load the render-device class, write `Detected.ini`, **return 0**.
-8. Otherwise run the config wizard if one is warranted.
+   Before trying the device it sets `[<class>] DescFlags=2` (incompatible) and flushes
+   the configuration (`0x1090A86D`, `0x1090A886`); a device that starts writes its own.
+8. Otherwise run the config wizard if one is warranted, closing the splash while it
+   shows (`0x1090B7FC`) and reopening it after (`0x1090B885`); a cancelled wizard
+   returns 0.
 9. Create `Running.ini` (the unclean-shutdown sentinel, `0x1090B903`).
-10. Clamp `FirstRun` up to **1100** and write it back (`0x1090B997`).
+10. Clamp `FirstRun` up to **1100** and write it back (`0x1090B997`) -- written every
+    time, also when it already was 1100 or more.
 11. CD check (§8).
 12. `StaticLoadClass(UGameEngine, "ini:Engine.Engine.GameEngine")` (`0x1090BB2A`),
     `ConstructObject_UEngine` (`0x10920920`), then `Engine->Init()` (vtable +100).
@@ -108,22 +137,35 @@ Enumerate `..\Save\*.usa`. For each, parse the slot index from the filename
 ## 8. CD check (`0x1090B9CE`–`0x1090BAFD`)
 
 Read `[Engine.Engine] CdPath`. If it is non-empty, loop until
-`<CdPath>Textures\Palettes.utx` exists; each failed pass shows a `MessageBoxW`
-(`MB_OKCANCEL|MB_ICONEXCLAMATION|MB_SETFOREGROUND|MB_TASKMODAL`, `0x52001`) with
+`<CdPath>Textures\Palettes.utx` -- the two joined with a backslash where `CdPath` lacks
+one -- is **larger than 0 bytes** (`0x1090BA82`); each failed pass shows a `MessageBoxW`
+(`MB_OKCANCEL|MB_TASKMODAL|MB_SETFOREGROUND|MB_TOPMOST`, `0x52001`, no icon) with
 `InsertCdText` / `InsertCdTitle` from the **`Window`** localization package.
-Cancel → `GIsCriticalError = 1; ExitProcess(0)`.
+Cancel → `GIsCriticalError = 1; ExitProcess(0)` (`0x1090BAE8`) -- after step 9, so
+`Running.ini` stays and the next launch opens in RecoveryMode.
 
 > Shipped `DeusEx.ini` sets `CdPath=..\`, so on a GOG/Steam install the check passes
 > against the game's own `Textures\` directory and never prompts.
 
 ## 9. Main loop and shutdown (`0x109097EB` onward)
 
-- `-EXEC=<file>` → runs `exec <file>` through the engine's client console (`0x109097E1`).
-- `MainLoop(Engine)` (`0x10914630`).
-- Delete `Running.ini` (`0x109098CC`) — **the clean-shutdown marker**.
-- Remove the `IsBrowser` property, `appPreExit()`, `appExit()`.
+With an engine from `InitEngine`:
 
-> If the process dies before step 3, `Running.ini` survives and the **next** launch
+- Log `LocalizeGeneral("Run")`, close the splash (`0x10909443`).
+- `-EXEC=<file>` → runs `exec <file>` on the client's first viewport, if it has one
+  (`0x109097E1`).
+- `MainLoop(Engine)` (`0x10914630`), unless an exit is already requested.
+
+Then, whatever `InitEngine` returned:
+
+- Delete `Running.ini` (`0x109098CC`) — **the clean-shutdown marker**. It is the only
+  deletion: a cancelled wizard, `-consolecommand=`, `-testrendev=` and the safe-mode
+  relaunch all end here too, while a crash, which leaves through the error handler,
+  and the CD prompt's `ExitProcess` never reach it.
+- Remove the `IsBrowser` property, log `LocalizeGeneral("Exit")`, close the log window,
+  `appPreExit()`, `appExit()`.
+
+> If the process dies before this, `Running.ini` survives and the **next** launch
 > shows the recovery wizard. That is the entire crash-detection mechanism.
 
 ## Exit paths
@@ -132,9 +174,11 @@ Cancel → `GIsCriticalError = 1; ExitProcess(0)`.
 |---|---|
 | Forwarded to a running instance (§1) | returns 0, engine never starts |
 | `-make` | fatal error via `GError` |
-| `-consolecommand=` | command runs, returns 0 |
-| `-testrendev=` | writes `Detected.ini`, returns 0 |
-| Wizard cancelled (`DoModal` → 0) | returns 0 |
-| SafeOptions "Next" | `ShellExecute`s a **new process** with safe flags, then ends this one |
-| CD check cancelled | `ExitProcess(0)` |
+| `-consolecommand=` | command runs; `Running.ini` deleted; returns 0 |
+| `-testrendev=` | writes `Detected.ini`; `Running.ini` deleted; returns 0 |
+| Wizard cancelled (`DoModal` → 0) | `Running.ini` deleted; returns 0 |
+| SafeOptions "Next" | `ShellExecute`s a **new process** with safe flags; `Running.ini` deleted; this one ends |
+| SafeMode "Web" | opens the web page; `Running.ini` deleted; returns 0 |
+| CD check cancelled | `ExitProcess(0)`; `Running.ini` stays |
 | Normal | `MainLoop` → delete `Running.ini` → `appExit` |
+| Crash | the error handler; `Running.ini` stays |

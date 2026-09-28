@@ -209,6 +209,9 @@ under its first 0.45 s; outside the zone the shot ends with the sample.
   `Use3dHardware` is on. With A3D 2.0, `RenderAudioGeometry` (`0x106084d0`)
   hands the level's polygons to A3D for its wave tracing. `Init` also turns
   off Aureal's splash screen in the registry.
+- **CPU extensions:** `Init` turns off the mixer's MMX, KNI and 3DNow!
+  routines where Core recorded none -- as `-nommx`, `-nokni` and `-nok6`
+  make it ([Core](core-dll.md#the-platforms-start)).
 - **Console commands** (`Exec`, `0x10607070`): `CDTRACK`, `CDVOLUME`,
   `MUSICORDER` (a jump to an order, logged as "Galaxy order"), `ASTAT AUDIO`
   and `ASTAT DETAIL` (each channel's sound, and its volume, pitch, radius and

@@ -118,7 +118,8 @@ Shipped value: `GameEngine=DeusEx.DeusExGameEngine`.
 | `Detected.ini` | create | `0x1090A9DB` | output of `-testrendev=` — **also written during first-run renderer detection**, which spawns `-testrendev=` children via `ShellExecute` (`0x1090DB18`) |
 | `<appPackage()>.ini` | delete | `0x10912508` | SafeOptions "Reset all configuration options" |
 | `..\Save\*.usa` | enumerate | `0x1090A2BA` | savegame migration |
-| `<Package>Logo.bmp`, `..\Help\Logo.bmp` | read | `0x1090907F` | splash bitmap |
+| `..\Help\<Package>Logo.bmp`, `..\Help\Logo.bmp` | read | `0x1090907F` | splash bitmap |
+| `..\Help\LogoSmall.bmp` | read | `0x1090C780` | the wizard's logo |
 | `<CdPath>Textures\Palettes.utx` | probe | `0x1090BA75` | CD check |
 
 ## Written by the log window

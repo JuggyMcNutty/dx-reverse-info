@@ -498,6 +498,29 @@ the level's time as a float, the first deleted actor, 16 text blocks, and
 the travel info: a count, then each key and value (package versions 61 and
 62 wrote the keys and the values as two lists).
 
+## Starting the game engine
+
+- **`UGameEngine::Init`** (`0x103891c0`): after the client, the renderer and
+  the Entry level (`entry.dx`), the start URL. It is the command line's first
+  token -- or its second, if the first is `SERVER` -- but only when the
+  command line has `-hax0r` or `-server`, and not when the token starts with
+  `-`. Otherwise, and when there is no token, it is `FURL::DefaultLocalMap`,
+  which Deus Ex sets to `DX.dx` here. So a client given a map on its command
+  line still starts at `DX.dx` unless `-hax0r` comes with it. A URL that does
+  not parse, or a level that cannot be loaded, is fatal. Then the input, the
+  console (`ini:Engine.Engine.Console`), the viewport and the audio.
+- **`UEngine::InitAudio`** (`0x1037fe50`): on a client with `UseSound`, and
+  without `-nosound`, creates `ini:Engine.Engine.AudioDevice` and starts it;
+  one that fails to start is logged ("Audio initialization failed.") and
+  dropped. With `-nosound` there is no audio subsystem at all: no sound, no
+  music.
+- **`OPEN` and `START`** (`UGameEngine::Exec`, `0x1038a030`): with a
+  viewport, the URL becomes its next travel -- partial for `OPEN`, absolute for
+  `START`; without one, the engine browses to it at once. A failure logs "Open
+  failed: " or "Start failed: " and the reason. There is no cheat check: this
+  is what a line forwarded to the running game runs
+  ([the receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+
 ## Small
 
 - **`SetInstantSoundVolume`, `SetInstantSpeechVolume`,
