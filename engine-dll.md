@@ -651,7 +651,11 @@ the travel info: a count, then each key and value (package versions 61 and
 - **An actor's tick** (`AActor::Tick`, `0x103a1aa0`), ticking as a
   standalone game's ([by role](network.md#replication)): nothing
   else in stasis; its animation; then its script `Tick`, its state code,
-  its timer, its `LifeSpan` and its physics, in that order.
+  its timer, its `LifeSpan` and its physics, in that order. A player's
+  pawn with a player (not a camera) has, in place of `Tick`, its player's
+  input read, `PlayerInput` and `PlayerTick`, and the input read again
+  with −1 (cleared) -- so its physics, later in the same tick, take the
+  move `PlayerTick` makes.
 
 ## Small
 
