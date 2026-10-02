@@ -296,14 +296,24 @@ moves the proxy to the current particle (`FarMoveActor`) with its scale and
 glow, and deletes a particle that cannot be moved to.
 
 **`ULaserIterator`** holds 8 beams (`ULaserIterator.h`), each drawn as a run
-of segments. `CurrentItem` (`0x1001a1a0`):
+of segments -- the script's `AddBeam` gives a beam its length / 16 + 1 (/ 15
++ 1 with `bRandomBeam`), and `Init` makes `MaxItems` the active beams'
+segments and one more, and starts `prevLoc` and `savedLoc` at the emitter.
+`CurrentItem` (`0x1001a1a0`):
 
-- finds the beam and segment of the current item;
-- moves and turns the proxy (a `LaserProxy`) onto that stretch of the beam;
-- with `bRandomBeam`, jitters each segment's end by a random unit vector and
-  aims the segment along the result: the electricity of
-  `ElectricityEmitter`;
-- after the last item, leaves the proxy at a segment chosen at random.
+- finds the current item's beam, the first whose segments, counted over the
+  active beams, pass the index -- past them all (the extra item), the first
+  beam, at its end;
+- puts the proxy (a `LaserProxy`: `DeusExItems.LaserBeam`, an open square
+  tube, unlit) at k/N of the beam's length for its k-th of N segments
+  (`FarMoveActor`), turned as the beam (`MoveActor` with no move);
+- with `bRandomBeam` -- the electricity of `ElectricityEmitter` -- moves
+  that spot by a random unit vector and the last segment's, aims the
+  segment from it back at where the last one's would end, and moves that
+  end on as far again (`prevLoc`, `prevRand`);
+- keeps one segment to draw again: while `savedLoc` is still the
+  emitter's, this one, with the items so far over all of them for its
+  chance; the extra item goes there.
 
 ## Bug locations
 

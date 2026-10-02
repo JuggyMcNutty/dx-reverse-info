@@ -349,7 +349,19 @@ shape, `LE_None`'s.
   and brightness above). The sum is scaled by 1.4 × `ScaleGlow`, and the
   zone's ambient light in `FGetHSV`'s colour and the actor's `AmbientGlow` ÷
   255 added -- 255 pulses, 0.25 + 0.2 sin(8 t) of the viewport's time --,
-  each channel at most 1. An unlit draw (`PF_Unlit`) is mid-grey.
+  each channel at most 1. An unlit draw (`PF_Unlit`, the actor's or a
+  material's) is `AmbientGlow` / 256 + `ScaleGlow` / 2, held to 0-1 --
+  mid-grey for most (`0x10b0f6e0`).
+- **Which faces are drawn.** `DrawLodMesh` keeps a face whose corners are
+  not all beyond one side of the view, and that faces the eye -- (A − B) ×
+  (C − A) against A, in view space, times the frame's `Mirror`, under 0 --
+  unless the actor's flags or its material's make it two-sided
+  (`PF_TwoSided`; `0x10b0ff9e`, and `0x10b10320` in its second face loop). `DrawMesh`, for a plain mesh, culls a face
+  turned away only when its own flags are `PF_Flat` without `PF_TwoSided`
+  or `PF_Invisible` (`0x10b0dc8a`). The actor's flags are its style's
+  (masked, translucent, modulated) and `bMeshEnviroMap`'s
+  (`0x10b26230`): none makes a face two-sided. `D3DDrv` draws with culling
+  off, so a translucent mesh's back faces stay unseen only for this.
 
 ## The database
 
