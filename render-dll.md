@@ -242,7 +242,9 @@ time (searchlight, slow and fast wave, cloud cast, shock, disco,
 interference, rotor), and whether its brightness wavers from texel to texel
 (torch and fire waver, watery shimmer). The torch and fire wavers, the
 watery shimmer, warp, the omni bump map and the unused slot have the plain
-shape, `LE_None`'s.
+shape, `LE_None`'s -- and so has the cloud cast: its function
+(`0x10b04380`) only calls `SpatialPlain`, though the table counts its shape
+as changing.
 
 - **The colour** is Engine.dll's `FGetHSV` (`0x103ec8d0`) at full value:
   the value makes a brightness of 0.7 b / (√b + 0.01), b = 1.4 × value ÷
@@ -294,9 +296,17 @@ shape, `LE_None`'s.
   again; a moving light is run without shadows. As a light is added
   (`MergeLight`, `0x10b03040`), a torch waver dims each texel by a random
   amount of up to 5%, a fire waver up to 20%, and a watery shimmer up to
-  40%. The random numbers are a table of 256 drawn afresh each frame
-  (`TickRandoms`, `0x10b13080`, from the level's time), the shimmer's a
-  table of its own that eases toward fresh draws 35 times a second.
+  40%: its illumination i becomes i × (1 − amount + amount × a draw) − 0.5,
+  cut down, the draws taken in turn from 0 over the texels of the light's
+  rectangle on the map, row by row, round a table of 256.
+- **The random tables** (`TickRandoms`, `0x10b13080`, each frame from the
+  level's time): 256 fresh draws -- the torch's and fire's --, and the
+  watery shimmer's own, each entry easing toward a draw: at each of 35
+  ticks a second the 16 entries the tick moves past take the fresh table's
+  draws as their targets, a sixteenth of the way a tick, and the others move
+  on that step for each tick passed; 16 ticks or more without a frame start
+  it over with fresh draws. So an entry glides to a new value every 16
+  ticks, under half a second, each held to 0-1.
 - **A texel's byte**, 0 to 127 a channel. The map starts at the zone's
   ambient light, `FGetHSV`'s colour times 64, rounded down. A light's
   shadow bits are unpacked into bytes (`ShadowFromBits`): each texel the
