@@ -362,6 +362,71 @@ none):
   1 − `Buoyancy` / `Mass`, the mass floored at 1, so a massless actor
   (Deus Ex's `GeneratorScout`, a pawn of mass 0) falls at full gravity.
 
+### The search
+
+`findPathToward` (`0x103db3f0`, `AActor* findPathToward(AActor* Goal, INT MaxNodes, ANavigationPoint** EndNode, INT bSinglePath)`)
+finds the node the goal is in or nearest (`GetPathnodeList`, `0x103c6490`),
+asks whether the goal itself can be walked to (`CanMoveTo` for a navigation
+point, `pointReachable` for a spot), and only then searches. `execFindPathToward`
+(`0x103bc9c0`) reads the goal, then `MaxNodes` (0 by default), then `bSinglePath`
+(1), and seeds the start node's `visitedWeight` with the node's own weight from
+the goal before the search (`0x103db875`, `0x103db980`). None of Deus Ex's eleven
+calls passes `MaxNodes`, so it is 0.
+
+- **`breadthPathFrom(StartNode, EndNode, MaxNodes, MoveFlags)`** (`0x103dcd60`),
+  the search itself. It walks **the level's navigation point list in order** from
+  the start node -- `Node = Node->nextNavigationPoint`, the same list
+  `clearPaths` walks -- expanding each, and gives up when a node it reaches is
+  marked as an end point:
+  - the cost of reaching a node over a reach spec (`LevelReachSpec::distance` at
+    its first dword, its `startActor` the second, `collisionRadius` the fourth,
+    `collisionHeight` the fifth, `reachFlags` the sixth) is
+    **`distance + nextNode->cost + node->visitedWeight + nextNode->bestPathWeight * (nextNode->bEndPoint ? 1 : 0)`**,
+    where `upstreamPaths` (the 16 ints at `0x320`) is the reverse travel
+    direction, so the node reached is the spec's `startActor`. A spec is skipped
+    where the pawn's collision radius or height is the larger, or where the
+    flags it needs are not all in the spec's (`(MoveFlags & spec.reachFlags) !=
+    spec.reachFlags`);
+  - a node is taken only when the cost is **less than** what it last cost;
+  - an open list of the nodes not yet expanded is kept sorted by that cost, out
+    of the nodes' own `nextOrdered` (`0x430`) and `prevOrdered` (`0x434`): a node
+    already in it is taken out first, then put back where the cost belongs,
+    found by walking the list (at most 500 steps -- "Breadth path list overflow
+    from %s", naming the **start** node -- after which the search gives up). The
+    list's front walks on as far as half the index the list has grown to. **No
+    node is ever taken off the open list to be expanded**: the walk is the
+    level's own list, so this bookkeeping is kept and never read;
+  - the caps: `MaxNodes` given, the search gives up after four nodes, silently;
+    otherwise after 1000, logging "1000 Navigation nodes". Both names the start
+    node;
+  - the route is the end node's `previousPath` (`0x43c`) back, the start node's
+    cleared (`StartNode->previousPath = 0`), and `ReverseRouteFor` (`0x10302ffe`)
+    reverses it.
+- **`clearPaths`** (`0x103da050`) resets what the search keeps in the nodes: for
+  every navigation point, `visitedWeight = 10000000`, `bEndPoint` off,
+  `nextOrdered = prevOrdered = 0`, and `cost` from the `SpecialCost` event with
+  the pawn given, or `ExtraCost`. Nothing else calls it: `execFindRandomDest`,
+  `execClearPaths` and `execComputePathnodeDistances` do, and no Deus Ex script
+  calls `ClearPaths`.
+- **`calcMoveFlags`** (`0x10326d10`) packs seven bits of the pawn's own flag
+  word (`0x318`) into the seven bits the reach specs carry: the move flags' bit 0
+  is the word's bit 13, bit 1 its bit 15, bit 2 its bit 14, bit 3 its bit 12,
+  bit 4 its bit 16, bit 5 its bit 17 and bit 6 its bit 1. The release's headers
+  do not name them.
+- **`definePathsFor(&Node, Pawn)`** (`0x103daaa0`, called through a thunk at
+  `0x10302522`) marks the end points. With no node, nothing. It sets that node's
+  `cost` to 1,000,000, then walks its `Paths` (`0x360`) and `PrunedPaths`
+  (`0x3a0`), 16 each, `-1` ending either: a spec that fits the pawn's radius,
+  height and move flags is traced between its two nodes
+  (`ULevel::LineCheck` through the function pointer at `ULevel+0xc0`, flags 6),
+  and where nothing blocks it -- or where what does is not an `AMover`, or is
+  one and the pawn's flag word has bit 16 and (bit 1 or the mover's flag word at
+  `0x4ec` does not have bit 3) -- the spec's **end** actor is marked as an end
+  point and given the spec's distance as its `bestPathWeight`. `findPathToward`
+  calls it on the goal-side node before searching, so the end points are that
+  node's forward neighbours: the search's whole job is the way back from the
+  goal to one of them.
+
 ### Teleporting an actor
 
 `SetLocation` is `ULevel::FarMoveActor(actor, spot, test, noCheck)`
