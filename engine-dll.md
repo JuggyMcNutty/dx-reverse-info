@@ -774,6 +774,18 @@ the travel info: a count, then each key and value (package versions 61 and
 
 ## Small
 
+- **`LevelInfo`'s clock** -- `Year`, `Month`, `Day`, `DayOfWeek`, `Hour`,
+  `Minute`, `Second` and `Millisecond` at `ALevelInfo+0x47c` to `0x49c` -- is
+  **the full year and the month 1 to 12**, and where it is filled is not found:
+  nothing in `Engine.dll` writes those offsets outside `ALevelInfo`'s own
+  constructor and assignment operator (the property system's copies), so it is
+  set somewhere this pass did not reach, or from the script side. What settles
+  the convention is the game's own use of them: they are `transient` in
+  `Engine.u`, and the one reader, `StatLog`'s date string, pads a month below
+  10 and writes the year as it stands -- a month from 0 or a year from 1900
+  would read wrong there. `MenuScreenSaveGame` builds its timestamp from
+  `DeusExSaveInfo`'s the same way, and those the fork already stores that way.
+
 - **`SetInstantSoundVolume`, `SetInstantSpeechVolume`,
   `SetInstantMusicVolume`** (`0x103e2850`, `0x103e28d0`, `0x103e2950`): hand
   the volume to the audio subsystem's own call for it (its virtuals at +0x90,
