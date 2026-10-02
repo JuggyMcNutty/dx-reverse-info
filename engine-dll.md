@@ -407,7 +407,13 @@ calls passes `MaxNodes`, so it is 0.
   `nextOrdered = prevOrdered = 0`, and `cost` from the `SpecialCost` event with
   the pawn given, or `ExtraCost`. Nothing else calls it: `execFindRandomDest`,
   `execClearPaths` and `execComputePathnodeDistances` do, and no Deus Ex script
-  calls `ClearPaths`.
+  calls `ClearPaths`. **So a search does not clear the end points, and neither
+  does anything else between searches** except an NPC wandering (which runs
+  `FindRandomDest`): the marks in a level are whatever the last flood left, of
+  whatever nodes it was run from, and the search stops at the first of them it
+  meets walking the list. The fork clears them before every search and marks
+  its own fresh set each time; that, and not the marking itself, is what a port
+  of `definePathsFor` in place of `MarkReachableNavEndPoints` gets wrong.
 - **`calcMoveFlags`** (`0x10326d10`) packs seven bits of the pawn's own flag
   word (`0x318`, `Pawn`'s bitfields) into the seven bits the reach specs carry,
   lowest first: `bCanWalk`, `bCanFly`, `bCanSwim`, `bCanJump`, `bCanOpenDoors`,
