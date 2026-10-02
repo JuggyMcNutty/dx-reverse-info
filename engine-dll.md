@@ -364,84 +364,118 @@ none):
 
 ### The search
 
-`findPathToward` (`0x103db3f0`, `AActor* findPathToward(AActor* Goal, INT MaxNodes, ANavigationPoint** EndNode, INT bSinglePath)`)
-finds the node the goal is in or nearest (`GetPathnodeList`, `0x103c6490`),
-asks whether the goal itself can be walked to (`CanMoveTo` for a navigation
-point, `pointReachable` for a spot), and only then searches. `execFindPathToward`
-(`0x103bc9c0`) reads the goal, then `MaxNodes` (0 by default), then `bSinglePath`
-(1), and seeds the start node's `visitedWeight` with the node's own weight from
-the goal before the search (`0x103db875`, `0x103db980`). None of Deus Ex's eleven
-calls passes `MaxNodes`, so it is 0.
+`findPathToward(Goal, bSinglePath, &BestPath, bClearPaths)` (`0x103db3f0`) and
+`findPathTo(Dest, bSinglePath, &BestPath, bClearPaths)` (`0x103dc1d0`, a point
+for the goal) have Unreal Tournament's shape. Their execs (`0x103bc9c0`,
+`0x103bc800`) read the goal, `bSinglePath` (0) and `bClearPaths` (1) -- none of
+Deus Ex's eleven `FindPathToward` calls nor its six `FindPathTo` calls passes
+either -- then clear `bShootSpecial` and `SpecialPause`, hand a found node that
+probes `SpecialHandling` to `HandleSpecial`, and drop `SpecialGoal` when the
+route is it. **Nothing fills `RouteCache`**: Deus Ex's `SetRouteCache`
+(`0x103dd7e0`) only logs "Hey, who called SetRouteCache?", and nothing calls it.
+On every way out the pawn is put back where it stood (`FarMoveActor` as a test,
+`noCheck`), for the search moves it onto nodes to ask what it can reach from
+them.
 
-- **`breadthPathFrom(StartNode, EndNode, MaxNodes, MoveFlags)`** (`0x103dcd60`),
-  the search itself. It walks **the level's navigation point list in order** from
-  the start node -- `Node = Node->nextNavigationPoint`, the same list
-  `clearPaths` walks -- expanding each, and gives up when a node it reaches is
-  marked as an end point:
-  - the cost of reaching a node over a reach spec (`LevelReachSpec::distance` at
-    its first dword, its `startActor` the second, `collisionRadius` the fourth,
-    `collisionHeight` the fifth, `reachFlags` the sixth) is
-    **`distance + nextNode->cost + node->visitedWeight + nextNode->bestPathWeight * (nextNode->bEndPoint ? 1 : 0)`**,
-    where `upstreamPaths` (the 16 ints at `0x320`) is the reverse travel
-    direction, so the node reached is the spec's `startActor`. A spec is skipped
-    where the pawn's collision radius or height is the larger, or where the
-    flags it needs are not all in the spec's (`(MoveFlags & spec.reachFlags) !=
-    spec.reachFlags`);
-  - a node is taken only when the cost is **less than** what it last cost;
-  - an open list of the nodes not yet expanded is kept sorted by that cost, out
-    of the nodes' own `nextOrdered` (`0x430`) and `prevOrdered` (`0x434`): a node
-    already in it is taken out first, then put back where the cost belongs,
-    found by walking the list (at most 500 steps -- "Breadth path list overflow
-    from %s", naming the **start** node -- after which the search gives up). The
-    list's front walks on as far as half the index the list has grown to. **No
-    node is ever taken off the open list to be expanded**: the walk is the
-    level's own list, so this bookkeeping is kept and never read;
-  - the caps: `MaxNodes` given, the search gives up after four nodes, silently;
-    otherwise after 1000, logging "1000 Navigation nodes". Both names the start
-    node;
-  - the route is the end node's `previousPath` (`0x43c`) back, the start node's
-    cleared (`StartNode->previousPath = 0`), and `ReverseRouteFor` (`0x10302ffe`)
-    reverses it.
-- **`clearPaths`** (`0x103da050`) resets what the search keeps in the nodes: for
-  every navigation point, `visitedWeight = 10000000`, `bEndPoint` off,
-  `nextOrdered = prevOrdered = 0`, and `cost` from the `SpecialCost` event with
-  the pawn given, or `ExtraCost`. Nothing else calls it: `execFindRandomDest`,
-  `execClearPaths` and `execComputePathnodeDistances` do, and no Deus Ex script
-  calls `ClearPaths`. **So a search does not clear the end points, and neither
-  does anything else between searches** except an NPC wandering (which runs
-  `FindRandomDest`): the marks in a level are whatever the last flood left, of
-  whatever nodes it was run from, and the search stops at the first of them it
-  meets walking the list. The fork clears them before every search and marks
-  its own fresh set each time; that, and not the marking itself, is what a port
-  of `definePathsFor` in place of `MarkReachableNavEndPoints` gets wrong.
+- **The goal falling.** A pawn not flying searches toward a falling pawn by
+  where it will land (`jumpLanding`), as a point.
+- **Two node lists** (`0x103da210`), each sorted by squared distance and 32 long
+  at most (`addPath`, `0x103dd170`, and `removePath`, `0x103dd2a0`, Unreal
+  Tournament's `FSortedPathList`): the navigation points within 800 units of the
+  pawn, and those within 800 of the goal -- or the goal alone, at 0, when it is a
+  navigation point. The same pass over the level's navigation list first clears
+  each node when `bClearPaths` is set -- `visitedWeight` 10,000,000, `bEndPoint`
+  off, `nextOrdered` and `prevOrdered` none, `cost` from `SpecialCost` or
+  `ExtraCost`, as `clearPaths` does -- so every search Deus Ex makes starts
+  clean, end points included. A pawn standing at its `MoveTarget` navigation
+  point -- height apart less than the two collision heights together, and
+  across less than its collision radius (squared and doubled for a player at an
+  `InventorySpot`) -- is **anchored** there, and gathers no list of its own.
+- **Where the pawn starts** (`findEndPoint`, `0x103da610`, Unreal Tournament's):
+  its nodes are dropped from the nearest until one is seen from its eye and
+  `pointReachable`. Within max(its radius, 48) of it across, and its height up
+  or down, the pawn is anchored there; otherwise that node is **the** end point,
+  its `bestPathWeight` its distance. None left: no path.
+- **Anchored**, the goal may be a step away. A navigation-point goal that is one
+  of the anchor's own reach specs, which the pawn fits and nothing it cannot
+  open blocks (`CanMoveTo`, `0x103dad20`), is the route itself; any other goal
+  within 800 units of the anchor, in its line of sight, and `pointReachable`
+  with the pawn moved onto the anchor (`0x103da880`), makes the anchor the route.
+  Otherwise **`definePathsFor`** (`0x103daaa0`) marks the anchor's forward
+  neighbours as the end points: the anchor's `cost` goes to 1,000,000; each of
+  its `Paths` (`0x360`) -- and once those end at a -1, its `PrunedPaths`
+  (`0x3a0`) -- that fits the pawn's radius, height and move flags is traced
+  between its two nodes (`ULevel::SingleLineCheck`, flags 6), and where nothing
+  blocks it, or what does is not an `AMover`, or is one the pawn can open
+  (`bCanOpenDoors`, and `bIsPlayer` or the mover not `bPlayerOnly`), the spec's
+  **end** node becomes an end point, the spec's distance its `bestPathWeight`.
+  `CanMoveTo` asks the same of one spec.
+- **Where the search starts**: a navigation-point goal itself, at weight 0.
+  Otherwise the goal's nodes are tried nearest first -- the goal in the node's
+  line of sight, the pawn moved onto the node, and the goal `actorReachable` (a
+  point `pointReachable`) from there -- and the first is the start, its
+  distance its weight. None: `findPathTo` fails; `findPathToward` takes the
+  nearest of them anyway for a pawn with `bHunting`, and otherwise tries the
+  second way below.
+- **`breadthPathFrom(Start, &EndNode, bSinglePath, MoveFlags)`** (`0x103dcd60`),
+  the search: best first, from the start over the reach specs the other way
+  round (`upstreamPaths`, `0x320`: the node reached is the spec's `startActor`),
+  each node it expands the next in its own **open list, kept sorted by what a
+  node cost to reach** (`nextOrdered`, `0x430`; `prevOrdered`, `0x434`), the
+  start its head with the start's weight as its `visitedWeight`:
+  - a node that is an end point ends the search: the start's `previousPath`
+    is cleared and that node is `EndNode`. A `bPlayerOnly` node is not expanded
+    for a pawn that is not the player, the start excepted;
+  - a spec is skipped where the pawn's collision radius or height is the larger,
+    or where the flags it needs are not all among the pawn's
+    (`(MoveFlags & reachFlags) != reachFlags`). What reaching its node costs is
+    **`distance + node.cost + expanded.visitedWeight + node.bestPathWeight` (the
+    last for an end point only)**, taken only where less than the node's
+    `visitedWeight`, with `previousPath` the node expanded;
+  - the node is taken out of the open list if it is in it and put back where its
+    cost belongs, found by walking the list from a **front** node when that
+    costs less than the new cost, else from the node expanded -- at most 500
+    steps, then "Breadth path list overflow from %s", the start's name, and no
+    path. The front starts at the start and moves on as the list grows: each
+    expanded node adds 1 to an index (a new node costing more than the front
+    1, one costing no more 1 less, a node moved in front of it 1 less), and the
+    front steps on along the list until it has stepped half that index,
+    counting a step even where the list ends;
+  - the caps: with `bSinglePath`, no path after four nodes, silently; otherwise
+    none after 1000, with "1000 navigation nodes searched from %s".
+  The route is the end node's `previousPath` chain back to the start: the end
+  node is where the pawn goes first.
+- **After a search**, unanchored and not single-path (`0x103db0e0`): the pawn's
+  other nodes are weighed against the end point, each its distance plus what the
+  search found it cost. One costing less than the end point's own sum, within
+  120 units of the pawn's height, and either on the far side of the pawn from
+  the route's first node or cheaper by 15% (or 150, whichever cuts deeper), is
+  a candidate; the cheapest candidate the pawn's eye sees and `pointReachable`
+  finds replaces the route's first node.
+- **The second way** (`findPathToward` only, no goal node reaching the goal and
+  no `bHunting`): the lists are gathered again -- the pawn's around wherever the
+  goal-node tries last moved it --, `definePathsFor` marks the forward
+  neighbours of the nearest of the pawn's nodes, `findEndPoint` runs, and the
+  search runs from the pawn's first node, its distance its weight. A route whose end lies no farther from the goal than the
+  pawn is taken, reversed (`ReverseRouteFor`, `0x103dd810`) to run from the
+  pawn's node; where the next node after it is within 120 units of the pawn's
+  height (or the pawn is anchored at the first), in sight and `pointReachable`,
+  the route starts there instead. A route that is only the anchor is no path.
+- **`HandleSpecial`** (`0x103c5de0`): the node's `SpecialHandling` answers. The
+  same node: the route stands. None: no path. Another actor: for a pawn with
+  `bCanDoSpecial` it becomes `SpecialGoal`, and the route is that actor where
+  `actorReachable` -- asked again when it too probes `SpecialHandling`, its own
+  answer taken where reachable and not the first node -- or else the way to it
+  (`findPathToward`, clearing), unless that is the first node; without
+  `bCanDoSpecial`, or with nothing found, no path.
+- **`clearPaths`** (`0x103da050`) does what the lists' pass does with
+  `bClearPaths`, and `execFindRandomDest`, `execClearPaths` and
+  `execComputePathnodeDistances` call it.
 - **`calcMoveFlags`** (`0x10326d10`) packs seven bits of the pawn's own flag
   word (`0x318`, `Pawn`'s bitfields) into the seven bits the reach specs carry,
   lowest first: `bCanWalk`, `bCanFly`, `bCanSwim`, `bCanJump`, `bCanOpenDoors`,
   `bCanDoSpecial` and `bIsPlayer` (the pawn word's bits 13, 15, 14, 12, 16, 17
   and 1).
-- **`definePathsFor(&Node, Pawn)`** (`0x103daaa0`, called through a thunk at
-  `0x10302522`) marks the end points. With no node, nothing. It sets that node's
-  `cost` to 1,000,000, then walks its `Paths` (`0x360`) and `PrunedPaths`
-  (`0x3a0`), 16 each, `-1` ending either: a spec that fits the pawn's radius,
-  height and move flags is traced between its two nodes
-  (`ULevel::LineCheck` through the virtual at vtable slot `0x30`, flags 6), and
-  where nothing blocks it -- or where what does is not an `AMover`, or is one
-  and the pawn can open doors (`bCanOpenDoors`) and is either the player
-  (`bIsPlayer`) or the mover is not the player's alone (`AMover`'s `bPlayerOnly`,
-  bit 3 of its flag word at `0x4ec`) -- the spec's **end** actor is marked as an
-  end point and given the spec's distance as its `bestPathWeight`. `findPathToward`
-  calls it before searching.
-- **Which node `definePathsFor` is given** is not settled: `findPathToward` takes
-  its node from `GetPathnodeList` on the **goal's** location
-  (`0x103db600`, `0x103db932`), which would make the end points the goal's own
-  forward neighbours -- and the search walks the level's list **backwards** from
-  the goal, so it would never meet one. Marking instead from the node the pawn
-  stands on (the reading that suits a backward search stopping at what the pawn
-  can walk to) is what the fork tried, and neither reading reproduced the
-  original's routes (MoveConsole, 47 of Liberty Island's 52 pawns' distance
-  moved against the original's, where the fork's own marking gives 50). What is
-  missing is therefore something in `GetPathnodeList`'s node list or in the
-  goal-side `findPathToward` flow between the two calls, not the marking itself.
 
 ### Teleporting an actor
 
