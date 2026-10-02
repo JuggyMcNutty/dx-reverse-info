@@ -143,17 +143,24 @@ The renderer keeps it; the engine and the scripts read it
 
 ## A pawn's attachments
 
-After a pawn's mesh, `DrawActorSprite` draws:
+After a pawn's mesh, `DrawActorSprite` draws what it holds, and only where
+the mesh has a weapon triangle (`DrawMesh` and `DrawLodMesh` note its place,
+`GWeaponCoords`, and that they found one, `GMeshHadWeaponTriangle`); a mesh
+without one draws nothing more:
 
-- when the mesh has a weapon triangle (`DrawMesh` and `DrawLodMesh` note its
-  place, `GWeaponCoords`): the pawn's `Weapon` in its third-person mesh and
-  scale at the triangle, in the pawn's style and lit as the pawn; with a
-  muzzle flash, the weapon's `MuzzleFlashMesh`, which no Deus Ex weapon has;
-  the flag its `PlayerReplicationInfo` carries (`HasFlag`, a multiplayer
-  game's); and it sends its `Shadow` an `Update`, which does nothing in Deus
-  Ex;
-- when it has none: its `SelectedItem` in its third-person mesh, where the
-  item is.
+- **with a `Weapon`**: the weapon in its third-person mesh and scale at the
+  triangle -- its own rotation zeroed for the draw, its style the pawn's --
+  lit as the pawn; with a muzzle flash, the weapon's `MuzzleFlashMesh`, which
+  no Deus Ex weapon has; the flag its `PlayerReplicationInfo` carries
+  (`HasFlag`, a multiplayer game's); and it sends its `Shadow` an `Update`,
+  which does nothing in Deus Ex. A weapon with no third-person mesh draws
+  nothing, and nothing else is drawn in its place;
+- **with none**: its `SelectedItem` the same way -- its third-person mesh and
+  scale at the triangle, rotation zeroed, in the pawn's style, lit as the
+  pawn: the player's multitool or lockpick in his hand, in third person.
+
+Each is drawn by swapping its third-person mesh and scale into its `Mesh` and
+`DrawScale` and the pawn's style into its `Style` for the draw, and back.
 
 ## Coronas
 
