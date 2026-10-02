@@ -267,10 +267,20 @@ corners, four edges and a centre.
   the two left corners and the left edge, and so on. A margin given above 0
   replaces it. When the box is narrower or shorter than two margins, both
   shrink in proportion.
-- **The pieces.** The corners are drawn at one texel a pixel, from their
-  inner corner. The edges and the centre are tiled at one texel a pixel
-  (`DrawIconPattern`, `0x10028770`: a source size of 0 tiles), unless
-  stretching is asked for across or down.
+- **The pieces**, in this order, each filling its band of the box: the four
+  corners, each in its two margins (the top-left from the box's corner to the
+  left and top margin lines, and so on); the left and right edges in their
+  margins' width, from the top margin line to the bottom one; the top and
+  bottom edges in their margins' height, from the left margin line to the
+  right one; and the centre between all four. Each is read from its texture
+  so that its **inner** side lies on the margin line -- a corner's inner
+  corner, an edge's inner side -- the source offset by the texture's size
+  less the margin on a left or top piece, 0 on a right or bottom one. The
+  corners are drawn at one texel a pixel; the edges and the centre are tiled
+  at one texel a pixel along their length (`DrawIconPattern`, `0x10028770`:
+  `DrawTile` with a source size of 0 tiling that axis, any other
+  stretching), unless stretching is asked for across or down. A box with no
+  width or height draws nothing.
 - **The game** passes no margins and no stretching in all 13 of its calls:
   the HUD's and the menus' frames are tiled.
 
