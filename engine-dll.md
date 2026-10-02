@@ -362,6 +362,75 @@ none):
   1 − `Buoyancy` / `Mass`, the mass floored at 1, so a massless actor
   (Deus Ex's `GeneratorScout`, a pawn of mass 0) falls at full gravity.
 
+### Reaching
+
+Whether a pawn can get somewhere is asked by moving it there and back
+(Unreal Tournament's shape, Deus Ex's numbers):
+
+- **`pointReachable(Dest, bKnowVisible)`** (`0x103c0d30`): no further than
+  1,000 units across; not into water unless the pawn is in water or can swim;
+  not into a pain zone whose damage it does not resist unless its feet are in
+  one already; seen from its eye (`FastLineCheck`) unless the caller knows;
+  the spot fitted for the pawn's size (`FarMoveActor` as a test, and back);
+  then `Reachable` within 15 units.
+- **`actorReachable(Other, bKnowVisible)`** (`0x103c0630`): what is not a pawn
+  no further than 800 units and not in a pain zone the pawn does not resist,
+  a pawn not with its feet in one; not in water unless the pawn can swim; a
+  line from the eye, level and movers, that nothing but `Other` stops (unless
+  known). A pawn within a blow -- min(1.5 times the radius, `MeleeRange`) plus
+  both radii -- is reached; else it is walked toward to within that reach,
+  or for one over 800 units off to 800 short of it, `Other` the goal. An
+  `Inventory` or a `Trigger` is walked to where the two cylinders touch (both
+  radii less 2), anything else to within 15; the goal given only for an actor
+  that blocks actors, or a `WarpZoneMarker`. The spot is fitted first, as
+  `pointReachable`'s is.
+- **`Reachable(Dest, Threshold, GoalActor)`** (`0x103c1000`): in a water zone
+  `swimReachable`; walking or swimming `walkReachable`; flying `flyReachable`;
+  any other physics, nothing.
+- **`walkReachable`** (`0x103c1b70`): up to 100 `walkMove`s toward the
+  destination, the collision radius at a time (a pawn that can jump at least
+  128), each threshold 4.1. It arrives within the threshold across and the
+  pawn's height up or down -- the goal's, when taller --, or on a slope (the
+  last floor's normal between 0.7 and 0.95) within what the slope rises over
+  the radius (46, or the goal's radius plus 15); a climb steeper than
+  0.8 (rise less height, squared, against the distance across, squared) ends
+  it. A fall: a flyer flies the rest (`flyReachable`), a jumper adds `R_JUMP`
+  and jumps (`FindBestJump`, the pawn moved to where it lands), another
+  retries in steps of `MaxStepHeight`. Into the void, or a pain zone its feet
+  do not resist, it fails; into water, a swimmer swims the rest. A
+  `WarpZoneMarker` goal is reached by being in its zone. The pawn and its
+  velocity are put back; the answer is the reach flags used.
+- **`flyReachable`** (`0x103c1190`), **`swimReachable`** (`0x103c15a0`): the
+  same with `flyMove` and `swimMove`, max(radius, 200) at a time, arriving
+  within the threshold and the pawn's height. A flyer that meets water swims
+  on if it can; a swimmer that leaves the water flies on if it can fly, or,
+  walking and within `MaxStepHeight` + 50 of the destination's height, climbs
+  out (a test move up by its height and `MaxStepHeight`, at least the rise)
+  and goes on as `flyReachable` would, `R_WALK` its flag.
+- **`walkMove(Delta, Hit, GoalActor, Threshold, bAdjust)`** (`0x103c3290`):
+  `ULevel::MoveActor` as a test that pawns do not stop, across only; blocked,
+  up by `MaxStepHeight`, across the rest, down again -- a wall too steep to
+  step (normal under 0.7) puts it back, 0 --; then down to the floor within
+  `MaxStepHeight` + 2: none, or one too steep, is -1 (put back to where it
+  dropped from, or with `bAdjust` to its start). Moving less than the
+  threshold is 0, the goal bumped 5, else 1. **`flyMove`** (`0x103c3900`)
+  moves along the whole delta and steps up over what blocks it;
+  **`swimMove`** (`0x103c3ca0`) as well, and a move that leaves the water is
+  taken back to the water's edge (`findWaterLine`, `0x103d3b10`, halving
+  between the two points until within a unit) and is 0.
+- **`FindBestJump(Dest, Vel, Landing, bMovePawn)`** (`0x103c2f50`): the jump
+  `SuggestJumpVelocity` (`0x103c2c80`) gives -- the time in the air for the
+  jump's own upward speed to come down to the destination's height, in
+  steps of 0.05 s under the zone's gravity (-100 where it points up), and the
+  speed across to cover the distance in it, at most `GroundSpeed` -- landed
+  (`jumpLanding`): it counts where it lands more than 8 units nearer, less
+  than 350 below its start, out of a pain zone it does not resist and out of
+  water unless it can swim ("Failing FBJ" logged for a fall of 350 or more).
+- **`AIDirectionReachable`**'s steps (above) are these moves, threshold 4.1,
+  no goal: a walk's fall retried at `MaxStepHeight`, its range classified
+  nearer, inside or beyond (`ClassifyDistanceSq`, `0x103c7f80`).
+  `jumpReachable` (`0x103c2380`) has no caller.
+
 ### The search
 
 `findPathToward(Goal, bSinglePath, &BestPath, bClearPaths)` (`0x103db3f0`) and
