@@ -243,6 +243,24 @@ none):
 
 ## Moving
 
+- **A move** (`ULevel::MoveActor(Actor, Delta, Rotation, Hit, bTest,
+  bIgnorePawns, bIgnoreBases, bNoFail)`, `0x103990e0`): the actor's cylinder
+  checked from its place to 2 units past the move's end (the delta plus 2
+  along it). The hit is the first that blocks it; passed over are, with
+  `bIgnorePawns`, a pawn or a decoration that is not `bStatic` (the
+  decorations Deus Ex's, `0x103995f1`), with `bIgnoreBases` what the actor
+  stands on, and always what stands on it. Unless `bNoFail`, a blocked move
+  goes (its length + 2) × the hit's time − 2 along the delta -- 2 units short
+  of the hit -- or nowhere when that is 2 or less, the hit's time then the
+  distance gone over the delta's length (`0x103997c3`). So an actor stops 2
+  units off what it meets, and the trace's own backoff more
+  ([traces](#traces)): what falls rests 2 units and a tenth of its last
+  move + 2 over the floor -- Liberty Island's large crate placed on the
+  pier 2.27 over it, its last move 0.72. Unless a test, what stands on the
+  actor moves with it, an actor that is not a pawn and encroaches on
+  something there does not move (`CheckEncroachment`), and then come the
+  hit's `Bump`s (Deus Ex's `BumpWall` for the level) and the touches of
+  what it passed before the hit.
 - **Walking over the floor** (`APawn::physWalking`, `0x103ca540`): a
   walking pawn floats. Standing still on the same base, a line 20 units
   down from the middle of its cylinder's bottom that finds the floor 4.1 to
@@ -352,15 +370,40 @@ none):
   NPCs running and firing (`StrafeFacing`, in combat) and stepping back from a
   door (`StrafeTo`).
 - **`SetPhysics(newPhysics, newFloor)`** (`0x103c8ea0`; `AActor::setPhysics`,
-  `0x103c95f0`): when the physics changes to none, walking, rolling, rotating
-  or spider, the actor takes `newFloor` as its base -- through the floor's
-  `SupportActor` event, which bases it -- or, with none, finds its base below;
-  to any other, it leaves its base. None and rotating also stop its velocity
-  and acceleration. The scripts pass the wall hit as grenades, pool balls,
-  basketballs and fragments come to rest.
+  `0x103c95f0`): only a change of physics does anything. A change to none,
+  walking, rolling, rotating or spider takes `newFloor` as the actor's base,
+  unless it is already -- through the floor's `SupportActor` event, which
+  bases it (`SetSupportBase`, `0x103c9390`) -- or, with none, finds its base
+  below (`FindBase`, `0x103c9470`: what a box of its size meets within 8
+  units down, anything colliding or the level, unless that stands on it); a
+  change to any other leaves its base. None and rotating also stop its
+  velocity and acceleration, unless the floor's event changed the physics
+  again. The scripts pass the wall hit as grenades, pool balls,
+  basketballs and fragments come to rest. Deus Ex's `SupportActor`s bounce a
+  pawn or the player off the one it lands on and have it stomped
+  (`ScriptedPawn`, `DeusExPlayer`), and push off a decoration that cannot be
+  a base (`DeusExDecoration`).
 - **Falling in water** (`physFalling`, `0x103d0a50`): gravity is scaled by
   1 − `Buoyancy` / `Mass`, the mass floored at 1, so a massless actor
   (Deus Ex's `GeneratorScout`, a pawn of mass 0) falls at full gravity.
+- **Landing** (`processLanded`, `0x103cef60`), from `physFalling` when its
+  move meets a floor (normal over 0.7), each move `MoveActor`'s (above): in
+  a `bBounceVelocity` zone with a velocity, what is not a pawn is thrown
+  again, the zone's velocity and 80 up. A pawn with nothing under 0.9 of
+  its box within its radius × 0.2 + 8 down is fitted (`FindSpot`, 1.1 of
+  its size) and, moved, put there with up to 30 units a second across added
+  at random, still falling. A decoration landed fewer than five times in a
+  row (`numLandings`), with nothing under its middle within its height and
+  radius + 8, traces four boxes (half its radius, its height) 8 down from
+  its corners: more than one free, one of each diagonal pair at least,
+  sends it off the ledge at (x, y, ½) × 2v -- x and y each axis's free
+  corners less the other side's, v its fall speed held between 30 and its
+  radius + 30 -- and counts the landing. A `bSlidingCarcass`
+  landing on a slope (normal under 0.9) bounces off it, 120 along the
+  normal and 70 up. Else the count goes to 0, `Landed` is sent, and if the
+  actor is still falling `setPhysics` takes walking (a pawn) or none, the
+  floor the actor hit -- the `LevelInfo` for the world -- given for its
+  base; a pawn walking walks out the rest of the tick.
 
 ### Reaching
 
@@ -408,7 +451,8 @@ Whether a pawn can get somewhere is asked by moving it there and back
   out (a test move up by its height and `MaxStepHeight`, at least the rise)
   and goes on as `flyReachable` would, `R_WALK` its flag.
 - **`walkMove(Delta, Hit, GoalActor, Threshold, bAdjust)`** (`0x103c3290`):
-  `ULevel::MoveActor` as a test that pawns do not stop, across only; blocked,
+  `ULevel::MoveActor` as a test that pawns and decorations do not stop
+  (`bIgnorePawns`, [moving](#moving)), across only; blocked,
   up by `MaxStepHeight`, across the rest, down again -- a wall too steep to
   step (normal under 0.7) puts it back, 0 --; then down to the floor within
   `MaxStepHeight` + 2: none, or one too steep, is -1 (put back to where it
