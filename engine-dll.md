@@ -409,23 +409,33 @@ calls passes `MaxNodes`, so it is 0.
   `execClearPaths` and `execComputePathnodeDistances` do, and no Deus Ex script
   calls `ClearPaths`.
 - **`calcMoveFlags`** (`0x10326d10`) packs seven bits of the pawn's own flag
-  word (`0x318`) into the seven bits the reach specs carry: the move flags' bit 0
-  is the word's bit 13, bit 1 its bit 15, bit 2 its bit 14, bit 3 its bit 12,
-  bit 4 its bit 16, bit 5 its bit 17 and bit 6 its bit 1. The release's headers
-  do not name them.
+  word (`0x318`, `Pawn`'s bitfields) into the seven bits the reach specs carry,
+  lowest first: `bCanWalk`, `bCanFly`, `bCanSwim`, `bCanJump`, `bCanOpenDoors`,
+  `bCanDoSpecial` and `bIsPlayer` (the pawn word's bits 13, 15, 14, 12, 16, 17
+  and 1).
 - **`definePathsFor(&Node, Pawn)`** (`0x103daaa0`, called through a thunk at
   `0x10302522`) marks the end points. With no node, nothing. It sets that node's
   `cost` to 1,000,000, then walks its `Paths` (`0x360`) and `PrunedPaths`
   (`0x3a0`), 16 each, `-1` ending either: a spec that fits the pawn's radius,
   height and move flags is traced between its two nodes
-  (`ULevel::LineCheck` through the function pointer at `ULevel+0xc0`, flags 6),
-  and where nothing blocks it -- or where what does is not an `AMover`, or is
-  one and the pawn's flag word has bit 16 and (bit 1 or the mover's flag word at
-  `0x4ec` does not have bit 3) -- the spec's **end** actor is marked as an end
-  point and given the spec's distance as its `bestPathWeight`. `findPathToward`
-  calls it on the goal-side node before searching, so the end points are that
-  node's forward neighbours: the search's whole job is the way back from the
-  goal to one of them.
+  (`ULevel::LineCheck` through the virtual at vtable slot `0x30`, flags 6), and
+  where nothing blocks it -- or where what does is not an `AMover`, or is one
+  and the pawn can open doors (`bCanOpenDoors`) and is either the player
+  (`bIsPlayer`) or the mover is not the player's alone (`AMover`'s `bPlayerOnly`,
+  bit 3 of its flag word at `0x4ec`) -- the spec's **end** actor is marked as an
+  end point and given the spec's distance as its `bestPathWeight`. `findPathToward`
+  calls it before searching.
+- **Which node `definePathsFor` is given** is not settled: `findPathToward` takes
+  its node from `GetPathnodeList` on the **goal's** location
+  (`0x103db600`, `0x103db932`), which would make the end points the goal's own
+  forward neighbours -- and the search walks the level's list **backwards** from
+  the goal, so it would never meet one. Marking instead from the node the pawn
+  stands on (the reading that suits a backward search stopping at what the pawn
+  can walk to) is what the fork tried, and neither reading reproduced the
+  original's routes (MoveConsole, 47 of Liberty Island's 52 pawns' distance
+  moved against the original's, where the fork's own marking gives 50). What is
+  missing is therefore something in `GetPathnodeList`'s node list or in the
+  goal-side `findPathToward` flow between the two calls, not the marking itself.
 
 ### Teleporting an actor
 
