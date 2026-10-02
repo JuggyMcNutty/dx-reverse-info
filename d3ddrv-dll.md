@@ -14,7 +14,7 @@ How it was read: [working on the binaries](README.md#working-on-the-binaries).
 | Source | `D:\prj\Clean\D3DDrv\Src\Direct3D7.cpp` (March 2001, with the game's other DLLs) |
 | API | DirectDraw 7 + Direct3D 7, one class: `UD3DRenderDevice` over `URenderDevice` |
 | Image | base `0x10000000`, 337 functions, all exports C++-mangled methods |
-| Options | `UseMultitexture`, `UseVertexFog`, `UseGammaCorrection`, `UsePalettes`, `UseMipmapping`, `UseTrilinear`, `Use32BitTextures`, `UseVSync`, `UseTripleBuffering`, `UsePrecache`, `UseAGPTextures`, `UseVideoMemoryVB`, `Use3dfx` |
+| Options | `UseMipmapping`, `UseTrilinear`, `UseMultitexture`, `UsePalettes`, `UseGammaCorrection`, `Use3dfx`, `UseTripleBuffering`, `UseVSync`, `UsePrecache`, `UseVideoMemoryVB`, `UseAGPTextures`, `UseVertexFog` (`StaticConstructor`, `0x10001880`); the game's ini also has `Use32BitTextures`, which nothing reads |
 
 The fixed state it draws with (`SetRes`): no culling, Z at less-equal,
 dithering on, the masked alpha test at reference 127 with GREATER -- a masked
@@ -42,13 +42,10 @@ What decides how bright a lit wall is:
 
 - A light map arrives as `TEXF_RGBA7` -- a byte a channel holding 0 to 127
   ([the maps](render-dll.md#light-maps)) -- and is uploaded as 2c/255 of
-  full brightness for a byte c. In 16-bit textures (`Use32BitTextures`
-  off, the game's setting) the texels are scaled to saturation against
-  the map's cached maximum colour (`FTextureInfo::CacheMaxColor`, which
-  keeps twice each channel's largest byte), through X1R5G5B5 tables that
-  `Init` (`0x100029b0`) makes, and that maximum, a 255th a step, is the
-  stage's modulation colour; 32-bit textures double each byte and keep a
-  modulation of 1.
+  full brightness for a byte c: in 32-bit textures, every display's today,
+  each byte doubled; in 16-bit ones, only on a display under 24 bits, taken
+  to 5 bits against its largest byte and drawn times twice that byte
+  ([textures](#textures)).
 - With `UseMultitexture` (on in the game's ini) a surface without a macro
   texture draws in one pass: the light map on stage 1 as a plain modulate
   (`D3DTOP_MODULATE`), the stages' modulation colours multiplied into the
@@ -63,6 +60,42 @@ What decides how bright a lit wall is:
   one-pass ones'.
 - On a 3dfx Voodoo3 (found by its device ID in `SetRes`) stage 0 takes the
   texture alone while light-mapping, so the diffuse is not applied twice.
+
+## Textures
+
+How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
+
+- **The format.** `SetRes` looks for A8R8G8B8 when the display is 24 bits
+  or more (`0x1000cff4`), and for A1R5G5B5 only when no format was found
+  (`RecognizePixelFormat`, `0x10009d60`, keeps a list): so 32-bit textures
+  on any display of 24 bits or more, 16-bit ones under that.
+  `Use32BitTextures` plays no part. Each texture format has a handler, a
+  setup and a per-mip conversion (constructor, `0x10001ee0`): palettized
+  (`TEXF_P8`), `TEXF_RGBA7` (light and fog maps), and DXT1 as it is.
+- **32-bit.** A palette's colours as they are, alpha whole (`0x10002320`);
+  a light map's bytes doubled (`0x10002120`); the stage's modulation
+  colour 1. So the colours drawn are the texture's own.
+- **16-bit, a palette** (`0x100026b0`): each channel against the texture's
+  `MaxColor` M (at least 1) -- (2^n − 1) / M in fixed point (2^31 for red,
+  2^26 green, 2^21 blue, the quotient made a float and back), times the
+  colour, the top 5 bits, at most 31 -- so the largest colour is 31 and one
+  under 1/32 of M is 0; alpha one bit, set at 128; a masked texture's
+  entry 0 cleared. A texture first drawn modulated takes its colours to 5
+  bits unscaled ((c − 1) / 8 for c over 0, alpha set) and is drawn
+  untinted. `MaxColor` is the texture's own, saved with it: the editor's
+  `UTexture::CreateColorRange` (Engine.dll `0x103ef1c0`), each channel's
+  largest over the palette entries its mips use, which `UTexture::Lock`
+  passes on.
+- **16-bit, a light map** (`0x10002390`): triangular tables `Init`
+  (`0x100029b0`) makes, by a maximum m up to 127 and a value up to it:
+  min(31, ⌊32 × value / m⌋), m half the map's `MaxColor`
+  (`FTextureInfo::CacheMaxColor`, Engine.dll `0x103f08f0`: twice each
+  channel's largest byte, at least 1). Red's entry is capped for A1R5G5B5
+  but masked with R5G6B5's `0xF800`, so red loses its lowest bit.
+- **The modulation.** In 16 bits the stage's colour is `MaxColor` over
+  255, multiplied into the vertex colour of every draw that is not
+  modulated -- a one-pass surface's diffuse is trunc(256 × both stages'
+  colours − 0.5) --, so a texel comes out (q / 31) × M / 255.
 
 ## Blending
 
