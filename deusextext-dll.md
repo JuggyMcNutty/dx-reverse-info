@@ -37,16 +37,16 @@ and 66 accounts' lists of them, 35 bulletins and 9 boards' lists of them, the
 credits and the quotes. The SDK has the sources of missions 0 to 2
 (`reference/ReleaseSDK1112f/DeusExText/Text/`).
 
-The script reads them in three places, each making a parser, opening a text
-and calling `ProcessText` until it returns false:
+The script reads them in three places. Each makes a parser, opens a text and
+calls `ProcessText` until it returns false.
 
 - **`InformationDevices`** (books, datacubes, newspapers) adds a text window
   to the HUD's information window for each paragraph, and to it each text and
   player name. `JL`, `JC` and `JR` align the current window; the three colour
   tags colour it. A datacube (`bAddToVault`) also keeps the text as a note,
-  with a line break for each `P` token but the first; as the parser swallows
-  a text's first `<P>` (below), the note runs its first two paragraphs
-  together.
+  with a line break for each `P` token but the first. As the parser swallows
+  a text's first `<P>` ([below](#parsing)), the note runs its first two
+  paragraphs together.
 - **`ComputerUIWindow`**: an account's list is the text
   `<mission>_EmailMenu_<user>`, and each of its `EMAIL` tags a row, ten at
   most, naming the email's own text. A public computer's `bulletinTag` names
@@ -59,7 +59,7 @@ and calling `ProcessText` until it returns false:
 ## Parsing
 
 `ProcessText` (`0x10001780`) parses one token (`ParseTextBlock`,
-`0x10001a20`), which `GetTag` and `GetText` then give; it returns false once
+`0x10001a20`), which `GetTag` and `GetText` then give. It returns false once
 the text is used up, on the call after the last token.
 
 - **A token** is one tag, or the text up to the next tag, with each CR and LF
@@ -121,11 +121,12 @@ the text is used up, on the call after the last token.
 - **Tags:** 16 of the 30 are used: `P` 3,955, `B` 642 and `/B` 536, `DC`
   399, `JC` 215, `COMMENT` 173 and `/COMMENT` 171, `EMAIL` 137, `I` and `/I`
   98, `FILE` 35, `PLAYERNAME` 12, `PLAYERFIRSTNAME` 10, `JL` 3, `JR` 2, and
-  one `L`, the `<LOG ERROR>` of a Paris bulletin, which is hidden. Every `DC`
-  is white and comes before its text's first `<P>`: in a book or datacube it
-  colours the first paragraph's window, beside the information window's
-  near-white for the rest, and the computer screens ignore it. Two more are
-  no tag at all, a `CYPHERBLOCK=<"...">` and an `AUTHBLOK=<"...">` whose
+  one `L`, the `<LOG ERROR>` of a Paris bulletin, which is hidden.
+- **`DC`:** every one is white and comes before its text's first `<P>`. In a
+  book or datacube it colours the first paragraph's window, beside the
+  information window's near-white for the rest; the computer screens ignore
+  it.
+- **No tag at all:** a `CYPHERBLOCK=<"...">` and an `AUTHBLOK=<"...">`, whose
   bracketed code is hidden.
 - **Comments:** 172 texts have one, the designers' notes of where a datacube,
   book or bulletin lies ("Datacube in Alex's office") or whose inbox an email
@@ -133,23 +134,19 @@ the text is used up, on the call after the last token.
 - **Lists:** at most 5 emails in an account's list and 8 bulletins on a
   board. 15 `EMAIL` tags have no cc field. `09_EmailMenu_ShipOps` holds one
   empty `EMAIL`, after a comment it never closes (its end is a second
-  `<COMMENT>`): the reading runs past the end of the text, so what that
+  `<COMMENT>`). The reading runs past the end of the text, so what that
   account lists depends on the memory after it.
 
 ## The importer
 
-`ImportAllDeusExTextFiles(package)` (`0x10004950`), a plain C export, imports
-every directory under `Text\`, `ImportDeusExTextDirectory(package, dir)`
-(`0x10004b60`) every `Text\<dir>\*.txt` and `ImportDeusExTextFile(package,
-file)` (`0x10004e30`) one file, through a transient `DTextImport`.
+The editor's; the game never runs them. Each a plain C export, through a
+transient `DTextImport`:
+
+- `ImportAllDeusExTextFiles(package)` (`0x10004950`) imports every directory
+  under `Text\`;
+- `ImportDeusExTextDirectory(package, dir)` (`0x10004b60`) every
+  `Text\<dir>\*.txt`;
+- `ImportDeusExTextFile(package, file)` (`0x10004e30`) one file.
+
 `ImportFile` (`0x10005090`) widens the 8-bit file to UTF-16 and makes an
-`ExtString` in the package named after the file, up to its first dot. They
-are the editor's; the game never runs them.
-
-## The database
-
-`gamefiles/System/DeusExText.dll.i64` has the class layouts, the UTF-16
-strings and the initializers' names ([working on the binaries](README.md#working-on-the-binaries)).
-By hand it has the tag names (`GDeusExTextTagNames`), the string and array
-helpers (`FString_*`, `TArray_FString_*`) and the deleting destructors. Each
-function above carries a one-line comment.
+`ExtString` in the package named after the file, up to its first dot.

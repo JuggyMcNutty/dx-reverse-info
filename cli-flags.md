@@ -1,9 +1,9 @@
 # Command-line surface
 
-Every flag the **`Launch` module** itself reads. Engine/driver packages parse more from
-the same command line; this list is only what `DeusEx.exe` acts on.
+Every flag the **`Launch` module** itself reads. Engine and driver packages parse more of the
+same command line; this list is only what `DeusEx.exe` acts on.
 
-Three different parsers are used, and they are **not** equivalent:
+Three parsers, **not** equivalent:
 
 | Helper | Form | Matching |
 |---|---|---|
@@ -11,13 +11,14 @@ Three different parsers are used, and they are **not** equivalent:
 | `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found anywhere (`appStrfind`, `0x10146bee`), no `-` needed; a value in quotes keeps its spaces |
 | `appStrfind(cmdline, "X")` | anywhere | **raw substring, no `-` required** |
 
-The `appStrfind` cases are the surprising ones: `readini` and the four
-single-instance bypass tokens match *anywhere in the command line*, including inside
-a map name or URL.
+The `appStrfind` cases are the surprising ones: `readini` and the four single-instance bypass
+tokens match *anywhere in the command line*, including inside a map name or URL. Matching
+the line's `argv` words one by one does not reproduce them.
 
-Most checks read the command line `appInit` keeps, without the program's path. Two
-read the one Windows gives, path and all: the single-instance bypass, with its four
-tokens, and the splash's, with `-log`, `-server` and `TestRenDev` ([`launch-flow.md`](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+Most checks read the command line `appInit` keeps, without the program's path. Two read the
+one Windows gives, path and all: the single-instance bypass, with its four tokens, and the
+splash's, with `-log`, `-server` and `TestRenDev`
+([`launch-flow.md`](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
 
 ## Flags
 
@@ -26,7 +27,7 @@ tokens, and the splash's, with `-log`, `-server` and `TestRenDev` ([`launch-flow
 | `-SERVER` | `ParseParam` | `0x10908D97` | `GIsClient = 0`; also forces `GLazyLoad` |
 | `-LAZY` | `ParseParam` | `0x10908DF4` | force lazy package loading |
 | `-LOG` | `ParseParam` | `0x10908E6D` | open the log window at startup; suppresses the splash |
-| `-MAKE` | `ParseParam` | `0x10908D44` | **fatal** — *"'DeusEx -make' is obsolete, use 'ucc make' now"* |
+| `-MAKE` | `ParseParam` | `0x10908D44` | **fatal**: *"'DeusEx -make' is obsolete, use 'ucc make' now"* |
 | `-firstrun` | `ParseParam` | `0x1090A26D` | force `FirstRun = 0` → full first-time wizard |
 | `-safe` | `ParseParam` | `0x1090ABA9` | show the SafeMode page |
 | `-changevideo` | `ParseParam` | `0x1090B23E` | show the Renderer page |
@@ -50,8 +51,8 @@ tokens, and the splash's, with `-log`, `-server` and `TestRenDev` ([`launch-flow
 
 ## Flags the launcher *emits* (safe mode)
 
-`WConfigPageSafeOptions__GetNext` (`0x10911C00`) re-executes the binary with a
-subset of these. They are consumed by the engine and drivers, not by `Launch`:
+`WConfigPageSafeOptions__GetNext` (`0x10911C00`) re-executes the binary with a subset of
+these. The engine and drivers read them, not `Launch`:
 
 | Flag | Read by | Effect |
 |---|---|---|
@@ -63,11 +64,10 @@ subset of these. They are consumed by the engine and drivers, not by `Launch`:
 | `-nommx`, `-nokni`, `-nok6` | `Core.dll`, `appPlatformInit` | the CPU's MMX, KNI (SSE) and 3DNow! left unused ([`core-dll.md`](core-dll.md#the-platforms-start)) |
 | `-nojoy` | `WinDrv.dll`, `UWindowsClient::PostEditChange` | no joystick |
 
-See the shipped-bug note in [`wizard.md`](wizard.md) — in the original, only
-`-nosound`, `-no3dsound`, `-nommx -nokni -nok6` and `-nojoy` are driven by their own
-checkbox; `-nohard`, `-noddraw` and `-defaultres` follow the 3D sound box.
+Which checkbox drives which flag, and the three that drive none:
+[the shipped bug](wizard.md#-shipped-bug-three-safe-mode-checkboxes-are-dead).
 
-A run the SafeMode page's Run button starts goes on with the command line it was
-given: when `-safe` opened the page, that keeps `-safe`, and `WinDrv.dll` reads that
-too: no DirectInput ([`windrv-dll.md`](windrv-dll.md#the-flags)). A page a stale
-`Running.ini` (RecoveryMode) or `readini` opened runs without it.
+The SafeMode page's Run goes on with the command line the run was given. When `-safe` opened
+the page, that keeps `-safe`, which `WinDrv.dll` reads too: no DirectInput
+([`windrv-dll.md`](windrv-dll.md#the-flags)). Opened by a stale `Running.ini` (RecoveryMode)
+or by `readini`, the run has no `-safe`.

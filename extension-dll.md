@@ -1,11 +1,14 @@
 # Extension.dll
 
-The native half of package Extension, Ion Storm's own: the UI's window system
-(`Window` and its subclasses: text, lists, edit fields, scrolling, tab groups,
-the computer terminal's window), the graphics context `GC` that draws them,
-the flag base behind every mission and conversation flag, and the game engine
-and input classes that put the UI in front of the game. How it was read:
-[working on the binaries](README.md#working-on-the-binaries).
+The native half of package Extension, Ion Storm's own:
+
+- the UI's window system: `Window` and its subclasses (text, lists, edit
+  fields, scrolling, tab groups, the computer terminal's window);
+- the graphics context `GC` that draws them;
+- the flag base behind every mission and conversation flag;
+- the game engine and input classes that put the UI in front of the game.
+
+How it was read: [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 
@@ -17,16 +20,15 @@ and input classes that put the UI in front of the game. How it was read:
 | Exports | 2,395: 36 classes, 453 `exec` natives |
 | Functions | 2,551 |
 
-As in `DeusEx.dll`, an export is its code, not a jump to it.
-
-It registers the 36 classes it exports. 34 match the layout of their script;
-`XGameEngineExt` and `XInputExt` are C++ only (the SDK's
-`Extension/Inc/ExtGameEngine.h` and `Extension/Inc/ExtInput.h`). The script
-declares the classes' native arrays, and ConSys's, as `DynamicArray`: three
-ints named `Num`, `Max` and `Ptr` that are a `TArray`'s data, count and
-capacity, whatever the names say.
-[`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) types them as
-`TArray`s.
+- An export is its code, not a jump to it, as in `DeusEx.dll`.
+- It registers the 36 classes it exports. 34 match the layout of their
+  script. `XGameEngineExt` and `XInputExt` are C++ only (the SDK's
+  `Extension/Inc/ExtGameEngine.h` and `Extension/Inc/ExtInput.h`).
+- **Native arrays.** The script declares the classes' native arrays, and
+  ConSys's, as `DynamicArray`: three ints named `Num`, `Max` and `Ptr`. They
+  are a `TArray`'s data, count and capacity, whatever the names say.
+  [`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) types them as
+  `TArray`s.
 
 ## Classes
 
@@ -64,21 +66,21 @@ are `exec` exports.
 
 - **`XGameEngineExt`**, the game engine's base:
   - `Init` (`0x100261b0`) registers the window events' names (`InitWindow`,
-    `DrawWindow` and the rest).
+    `DrawWindow` and the rest; `Extension_RegisterNames`).
   - `Browse` (`0x10026330`), after a level loads, makes the player's root
     window.
   - `Tick` (`0x100266a0`) ticks the windows, then the engine.
   - The mouse's position and movement go to the player's root window first
-    (`0x100264b0`, `0x10026580`); typed characters go to it after the console
-    (`0x10026650`).
+    (`0x100264b0`, `0x10026580`). Typed characters go to it after the
+    console (`0x10026650`).
   - `Destroy` destroys every window first.
 - **`XInputExt`**, the input: `Process` (`0x1002d0b0`) gives each key to the
   root window first.
   - When the root window takes one, the input runs the release binding of
     every key it holds down. Nothing stays held under a menu: a movement key
-    held when the menu opened is released then.
-  - Otherwise it runs the key's binding itself: a press only once until the
-    key is released, and a release only after a press.
+    held when the menu opens is released then.
+  - Otherwise it runs the key's binding itself: a press once per hold, and a
+    release only after a press.
 
 ### The root window
 
@@ -89,8 +91,9 @@ are `exec` exports.
   screens.
 - **Keys** go to the focus window, else the topmost modal window, then up its
   parents until one handles them: `RawKeyPressed`, then, for a press,
-  `VirtualKeyPressed`. Typed characters go the same way as `KeyPressed`,
-  passed over by windows that are not modal while Alt is down (accelerators).
+  `VirtualKeyPressed`. Typed characters go the same way as `KeyPressed`.
+  Windows that are not modal pass them over while Alt is down
+  (accelerators).
 - **Mouse buttons** (`HandleButtons`, `0x1003b960`) go to the window under
   the pointer, then up its parents. A press grabs the mouse for that window,
   and may give it focus. Presses of one button on one window within a short
@@ -98,15 +101,15 @@ are `exec` exports.
   sees a double click as 2.
 - **`LockMouse(bLockMove, bLockButton)`** (`0x1003a290`): with movement
   locked the pointer stays where it is; with buttons locked the UI takes and
-  ignores them. The Customize Keys screen locks movement while it waits for a
-  key.
+  ignores them. The Customize Keys screen locks movement while it waits for
+  a key.
 
 ### Showing and hiding
 
 - **`Show` and `Hide`** (`SetVisibility`, `0x1004c7d0`) ask the window's
-  parent. Its `ChildRequestedVisibilityChange` event decides, and the
-  script's default calls `SetChildVisibility`. The root window, having no
-  parent, sets its own.
+  parent. Its `ChildRequestedVisibilityChange` event decides; the script's
+  default calls `SetChildVisibility`. The root window, having no parent,
+  sets its own.
 - **`SetChildVisibility(bNewVisibility)`** (`0x1004ee20`) sets the window's
   flag. When that changes whether it can be seen, it:
   - moves focus and grabs away from what is hidden;
@@ -114,20 +117,85 @@ are `exec` exports.
   - lays the tree out again.
 - **`DeusExHUD`** overrides the event to lay the HUD out again as its parts
   come and go, the InfoLink and the log among them.
-- **The pointer** (`XRootWindow::PaintWindows`, `0x1003ac18`) is drawn,
-  last, while a window takes the mouse -- every modal one does -- and the
-  root's `bCursorVisible` holds: set as the root starts (`Init`), cleared
-  and set again by `ShowCursor`. The game hides it while a conversation
-  plays (but for its choices), a key waits to be bound, the credits roll,
-  and its multiplayer HUD and message window are up.
+- **The pointer** (`XRootWindow::PaintWindows`, `0x1003ac18`) is drawn last,
+  while a window takes the mouse (every modal one does) and the root's
+  `bCursorVisible` holds. `Init` sets that as the root starts; `ShowCursor`
+  clears and sets it. The game hides the pointer while a conversation plays
+  (but for its choices), while a key waits to be bound, while the credits
+  roll, and while its multiplayer HUD and message window are up.
+
+### Keyboard focus
+
+- **Window types** (`windowType`):
+
+  | Value | Window |
+  |---|---|
+  | 0 | any other window |
+  | 1 | a tab group (`XTabGroupWindow::Init`, `0x10044d90`) |
+  | 2 | a modal (`XModalWindow::Init`, `0x10036c00`) |
+  | 3 | the root |
+
+  A modal that is not the root's child logs "Modal window must be a child
+  of Root!" and stays 1. A modal and the root are tab groups too, so a
+  conversation window is its choices' group.
+- **The tables.** A tab group lists its selectable windows twice
+  (`ResortWindowTables`, `0x10045140`): by row (top to bottom, then left to
+  right) and by column (left to right, then top to bottom), ties broken by
+  address. It keeps each window's index in both. `SetSelectability`
+  (`0x1004c390`) puts a window in its group's lists or takes it out
+  (`AddWindowToTables`, `0x10045350`).
+- **A modal's tab groups.** A modal keeps a table of its tab groups: itself
+  (`XModalWindow::Init`) and each tab group made under it. It is sorted top
+  to bottom, then left to right, by each group's place: that of its first
+  traversable window (`ComputeTabGroupLocation`, `0x10045000`).
+- **`XWindow::IsTraversable`** (`0x1004c460`): a window can take the focus
+  when it is selectable, and it and every parent are visible and sensitive.
+  With the modal check, its nearest modal (or the root) must also be the
+  root's topmost modal child, or the root when no modal is up: nothing under
+  a buried modal takes it.
+- **`XWindow::MoveFocus`** (`0x1004ef30`), behind `MoveFocusLeft`,
+  `MoveFocusRight`, `MoveFocusUp` and `MoveFocusDown`, steps from the focus
+  window to the first window traversable with the modal check:
+  - along its group's row list for left and right, its column list for up
+    and down;
+  - backward for left and up;
+  - round the ends (a tab group's default).
+
+  With none in the list, or no focus at all, it hands the move to
+  `MoveTabGroup`.
+- **`XWindow::MoveTabGroup`** (`0x1004f440`) works in the topmost modal (or
+  the root). `MoveTabGroupNext` and `MoveTabGroupPrev` call it forward and
+  back ([small](#small)). It starts at the tab group after or before the
+  focus's, or at the table's first when the focus is not in that modal. The
+  first window of a group's row list traversable without the modal check
+  takes the focus. A group with none is passed over the same way, round the
+  ends.
+- **The root's tick** (`XRootWindow::Tick`, `0x1003a540`), while nothing has
+  the focus: the topmost modal (or the root) gives the focus to its
+  `preferredFocus` when that is traversable, else as `MoveTabGroup` forward
+  does. It does not when its `focusMode` is `MFOCUS_EnterLeave`. So a
+  conversation's first choice takes the focus as the choices appear. The
+  keypad (`HUDKeypadWindow`) sets `MFOCUS_EnterLeave`.
+- **A button's look** (`XButtonWindow::ChangeButtonAppearance`,
+  `0x10008380`):
+  - the insensitive pair of textures and colours when the button or a parent
+    is insensitive;
+  - else the focused pair while it has the focus;
+  - else the normal pair.
+
+  Of the pair, the pressed one while pressed. A state with no texture takes
+  the pressed one while pressed, else the normal one.
 
 ### Window sounds
 
 `PlaySound(sound, volume, pitch, posX, posY)` (`0x10050050`) plays one unit
-from the player. When the root window has positional sound on, the sound is
-turned left or right by the point's place across the screen, a quarter turn
-at either edge; otherwise it is straight ahead. The point defaults to the
-window's centre, and the volume to the window's own.
+from the player.
+
+- With the root window's positional sound on, the sound is turned left or
+  right by the point's place across the screen, a quarter turn at either
+  edge. Otherwise it is straight ahead.
+- The point defaults to the window's centre, and the volume to the window's
+  own.
 
 ## Lists
 
@@ -141,24 +209,24 @@ new game.
   A row ID is the row itself; 0 is none.
 - **Column types:** string, float and time.
   - A float or time field keeps the number read from the text
-    (`StringToFloat`, `0x100317c0`: a sign; octal after a leading `0` and
+    (`StringToFloat`, `0x100317c0`): a sign; octal after a leading `0` and
     hex after `0x`; a decimal point or comma; `'` adds the number so far as
-    hours, `:` or `"` as minutes; anything else ends it).
+    hours, `:` or `"` as minutes; anything else ends it.
   - A float field shows its number through the column's format, `%f` by
-    default. A time field shows it as `%f` too: its own format
-    (`%02h:%02m` by default) is not used.
+    default. A time field shows it as `%f` too: its own format (`%02h:%02m`
+    by default) is not used.
   - A string field's number is 0.
 - **Defaults** (`Init`, `0x1002e900`):
   - the delimiter is `;`;
-  - auto sort is off, and auto-expanding columns, multiple selection and hot
+  - auto sort is off; auto-expanding columns, multiple selection and hot
     keys (column 0) are on;
   - the column margin is 3 and the row margin 1, and a double click counts;
   - there is one column.
 - **A new column** (`0x100314f0`): 20 wide plus both margins, left-aligned,
   the window's text colour and font, string, and a sort key.
 - **`GetField`** (`0x1002f250`) of a column that is not there is empty.
-  **`GetSelectedRow`** (`0x1002f740`) is the focus row if it is selected, else
-  the first selected row.
+- **`GetSelectedRow`** (`0x1002f740`) is the focus row if it is selected,
+  else the first selected row.
 
 ### Sorting
 
@@ -167,17 +235,18 @@ new game.
   - `SetSortColumn(col, bReverse, bCaseSensitive)` (`0x10030860`): that
     column first, then every other column in column order, their reverse and
     case flags cleared.
-  - `AddSortColumn` (`0x10030980`) adds a column as the last key, and
+  - `AddSortColumn` (`0x10030980`) adds a column as the last key;
     `RemoveSortColumn` (`0x10030a90`) drops one.
-  - `ResetSortColumns(bSort)` (`0x10030b40`), true by default: every column
-    a key, in column order, or with false none. Reverse and case are cleared.
-- **The order** (`0x100326d0`): each key in turn. A float or time column
-  compares numbers, a string column text with or without case, either
+  - `ResetSortColumns(bSort)` (`0x10030b40`), true by default: every column a
+    key, in column order; with false, none. Reverse and case are cleared.
+- **The order** (`XListWindow_CompareRows`, `0x100326d0`, over the keys in
+  `GListSortCols` and `GListNumSortCols`): each key in turn. A float or time
+  column compares numbers, a string column text with or without case, either
   reversed on request. Rows equal in every key keep their order.
 - **When.** `Sort()` sorts at once (`appQsort`). `EnableAutoSort(true)`
-  sorts, and while it is on a new row goes in at its place and a changed row
-  is moved to its place (`0x10032b50`, `0x10032a70`). Changing the keys
-  with auto sort on sorts again.
+  sorts; while it is on, a new row goes in at its place and a changed row is
+  moved to its place (`0x10032b50`, `0x10032a70`). Changing the keys with
+  auto sort on sorts again.
 - **The game's lists.** The load game list sorts by a hidden column, the
   save's date as a number, with auto sort, and by name or date when the
   player clicks a header, reversing on a second click. The emails sort by
@@ -188,22 +257,22 @@ new game.
 
 With auto-expanding columns, each field set widens its column to the field's
 text plus both margins. Turning it on widens every column
-(`ResizeColumns(true)`, `0x1002fc40`); `ResizeColumns(false)` first shrinks
+(`ResizeColumns(true)`, `0x1002fc40`). `ResizeColumns(false)` first shrinks
 every column to its margins.
 
 ### The list's size
 
 - **What it asks for** (`ParentRequestedPreferredSize`, `0x10033260`): the
-  visible columns' widths side by side, and a row size for each row. The clip
-  window a list sits in sizes it so, and the scroll area around it scrolls a
-  row at a time (`ParentRequestedGranularity`: 1 across, a row size down).
+  visible columns' widths side by side, and a row size for each row. The
+  clip window a list sits in sizes it so. The scroll area around it scrolls
+  a row at a time (`ParentRequestedGranularity`: 1 across, a row size down).
 - **The row size** (`ComputeRowSize`, `0x10031fd0`): the tallest of the
   columns' fonts, by the height of a space, plus the row margin above and
   below.
-- **When it changes.** Adding, changing or deleting rows, setting a field's
-  text or number, and a column's number, width, font, title or hiding, and
-  the margins, each ask the parent to lay the list out again
-  (`AskParentForReconfigure`).
+- **When it changes.** Each of these asks the parent to lay the list out
+  again (`AskParentForReconfigure`): adding, changing or deleting rows;
+  setting a field's text or number; a column's number, width, font, title or
+  hiding; the margins.
 
 ### Moving, selecting, activating
 
@@ -219,7 +288,7 @@ every column to its margins.
   activates the focus row: `ListRowActivated` to the list's parents, with
   the activate sound.
 - **Notices.** Every change of selection calls `ListSelectionChanged` up the
-  parents, and a new focus row plays the move sound (`MoveToRow`,
+  parents. A new focus row plays the move sound (`MoveToRow`,
   `0x10032e30`).
 - **Hot keys** (`0x10033ae0`): letters, digits and `_` typed within a second
   of each other search the hot key column for a row starting with them,
@@ -232,12 +301,11 @@ every column to its margins.
 `XFlagBase`: the player's flags, what missions and conversations set and
 test.
 
-- **Storage** (`FindName`, `0x10024e60`): 64 buckets, by the low six bits
-  of the flag's name hashed with UE1's `appStrihash`
-  ([names](core-dll.md#names-hashed-and-compared); checked against the 75
-  flags of four saves, 2026-09-27). Each is a chain kept in order of the
-  hash, compared as a signed number, then of type, so there is no limit to
-  the flags. A flag is an object inside the flag base.
+- **Storage** (`FindName`, `0x10024e60`): 64 buckets, by the low six bits of
+  the flag's name hashed with UE1's `appStrihash`
+  ([names](core-dll.md#names-hashed-and-compared)). Each bucket is a chain
+  kept in order of the hash, compared as a signed number, then of type, so
+  the flags have no limit. A flag is an object inside the flag base.
 - **Setting** (`SetBool`, `0x10023c60`, and the other types alike):
   `Set*(name, value, bAdd, expiration)`, bAdd true and expiration -1 by
   default. It sets the flag, adding it with bAdd, and stamps its expiration
@@ -267,20 +335,23 @@ corners, four edges and a centre.
   the two left corners and the left edge, and so on. A margin given above 0
   replaces it. When the box is narrower or shorter than two margins, both
   shrink in proportion.
-- **The pieces**, in this order, each filling its band of the box: the four
-  corners, each in its two margins (the top-left from the box's corner to the
-  left and top margin lines, and so on); the left and right edges in their
-  margins' width, from the top margin line to the bottom one; the top and
-  bottom edges in their margins' height, from the left margin line to the
-  right one; and the centre between all four. Each is read from its texture
-  so that its **inner** side lies on the margin line -- a corner's inner
-  corner, an edge's inner side -- the source offset by the texture's size
-  less the margin on a left or top piece, 0 on a right or bottom one. The
-  corners are drawn at one texel a pixel; the edges and the centre are tiled
-  at one texel a pixel along their length (`DrawIconPattern`, `0x10028770`:
-  `DrawTile` with a source size of 0 tiling that axis, any other
-  stretching), unless stretching is asked for across or down. A box with no
-  width or height draws nothing.
+- **The pieces**, in this order, each filling its band of the box:
+  - the four corners, each in its two margins (the top-left from the box's
+    corner to the left and top margin lines, and so on);
+  - the left and right edges, in their margins' width, from the top margin
+    line to the bottom one;
+  - the top and bottom edges, in their margins' height, from the left margin
+    line to the right one;
+  - the centre, between all four.
+- **The source.** Each piece is read from its texture so that its **inner**
+  side lies on the margin line: a corner's inner corner, an edge's inner
+  side. The source is offset by the texture's size less the margin on a left
+  or top piece, 0 on a right or bottom one.
+- **The scale.** The corners are drawn at one texel a pixel. The edges and
+  the centre are tiled at one texel a pixel along their length
+  (`DrawIconPattern`, `0x10028770`: `DrawTile` with a source size of 0 tiles
+  that axis, any other stretches), unless stretching is asked for across or
+  down. A box with no width or height draws nothing.
 - **The game** passes no margins and no stretching in all 13 of its calls:
   the HUD's and the menus' frames are tiled.
 
@@ -292,16 +363,20 @@ drawn:
 
 - with the GC's style, the glow and unlit given, its draw scale multiplied,
   and with a skin every skin replaced, as if not hidden;
-- with `bConstrain` clipped to the window, with `bClearZ` over whatever the
-  depth buffer holds;
+- with `bConstrain`, clipped to the window; with `bClearZ`, over whatever
+  the depth buffer holds;
 - all of it put back afterwards.
 
-`AugmentationDisplayWindow` uses it for the vision augmentation. From level
-1, each heat source within range is drawn in a grid skin at twice its glow,
-unlit, with or without a line of sight; it does not clear the depth buffer,
-and what a wall in front does to it is the renderer's. The augmentation's
-description promises sight through walls from its third level. A debug
-window shows an actor with it too.
+`AugmentationDisplayWindow` uses it for the vision augmentation:
+
+- From level 1, each heat source within range is drawn in a grid skin at
+  twice its glow, unlit, with or without a line of sight.
+- It does not clear the depth buffer; what a wall in front does to it is the
+  renderer's.
+- The augmentation's description promises sight through walls from its third
+  level.
+
+A debug window shows an actor with it too.
 
 ### Save pictures
 
@@ -310,24 +385,24 @@ window shows an actor with it too.
 
 - reads the frame the render device last drew, at the viewport's size;
 - averages it down to w × h: each pixel the mean of the box of pixels it
-  covers -- steps of the frame's size over w and h, each box starting where
-  its step truncates to -- each channel scaled by 256/255 and clamped;
+  covers (steps of the frame's size over w and h, each box starting where
+  its step truncates to), each channel scaled by 256/255 and clamped;
 - keeps the mean of the three channels in an 8-bit texture with a grey
   palette, its sizes rounded up to powers of two (160 × 120 in a
   256 × 128, the rest black). The C++ can quantize to a palette of 256
-  colours instead, and nothing asks it to.
+  colours instead; nothing asks it to.
 
-The C++ fills a texture it is given, or makes one beside the root window;
-the script's call always makes one. `bFilter` is not used. Three callers:
+The C++ fills a texture it is given, or makes one beside the root window.
+The script's call always makes one. `bFilter` is not used. Three callers:
 
 - **The Save Game screen**, for the new save's row: it hides the UI, and two
-  ticks later takes one -- not under the OpenGL driver
+  ticks later takes one, but not under the OpenGL driver
   (`MenuScreenSaveGame.GenerateNewSnapShot`).
-- **The save itself**: `SaveGame` takes a 160 × 120 one into a texture made
+- **The save itself:** `SaveGame` takes a 160 × 120 one into a texture made
   beside the save info, so the save's `SaveInfo` file carries it
   ([the game engine](deusex-dll.md#the-game-engine-travel-and-saving)). The
   screens show it for the selected save.
-- **The menus' background**: [the raw background](#the-raw-background).
+- **The menus' background:** [the raw background](#the-raw-background).
 
 ### The raw background
 
@@ -343,51 +418,48 @@ What the game shows under a menu, by the player's UI background option
   `SetRawBackgroundSize`, `StretchRawBackground`) is drawn before any window
   (`DrawRawBackground`, `0x1003c720`), wherever the scene is not: over the
   whole root with rendering off, around the render viewport with one set,
-  nowhere otherwise. Every window is made with `bDrawRawBackground` on
-  (`XWindow::Init`) and nothing clears it, so no window keeps it out. Each
-  piece left -- above the viewport, below it, then left and right of it --
-  is drawn in the colour, unsmoothed: stretched from the background's own
-  size, or tiled from the piece's corner.
-- **The game's use** (`DeusExRootWindow.ShowSnapshot`): opening a menu with
-  Snapshot takes a snapshot of the frame under it at the root's snapshot
-  size (256 × 192), draws it stretched at half brightness and turns
-  rendering off; Black has no background and turns rendering off. Closing
-  the menus turns rendering on and leaves the background set. The credits
-  turn rendering off for their own screen.
+  nowhere otherwise.
+  - Every window is made with `bDrawRawBackground` on (`XWindow::Init`) and
+    nothing clears it, so no window keeps it out.
+  - Each piece left (above the viewport, below it, then left and right of
+    it) is drawn in the colour, unsmoothed: stretched from the background's
+    own size, or tiled from the piece's corner.
+- **The game's use** (`DeusExRootWindow.ShowSnapshot`):
+  - opening a menu with Snapshot takes a snapshot of the frame under it at
+    the root's snapshot size (256 × 192), draws it stretched at half
+    brightness and turns rendering off;
+  - Black has no background and turns rendering off;
+  - closing the menus turns rendering on and leaves the background set;
+  - the credits turn rendering off for their own screen.
 
 ## Small
 
 - **Edit fields.** `Undo` (`0x1001e0a0`) and `Redo` (`0x1001e170`) walk a
-  list of changes: each a position, the text removed and the text put in.
-  Typing straight after the last change joins it (`AddUndo`, `0x10020450`),
-  and the list keeps at most `maxUndos`. `ClearUndo` empties it. The script's
+  list of changes, each a position, the text removed and the text put in.
+  Typing straight after the last change joins it (`AddUndo`, `0x10020450`).
+  The list keeps at most `maxUndos`; `ClearUndo` empties it. The script's
   Ctrl+Z and Ctrl+Y call them.
 - **Tab groups.** `MoveTabGroupNext` and `MoveTabGroupPrev` (`0x100033f0`,
-  `0x10003400`) move the focus to the next or previous tab group; the root
-  window's script calls them for Tab and Shift+Tab. `GetTabGroupWindow`
-  (`0x1004c560`) is the nearest tab group at or above a window.
-- **No width is no limit.** `XGC::ParseLine` (`0x10029ae0`), which breaks
-  the lines `GetTextExtent` (`0x10027bb0`) measures and `DrawText` draws,
-  takes a width of 0 or less as 500,000: `GetTextExtent(0, ...)` measures
-  each line whole, as the multiplayer message window measures its progress
-  lines before drawing them in a box of that width.
+  `0x10003400`) move the focus to the next or previous tab group
+  ([keyboard focus](#keyboard-focus)). The root window's script calls them
+  for Tab and Shift+Tab. `GetTabGroupWindow` (`0x1004c560`) is the nearest
+  tab group at or above a window.
+- **No width is no limit.** `XGC::ParseLine` (`0x10029ae0`) breaks the lines
+  that `GetTextExtent` (`0x10027bb0`) measures and `DrawText` draws. It takes
+  a width of 0 or less as 500,000: `GetTextExtent(0, ...)` measures each line
+  whole. The multiplayer message window measures its progress lines so,
+  before drawing them in a box of that width.
+- **Aligned text.** `XGC::DrawText` (`0x10028180`) hands its wrap width (the
+  width with word wrap on, 0 with it off) only to line breaking. It centres
+  or right-aligns each line within the width it was given.
 - **`GetTickOffset`** (`0x1004fda0`): the real time since the windows were
   last ticked.
-- **Text windows.** `ResetLines` (`0x10046310`) and `ResetMinWidth`
-  (`0x10046450`) lift a text window's line limits and minimum width,
-  `LargeTextWindow.SetVerticalSpacing` (`0x1002d7e0`) sets the space between
-  lines (not below 0), and `RadioBoxWindow.GetEnabledToggle` (`0x10015970`)
-  is the box's selected toggle. No script calls them.
+- **Text windows.** No script calls these: `ResetLines` (`0x10046310`) and
+  `ResetMinWidth` (`0x10046450`) lift a text window's line limits and
+  minimum width; `LargeTextWindow.SetVerticalSpacing` (`0x1002d7e0`) sets the
+  space between lines (not below 0); `RadioBoxWindow.GetEnabledToggle`
+  (`0x10015970`) is the box's selected toggle.
 - **`ExtString.GetNextTextPart`** (`0x10044ad0`): the text in parts of 239
   characters, a part a call. No script calls it.
 - **No script calls** `GC`'s `PushGC`, `PopGC`, `CopyGC` and `Intersect`,
-  `ClipWindow`'s unit sizes, or the 22 `ComputerWindow` natives the fork
-  stubs ([not needed](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md#not-needed-for-single-player)).
-
-## The database
-
-`gamefiles/System/Extension.dll.i64` has the class layouts, the UTF-16
-strings and the initializers' names ([working on the binaries](README.md#working-on-the-binaries)).
-By hand it has the list's row comparison (`XListWindow_CompareRows`) and its
-sort keys (`GListSortCols`, `GListNumSortCols`), and
-`Extension_RegisterNames`. Each function above carries a one-line comment.
+  `ClipWindow`'s unit sizes, or 22 of `ComputerWindow`'s 33 natives.

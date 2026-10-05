@@ -17,8 +17,8 @@ locations. How it was read: [working on the binaries](README.md#working-on-the-b
 
 ## Classes
 
-Every class's size is the one its registration passes to `UClass`, and each
-matches the layout of its script (`tools/ida/ue1_types.py`) but
+Each size is the one the class's registration passes to `UClass`. Each
+matches the layout of its script (`tools/ida/ue1_types.py`), except
 `DDeusExGameEngine`, which has no script. Natives are `exec` exports, with
 their script numbers.
 
@@ -33,8 +33,8 @@ their script numbers.
 | `UParticleIterator` | `URenderIterator` | 0xd50 | 1: `UpdateParticles` 3017 |
 | `ULaserIterator` | `URenderIterator` | 0x190 | -- |
 | `UDeusExSaveInfo` | `UObject` | 0x78 | 1: `UpdateTimeStamp` 3075 |
-| `XGameDirectory` | `UObject` | 0x54 | 15, 3080--3094 |
-| `UDumpLocation` | `UObject` | 0xa8 | 21, 3020--3040 |
+| `XGameDirectory` | `UObject` | 0x54 | 15, 3080–3094 |
+| `UDumpLocation` | `UObject` | 0xa8 | 21, 3020–3040 |
 | `UDeusExLog`, `UDataVaultImageNote` | `UObject` | 0x38, 0x44 | -- |
 | `DDeusExGameEngine` | `XGameEngineExt` | 0xd0 | -- (C++ only: the game engine, the ini's `GameEngine=DeusEx.DeusExGameEngine`) |
 
@@ -42,50 +42,49 @@ their script numbers.
 
 `AScriptedPawn::Tick` (`0x100195a0`) overrides `AActor::Tick` for every
 `ScriptedPawn` and ends by calling it, which runs the script's `Tick`. Its own
-work runs where the pawn is simulated here: not controlled by a remote client
-(`RemoteRole` not `ROLE_AutonomousProxy`), `Role` at least
-`ROLE_SimulatedProxy`, and not a viewports-only tick -- or with
-`bSimulatedPawn`. In single player that is every tick. In order:
+work runs when the pawn is simulated here, or with `bSimulatedPawn`:
+
+- no remote client controls it (`RemoteRole` not `ROLE_AutonomousProxy`);
+- `Role` is at least `ROLE_SimulatedProxy`;
+- the tick is not a viewports-only one.
+
+In single player that is every tick. In order:
 
 1. **Disappearing.** With `bDisappear`, a pawn in stasis, or not rendered for
-   more than 5 s (`Level.TimeSeconds` less `LastRenderTime`), is destroyed, and
-   the tick ends there ([stasis and render time](engine-dll.md#stasis-and-render-time)).
-2. **Pivot.** While `PrePivotTime` is above 0, `PrePivot` moves toward
-   `DesiredPrePivot` in a straight line, reaching it as `PrePivotTime` runs
-   out.
-3. **Agitation and fear.** `UpdateAgitation` (`0x10019e30`) and `UpdateFear`
-   (`0x10019f60`) with the frame's time. The script has versions of both that
-   nothing calls.
+   more than 5 s (`Level.TimeSeconds` less `LastRenderTime`), is destroyed,
+   and the tick ends there ([stasis and render time](engine-dll.md#stasis-and-render-time)).
+2. **Pivot.** While `PrePivotTime` is above 0, `PrePivot` moves in a straight
+   line toward `DesiredPrePivot`, reaching it as `PrePivotTime` runs out.
+3. **Agitation and fear.** `UpdateAgitation` and `UpdateFear` with the
+   frame's time ([below](#alliances-fear-and-carcasses)).
 4. **Timers.**
    - Counted down to 0: `AlarmTimer`, `FireTimer`, `SpecialTimer`,
      `AvoidWallTimer`, `AvoidBumpTimer`, `ObstacleTimer`, `CloakEMPTimer`,
      `TakeHitTimer`, `CarcassCheckTimer`, `BeamCheckTimer`, `FutzTimer`,
      `PlayerAgitationTimer`.
-   - `ReloadTimer`: counted down only while the pawn has a weapon; set to 0
-     without one.
-   - `PotentialEnemyTimer`: counted down, and when it runs out
+   - `ReloadTimer`: counted down while the pawn has a weapon, else 0.
+   - `PotentialEnemyTimer`: counted down; when it runs out,
      `PotentialEnemyAlliance` is cleared.
-   - Counted up: `WeaponTimer` while the pawn has a weapon (0 without);
-     `DistressTimer` while it is not negative, until it passes
-     `FearSustainTime`, when it becomes -1.
-5. **Cloak.** With `bHasCloak`, the script's `EnableCloak(Health <=
-   CloakThreshold)`, every tick.
-6. **Avoidance.** With `bAdvancedTactics`, once the pawn stops accelerating,
-   leaves walking or has no `TurnDirection`, the manoeuvre ends:
+   - Counted up: `WeaponTimer` while the pawn has a weapon (else 0);
+     `DistressTimer` while not negative, until it passes `FearSustainTime`,
+     when it becomes -1.
+5. **Cloak.** With `bHasCloak`, the script's `EnableCloak(Health <= CloakThreshold)`, every tick.
+6. **Avoidance.** With `bAdvancedTactics`, the manoeuvre ends once the pawn
+   stops accelerating, leaves walking or has no `TurnDirection`:
    - `bAdvancedTactics` is cleared;
    - `MoveTimer` loses 4 s if the pawn was turning;
    - `ActorAvoiding`, `NextDirection` and `TurnDirection` are cleared;
    - `bClearedObstacle` is set and `ObstacleTimer` zeroed.
 7. **Burning.** While `bOnFire`, `burnTimer` grows; past `BurnPeriod`, the
    script's `ExtinguishFire`.
-8. **Bleeding.** With `bCanBleed` and `BleedRate` above 0 -- and, with
-   `bTickVisibleOnly`, only within 1,200 units of the player:
+8. **Bleeding.** With `bCanBleed` and `BleedRate` above 0 (and, with
+   `bTickVisibleOnly`, only within 1,200 units of the player):
    - a `SpurtBlood` event each time `DropCounter` passes the period
-     `(1.1 - BleedRate) / f`, where `f` is the pawn's speed over 512 held
-     between 0.05 and 1, so a pawn drips faster the harder it bleeds and the
-     faster it moves;
-   - `BleedRate` falls by the frame's time over `ClotPeriod`, and at 0 both
-     are reset.
+     `(1.1 - BleedRate) / f`, where `f` is the pawn's speed / 512, held to
+     0.05–1: the harder it bleeds and the faster it moves, the faster it
+     drips;
+   - `BleedRate` falls by the frame's time / `ClotPeriod`; at 0, it and
+     `DropCounter` are reset to 0.
 
 ## Alliances, fear and carcasses
 
@@ -101,18 +100,23 @@ and calls the function named here.
 - **`GetPawnAllianceType(pawn)`** (`0x100194d0`): Hostile if the other pawn is
   a `ScriptedPawn` that holds this one's alliance hostile, else what this pawn
   makes of the other's alliance. `None` is Neutral.
-- **`IsValidEnemy(pawn, bCheckAlliance)`** (`0x10019300`): ported by patch
-  0034 ([its message](https://github.com/JuggyMcNutty/VibeEngine/commit/b5d08853dbf4e24894d56942c07a5a743438e824)).
+- **`IsValidEnemy(pawn, bCheckAlliance)`** (`0x10019300`): true for any other
+  pawn, the player included, that is not being destroyed (`bDeleteMe`), is
+  `bDetectable` and has `Health` above 0. With `bCheckAlliance`,
+  `GetPawnAllianceType` must also make it Hostile. The `exec` wrapper
+  defaults an omitted `bCheckAlliance` to true. The script's
+  `CheckEnemyPresence` asks it of each pawn it cycles through, before
+  `AICanSee` ([the senses](engine-dll.md#the-senses)).
 - **`UpdateAgitation(dt)`** (`0x10019e30`) and **`UpdateFear(dt)`**
-  (`0x10019f60`), called only from the native tick. They do exactly what the
-  script's own `UpdateAgitation` and `UpdateFear` do, which nothing calls:
+  (`0x10019f60`), called only from the native tick, do exactly what the
+  script's own `UpdateAgitation` and `UpdateFear` do; nothing calls those:
   - `AgitationCheckTimer` counts down;
-  - after `AgitationTimer` (or `FearTimer`) has run out, the decay is the
-    decay rate times the time, less the part of the frame the timer still
+  - once `AgitationTimer` (or `FearTimer`) has run out, the decay is the
+    decay rate × the time, less the part of the frame the timer still
     covered;
-  - that decay comes off each non-permanent alliance's `AgitationLevel`
-    (only while `bAlliancesChanged`, which stays set while any is above 0) and
-    off `FearLevel`, none below 0.
+  - that decay comes off each non-permanent alliance's `AgitationLevel` (only
+    while `bAlliancesChanged`, which stays set while any is above 0) and off
+    `FearLevel`, none below 0.
 - **`HaveSeenCarcass(name)`** (`0x1001a010`) and **`AddCarcass(name)`**
   (`0x1001a040`): the first `NumCarcasses` of `Carcasses`; a new name is added
   while there are fewer than 4.
@@ -120,48 +124,44 @@ and calls the function named here.
 ## Conversations
 
 `ConBindEvents` (`AScriptedPawn` `0x10019140`, `ADeusExPlayer` `0x10014320`,
-`ADeusExDecoration` `0x1000ea50`, the same code three times):
+`ADeusExDecoration` `0x1000ea50`; the same code three times):
 
-- It finds the level's `DeusExLevelInfo`, and does nothing for a mission
-  below 0.
-- It loads the conversation list `<package>Text.ConList_MissionNN`, where
-  `<package>` is the level's `ConversationPackage`, `DeusExConversations`
-  becoming `DeusExCon`, so `DeusExConText.ConList_Mission02` in the game
-  itself.
-- The list binds the actor's conversations in ConSys's
+- It finds the level's `DeusExLevelInfo`. With none, it logs that
+  conversations cannot be bound; for a mission below 0, it does nothing.
+- It loads the conversation list `<package>Text.ConList_MissionNN`.
+  `<package>` is the level's `ConversationPackage`, with `DeusExConversations`
+  becoming `DeusExCon`: mission 2's is `DeusExConText.ConList_Mission02`.
+- The list binds the actor's conversations with ConSys's
   `DConversationList::BindConversations`
   ([how](consys-dll.md#an-actors-conversations)).
-- With no `DeusExLevelInfo` it logs that conversations cannot be bound.
 
 ## The player
 
 `ADeusExPlayer`'s natives:
 
 - **`SaveGame(index, optional desc)`** (`0x10014830`): the game engine's
-  `SaveGame`, with `""` as the default description.
-- **`DeleteSaveGameFiles(optional dir)`** (`0x100149f0`): the engine's, with
-  `""` -- which means `Save\Current`.
+  `SaveGame`; the description defaults to `""`.
+- **`DeleteSaveGameFiles(optional dir)`** (`0x100149f0`): the engine's; the
+  directory defaults to `""`, which means `Save\Current`.
 - **`SetBoolFlagFromString(name, value)`** (`0x100144e0`): sets that bool
   flag, adding it with no expiry, and returns the name. No script calls it.
 - **New objects.** `CreateHistoryObject`, `CreateHistoryEvent`,
   `CreateLogObject`, `CreateDataVaultImageNoteObject` and
-  `CreateDumpLocationObject` make a new object each call in the player's own
-  package, the level, so a saved level keeps the player's history, log and
+  `CreateDumpLocationObject` make a new object each call, in the player's own
+  package (the level), so a saved level keeps the player's history, log and
   notes. `CreateGameDirectoryObject` makes a new `XGameDirectory` in the
   transient package each call.
 - **`UnloadTexture(tex)`** (`0x10014c90`): unloads each mip's data.
-- **`GetDeusExVersion()`** (`0x10014270`): `"Mon Mar 19 12:06:14 2001
-  v1.112fm"`, the build date and version.
+- **`GetDeusExVersion()`** (`0x10014270`): `"Mon Mar 19 12:06:14 2001 v1.112fm"`, the build date and version.
 
 ## The game engine: travel and saving
 
 `DDeusExGameEngine` is `XGameEngineExt` with Deus Ex's travel and saves.
 Saves live under the ini's `SavePath`:
 
-- `Save\Current` holds the maps of the mission in progress as the player
-  left them, and a `SaveInfo.<ext>` of its own (seen in a reference save,
-  2026-09-24).
-- `Save\SaveNNNN` is a slot and `Save\QuickSave` the quick save, each a copy
+- `Save\Current`: the maps of the mission in progress as the player left
+  them, and a `SaveInfo.<ext>` of its own.
+- `Save\SaveNNNN` (a slot) and `Save\QuickSave` (the quick save): each a copy
   of `Current` plus the level saved in, and `SaveInfo.<ext>`.
 - A map's mission number is its name's two leading digits
   (`GetNextMissionNumber`, `0x10011ef0`: `02_NYC_Street` is 2, anything else
@@ -171,41 +171,36 @@ Saves live under the ini's `SavePath`:
 **`Browse(url)`** (`0x10010b90`), after `XGameEngineExt::Browse` has had its
 turn:
 
-- **`?restart`:** reloads the current map (`?loadonly`) after emptying
-  `Current`.
+- **`?restart`:** empties `Current`, then reloads the current map
+  (`?loadonly`).
 - **`?loadgame=N`** (-1 for the quick save): reads the slot's `SaveInfo`,
   empties `Current`, copies the slot into it, and loads
   `Current\<MapName>.<ext>?load?loadonly?loadgame`.
-- **Any other map:** it compares the mission numbers. Within one mission,
-  unless `?loadonly`:
-  - `PruneTravelActors`, then `SaveCurrentLevel` into `Current`;
-  - the destination is loaded from `Current` if it was saved there, else from
-    `Maps`.
-
-  A new mission, a map outside any, or a player with `bStartingNewGame` set
-  (which it then clears) empties `Current` first, and the destination loads
-  from `Maps`.
+- **Any other map:** it compares the mission numbers.
+  - Within one mission, unless `?loadonly`: `PruneTravelActors`, then
+    `SaveCurrentLevel` into `Current`; the destination loads from `Current`
+    if it was saved there, else from `Maps`.
+  - A new mission, a map outside any, or a player with `bStartingNewGame` set
+    (which it then clears): `Current` is emptied first, and the destination
+    loads from `Maps`.
 
 **`SaveCurrentLevel(slot)`** (`0x1000fac0`):
 
-- The directory: `Current` for -2, `QuickSave` for -1, else `Save%04d`.
-- It marks the level as saving (`LevelInfo.LevelAction` 2), shows "Saving"
-  (not for the quick save), and drops the brush tracker and destroyed
-  actors.
-- It saves the level package as `<MapName>.<ext>`.
-- It sets every mover's `SavedPos` to (-1,-1,-1), then restores the tracker
-  and the level action and flushes the cache.
+1. The directory: `Current` for -2, `QuickSave` for -1, else `Save%04d`.
+2. It marks the level as saving (`LevelInfo.LevelAction` 2), shows "Saving"
+   (not for the quick save), and drops the brush tracker and destroyed
+   actors.
+3. It saves the level package as `<MapName>.<ext>`.
+4. It sets every mover's `SavedPos` to (-1,-1,-1), then restores the tracker
+   and the level action and flushes the cache.
 
-**`PruneTravelActors`** (`0x1000f9b0`): before the level is saved, destroys
-what travels with the player so it is not saved twice:
-
-- the augmentations and their manager;
-- the skills and theirs;
-- the flag base, after `DeleteAllFlags`;
-- any carried decoration.
+**`PruneTravelActors`** (`0x1000f9b0`), before the level is saved, destroys
+what travels with the player, so it is not saved twice: the augmentations and
+their manager; the skills and theirs; the flag base, after `DeleteAllFlags`;
+any carried decoration.
 
 **`SaveGame(slot, desc)`** (`0x1000ef10`), for the `SaveGame` native and the
-`SAVEGAME` console command. It fills a `DeusExSaveInfo`:
+`SAVEGAME` console command, fills a `DeusExSaveInfo`:
 
 - **Text:** the map name, and the description, or the level's `Title` when
   none is given.
@@ -217,8 +212,8 @@ what travels with the player so it is not saved twice:
   `GameRenderDevice` is `OpenGLDrv.OpenGLRenderDevice`.
 
 Slot 0 means a new slot: the highest existing `SaveNNNN` plus 1. It then
-empties the slot, copies `Current` into it, saves the `SaveInfo` there and the
-level with `SaveCurrentLevel`.
+empties the slot, copies `Current` into it, and saves there the `SaveInfo`
+and, with `SaveCurrentLevel`, the level.
 
 **The others:**
 
@@ -228,8 +223,8 @@ level with `SaveCurrentLevel`.
   `Current` for `""`, after resetting the level's loaders.
 - **`DeleteGame(slot)`** (`0x10010710`): removes `Save%04d` with its
   contents.
-- **`LoadSaveInfo(slot)`** (`0x100108a0`): reads a slot's `SaveInfo`, -2 for
-  `Current` and -1 for the quick save.
+- **`LoadSaveInfo(slot)`** (`0x100108a0`): reads a slot's `SaveInfo`; -2 is
+  `Current`, -1 the quick save.
 - **`GetSaveInfo(pkg)`** (`0x10010850`): `Current`'s, or a new one in `pkg`.
 - **`GetDeusExLevelInfo`** (`0x100120a0`): the first `DeusExLevelInfo` among
   all objects.
@@ -255,17 +250,17 @@ menus. Each native's `exec` only unpacks its arguments.
   (`0x10018170`) only lets go of one so kept: it releases its file and
   destroys the object, and deletes nothing on disk. `PurgeAllSaveInfo`
   (`0x10018240`) lets go of all of them.
-- **New slots.** `GetNewSaveFileIndex` (`0x10017cc0`) is the highest `SaveNNNN`
-  listed plus 1, never a gap. `GenerateSaveFilename(n)` (`0x10017d60`) is
-  `SaveNNNN.<ext>`, and `GenerateNewSaveFilename(n)` (`0x10017e30`) lists the
+- **New slots.** `GetNewSaveFileIndex` (`0x10017cc0`): the highest `SaveNNNN`
+  listed plus 1, never a gap. `GenerateSaveFilename(n)` (`0x10017d60`):
+  `SaveNNNN.<ext>`. `GenerateNewSaveFilename(n)` (`0x10017e30`) lists the
   saves first and takes a new index for -1.
 - **Other.** `GetTempSaveInfo` (`0x10018120`) makes one transient
-  `DeusExSaveInfo` and keeps it. `GetSaveFreeSpace` (`0x10017770`) is the
-  save drive's free space in KB. `GetSaveDirectorySize(slot)`
-  (`0x100179d0`) is the slot's files' total in KB.
+  `DeusExSaveInfo` and keeps it. `GetSaveFreeSpace` (`0x10017770`): the save
+  drive's free space in KB. `GetSaveDirectorySize(slot)` (`0x100179d0`): the
+  slot's files' total in KB.
 
 `UDeusExSaveInfo::UpdateTimeStamp` (`0x10014df0`) stores the local time as
-the system gives it: the full year, the month from 1 to 12, the day, hour,
+the system gives it: the full year, the month (1 to 12), the day, hour,
 minute and second. `CreateTexture` (`0x10014e20`) makes the snapshot's
 texture beside it.
 
@@ -278,10 +273,9 @@ Both are render iterators: the renderer draws an actor with a
 many times, moving it before each.
 
 **`UParticleIterator`** holds 64 particles (`FsParticle` in
-`DeusEx/Inc/uparticle.h`). The script adds them from `ParticleGenerator`.
-
-`UpdateParticles(dt)` (`0x1001ac50`) ages each live particle, and one whose
-life has run out is deleted (`DeleteParticle`, `0x1001aaf0`). A living one:
+`DeusEx/Inc/uparticle.h`), which the script adds from `ParticleGenerator`.
+`UpdateParticles(dt)` (`0x1001ac50`) ages each live particle and deletes one
+whose life has run out (`DeleteParticle`, `0x1001aaf0`). A living one:
 
 - **drifts:** its horizontal velocity is its initial one plus a new random
   offset each frame, from -3 to +2;
@@ -293,43 +287,36 @@ life has run out is deleted (`DeleteParticle`, `0x1001aaf0`). A living one:
 
 The proxy is hidden while no particle lives. `CurrentItem` (`0x1001ab20`)
 moves the proxy to the current particle (`FarMoveActor`) with its scale and
-glow, and deletes a particle that cannot be moved to.
+glow, and deletes a particle it cannot move to.
 
 **`ULaserIterator`** holds 8 beams (`ULaserIterator.h`), each drawn as a run
-of segments -- the script's `AddBeam` gives a beam its length / 16 + 1 (/ 15
-+ 1 with `bRandomBeam`), and `Init` makes `MaxItems` the active beams'
-segments and one more, and starts `prevLoc` and `savedLoc` at the emitter.
+of segments:
+
+- the script's `AddBeam` gives a beam length / 16 + 1 segments
+  (length / 15 + 1 with `bRandomBeam`);
+- `Init` sets `MaxItems` to the active beams' segments plus one, and starts
+  `prevLoc` and `savedLoc` at the emitter.
+
 `CurrentItem` (`0x1001a1a0`):
 
-- finds the current item's beam, the first whose segments, counted over the
-  active beams, pass the index -- past them all (the extra item), the first
-  beam, at its end;
+- finds the item's beam: the first at which the segments, counted over the
+  active beams, pass the index. The extra item, past them all, takes the
+  first beam, at its end.
 - puts the proxy (a `LaserProxy`: `DeusExItems.LaserBeam`, an open square
   tube, unlit) at k/N of the beam's length for its k-th of N segments
   (`FarMoveActor`), turned as the beam (`MoveActor` with no move);
-- with `bRandomBeam` -- the electricity of `ElectricityEmitter` -- moves
-  that spot by a random unit vector and the last segment's, aims the
-  segment from it back at where the last one's would end, and moves that
-  end on as far again (`prevLoc`, `prevRand`);
-- keeps one segment to draw again: while `savedLoc` is still the
-  emitter's, this one, with the items so far over all of them for its
-  chance; the extra item goes there.
+- with `bRandomBeam` (the electricity of `ElectricityEmitter`): moves that
+  spot by a random unit vector and the last segment's, aims the segment from
+  there back at where the last one's would end, and moves that end on as far
+  again (`prevLoc`, `prevRand`);
+- keeps one segment to draw again: while `savedLoc` is still the emitter's,
+  it takes this one at a chance of the items so far over all of them. The
+  extra item is drawn there.
 
 ## Bug locations
 
-`UDumpLocation` is Ion Storm's QA tool, not read in detail: its 21 natives
-(3020--3040) keep bug locations -- map, position, view, game version, title
-and description, the script's `DumpLocationStruct` -- in dump files per
-user, to list, add, delete and go back to. `DeusExGameInfo.Login` asks
+`UDumpLocation`, Ion Storm's QA tool, is not read in detail. Its 21 natives
+(3020–3040) keep bug locations in dump files per user, to list, add, delete
+and go back to: map, position, view, game version, title and description
+(the script's `DumpLocationStruct`). `DeusExGameInfo.Login` asks
 `HasLocationBeenSaved` on every map; nothing a player uses depends on it.
-
-## The database
-
-`gamefiles/System/DeusEx.dll.i64` has the class layouts, the UTF-16 strings
-and the initializers' names ([working on the binaries](README.md#working-on-the-binaries)),
-and by hand the inlined `FString` and `TArray` helpers (`TArrayTCHAR_*`,
-`TArrayFString_*`).
-
-The native tick, `Browse`, the save functions, the iterators and the
-alliance functions carry a one-line comment. What is left unnamed is the C
-runtime and small thunks.

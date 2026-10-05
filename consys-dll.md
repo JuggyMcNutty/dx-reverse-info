@@ -1,6 +1,6 @@
 # ConSys.dll
 
-The native half of package ConSys: conversations -- their events (speech,
+The native half of package ConSys: conversations. Their events (speech,
 choices, flags, animations, trades, camera moves), the camera, the history
 the player's log keeps, and the lists that bind them to actors. How it was
 read: [working on the binaries](README.md#working-on-the-binaries).
@@ -30,11 +30,14 @@ It registers the 34 classes it exports; the package's `ConLight` and
   play mode and a play length where the script has `bLoopAnim`), where its
   script declares 0x58. The game's conversations have no animation events.
 
-`DeusEx.dll` uses its C++ in two places: `ConBindEvents` calls
-`DConversationList::BindConversations`
-([`DeusEx.dll`](deusex-dll.md#conversations)), and the player's
-`CreateHistoryObject` and `CreateHistoryEvent` make its history objects. The
-rest is the natives and the importer.
+`DeusEx.dll` uses its C++ in two places:
+
+- `ConBindEvents` calls `DConversationList::BindConversations`
+  ([`DeusEx.dll`](deusex-dll.md#conversations));
+- the player's `CreateHistoryObject` and `CreateHistoryEvent` make its
+  history objects.
+
+The rest is the natives and the importer.
 
 ## Classes
 
@@ -60,7 +63,7 @@ are `exec` exports.
 | `DConImport` | `DConObject` | 0xb4 | -- (C++ only: the importer) |
 
 The script also gives `ConEvent.GetSoundLength` native 2054, which is
-`ClearBindEvents`'s; the DLL has no code for it, and no script calls it.
+`ClearBindEvents`'s. The DLL has no code for it, and no script calls it.
 
 ## The game's conversations
 
@@ -77,19 +80,20 @@ at 128).
 the conversations of a mission list; `ConBindEvents` calls it with the
 level's list.
 
-- **First** it deletes the actor's old list (`PurgeBoundConversations`,
-  `0x10010cf0`), taking one off each conversation's `ownerRefCount`.
-- **Then** each conversation of the list, in order, goes to the front of the
-  actor's `ConListItems` when its owner is:
-  - for a bark (`_Bark` in its name, case sensitive): the actor's
-    `BarkBindName`, or its `BindName` when it has no bark name;
-  - for any other: the actor's `BindName`. Never its bark name.
+1. It deletes the actor's old list (`PurgeBoundConversations`,
+   `0x10010cf0`), taking one off each conversation's `ownerRefCount`.
+2. Each conversation of the list, in order, goes to the front of the actor's
+   `ConListItems` when its owner is:
+   - for a bark (`_Bark` in its name, case sensitive): the actor's
+     `BarkBindName`, or its `BindName` when it has no bark name;
+   - for any other: the actor's `BindName`, never its bark name.
 
-  Names compare without case. Each item adds one to the conversation's
-  `ownerRefCount`, the number of actors that have it.
-- So an actor's list runs from the mission list's last conversation to its
-  first, and the script starts the first in it that qualifies
-  (`DeusExPlayer.GetActiveConversation`).
+   Names compare without case. Each item adds one to the conversation's
+   `ownerRefCount`, the number of actors that have it.
+
+So an actor's list runs from the mission list's last conversation to its
+first, and the script starts the first in it that qualifies
+(`DeusExPlayer.GetActiveConversation`).
 
 `DConversationMissionList::BindConversations(actor, mission)` (`0x10011040`)
 does the same from the list with that number. Nothing in the game calls it.
@@ -145,7 +149,7 @@ are loaded here.
 
 - **`GetSpeechAudio(id)`** (`0x10010210`): none for -1. Otherwise it loads
   one sound, by name: `ConAudio<audioPackageName>_<id>` from
-  `..\System\<package>Audio<audioPackageName>.u`, where `<package>` is the
+  `..\System\<package>Audio<audioPackageName>.u`. `<package>` is the
   conversation's own package less a final `Text`: a conversation in
   `DeusExConText` with `audioPackageName` `Mission01` speaks from
   `DeusExConAudioMission01.u`.
@@ -176,25 +180,17 @@ reaches it, it jumps to one of them.
   serialized after the event's properties (`0x1000a090`).
 - **The game's 1,241**: 561 random, 15 in turn forever, 496 in turn and then
   random, and 169 in turn once. 164 of those 169 are in first-person
-  conversations, what an NPC says when the player walks up or frobs it.
+  conversations: what an NPC says when the player walks up or frobs it.
 
 ## Small
 
 - **`CreateConCamera()`** (`0x100106f0`) makes a new camera in package
   `DeusEx`; `ConPlay` makes one for a third-person conversation.
-  **`CreateFlagRef(name, value)`** (`0x10010600`) does the same for a flag
-  reference, and only `Conversation.AddFlagRef` calls it, which nothing calls.
+- **`CreateFlagRef(name, value)`** (`0x10010600`) does the same for a flag
+  reference. Only `Conversation.AddFlagRef` calls it, and nothing calls that.
 - **The history.** `DConHistory::Destroy` (`0x1000ca20`) deletes its events,
   then itself.
 - **The importer.** `ImportConversationFile(package, file)` (`0x1000cc50`), a
   plain C export, reads a conversation editor `.con` file into the text and
   audio packages through a transient `DConImport`. It is the editor's; the
   game never runs it.
-
-## The database
-
-`gamefiles/System/ConSys.dll.i64` has the class layouts, the UTF-16 strings
-and the initializers' names ([working on the binaries](README.md#working-on-the-binaries)).
-By hand it has the object iterator's step (`TObjectIterator_Advance`) and the
-two array serializers (`Serialize_TArray_FString`, `Serialize_TArray_USoundPtr`).
-Each function above carries a one-line comment.
