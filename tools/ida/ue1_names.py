@@ -6,8 +6,9 @@ Script file, or the MCP's py_exec_file), after tools/ida/ue1_types.py; it names
 them by what they do:
 
 - ?PrivateStaticClass@<class>@@0VUClass@@A: the class object of a class the
-  DLL does not export (Engine.dll's AI events and pending levels), the name
-  its export would have;
+  DLL does not export (Engine.dll's AI events, pending levels and
+  UServerCommandlet, IpDrv.dll's two commandlets), the name its export would
+  have;
 - <class>_StaticInit: builds the class object (UClass's native constructor);
 - <class>_StaticInitAtExit: calls that and registers the destructor;
 - <class>_StaticClassDestroy: the class object's destructor;

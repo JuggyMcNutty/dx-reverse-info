@@ -11,6 +11,8 @@ How it was read: [working on the binaries](README.md#working-on-the-binaries).
 
 | Property | Value |
 |---|---|
+| Size | 212,992 bytes |
+| SHA1 | `d277f7467b1612282b123ed039cfac92937979c0` |
 | Source | `D:\prj\Clean\D3DDrv\Src\Direct3D7.cpp` (March 2001, with the game's other DLLs) |
 | API | DirectDraw 7 + Direct3D 7, one class: `UD3DRenderDevice` over `URenderDevice` |
 | Image | base `0x10000000`, 337 functions, all exports C++-mangled methods |
@@ -31,8 +33,8 @@ Brightness is a display gamma ramp, not arithmetic in the frame:
 - `Flush` computes and sets the ramp, so it takes effect on start and
   whenever the game flushes (a brightness change does):
   `ramp[i] = (i/255) ^ (1 / (2.5 x Brightness)) x 65535`, the same for R, G
-  and B, from the client's `Brightness` (0 to 1, default 0.5 -- a 1.25
-  gamma).
+  and B, from the client's `Brightness` (0 to 1; the game's ini ships 0.6,
+  a gamma of 1.5 -- 0.5 would be 1.25).
 - `ReadPixels` (screenshots) applies the ramp to what it reads back, so a
   screenshot looks like the screen.
 

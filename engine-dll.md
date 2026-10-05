@@ -302,10 +302,13 @@ none):
 - **The speed** (`APawn::calcVelocity`, `0x103cd7a0`): an acceleration
   over `AccelRate` -- over 0.3 of it for a player walking (`bIsWalking`) --
   is cut to it; one under it is left.
-- **The next node** (`APawn::findPathToward`, `0x103db3f0`): once the
-  route is found, the node after its first is taken instead when it lies
-  within 120 units up or down (or the pawn stands at the first), clear of
-  the level from the eyes, and reachable.
+- **The next node** (`APawn::findPathToward`, `0x103db3f0`), in the
+  search's second way only ([the search](#the-search), read in full since):
+  once that route is found, the node after its first is taken instead when
+  it lies within 120 units up or down (or the pawn stands at the first),
+  clear of the level from the eyes, and reachable. A route the first way
+  finds has a step of its own instead: the pawn's other nodes weighed
+  against the end point (`0x103db0e0`, "after a search" there).
 - **`RandomBiasedRotation(centralYaw, yawDistribution, centralPitch,
   pitchDistribution)`** (`0x1036d030`): a random rotation about the central
   one, yaw up to half a turn (32,768) either way and pitch up to a quarter
@@ -923,15 +926,20 @@ the travel info: a count, then each key and value (package versions 61 and
 
 - **`LevelInfo`'s clock** -- `Year`, `Month`, `Day`, `DayOfWeek`, `Hour`,
   `Minute`, `Second` and `Millisecond` at `ALevelInfo+0x47c` to `0x49c` -- is
-  **the full year and the month 1 to 12**, and where it is filled is not found:
-  nothing in `Engine.dll` writes those offsets outside `ALevelInfo`'s own
-  constructor and assignment operator (the property system's copies), so it is
-  set somewhere this pass did not reach, or from the script side. What settles
-  the convention is the game's own use of them: they are `transient` in
-  `Engine.u`, and the one reader, `StatLog`'s date string, pads a month below
-  10 and writes the year as it stands -- a month from 0 or a year from 1900
-  would read wrong there. `MenuScreenSaveGame` builds its timestamp from
-  `DeusExSaveInfo`'s the same way, and those the fork already stores that way.
+  **the full year and the month 1 to 12**, as Windows gives them. The virtual
+  `ULevel::UpdateTime` (exported, `?UpdateTime@ULevel@@UAEXPAVALevelInfo@@@Z`:
+  `0x10301b18`, a jump to `0x103a08f0`) hands the eight fields by reference to
+  Core's `appSystemTime` (the import at `0x1059a05c`; in `Core.dll` a jump at
+  `0x101033be` to `0x1016c6a0`), which reads `GetLocalTime` and copies its
+  eight words into them in its own order -- year, month, day of the week, day
+  of the month, then the time -- so `UpdateTime` passes `+0x488`, `DayOfWeek`,
+  third and `+0x484`, `Day`, fourth. The stores go through the references,
+  which is why no store to those offsets shows in `Engine.dll`. The game's own
+  use agrees: the fields are `transient` in `Engine.u`, and the one reader,
+  `StatLog`'s date string, pads a month below 10 and writes the year as it
+  stands -- a month from 0 or a year from 1900 would read wrong there.
+  `MenuScreenSaveGame` builds its timestamp from `DeusExSaveInfo`'s the same
+  way, and those the fork already stores that way.
 
 - **`SetInstantSoundVolume`, `SetInstantSpeechVolume`,
   `SetInstantMusicVolume`** (`0x103e2850`, `0x103e28d0`, `0x103e2950`): hand

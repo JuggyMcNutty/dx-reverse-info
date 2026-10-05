@@ -87,9 +87,10 @@ Any launch not carrying `-log`, `-server` or `TestRenDev` is affected.
 
 **2. `Detected.ini` is not only produced by an explicit `-testrendev=`.** It also
 appears during first-run renderer detection: the Renderer page `ShellExecute`s the game
-recursively (`0x1090DB18`) with `-testrendev=<class>` per candidate, so a crashing
-driver kills only a child. `ini-keys.md` previously attributed the file solely to the
-explicit flag.
+once (`0x1090DB18`), as `testrendev=D3DDrv.D3DRenderDevice log=Detected.log` -- no
+dash, and Direct3D the only device tested ([`wizard.md`](wizard.md#renderer-2017)) -- so
+a crashing driver kills only the child. `ini-keys.md` previously attributed the file
+solely to the explicit flag.
 
 **3. `[WindowPositions]` is written by the log window** — not previously documented:
 
@@ -139,7 +140,7 @@ The captures stay outside the repositories, in `reference/original-wizard/`.
 | The relaunch carries only the safe flags | `wizard.md` SafeOptions | the same command line |
 | A cancelled wizard deletes `Running.ini` | `launch-flow.md` §9 | the file was gone after `-firstrun` and `-changevideo` were cancelled |
 | The CD prompt: title, text, OK and Cancel, no icon; Cancel leaves `Running.ini` | `launch-flow.md` §8 | with `CdPath` pointed at a missing folder for the run |
-| The splash is `..\Help\Logo.bmp` at its own size, centred, until the engine is up | `launch-flow.md` §3 | a 512×410 window at the desktop's centre, behind the CD prompt, its frame over the bitmap's edges; with a wizard to show it closes within a second. Wine shows the picture colour-reduced: many pixels a step of 8 off the file's |
+| The splash is `..\Help\Logo.bmp` at its own size, centred (that it stays up until the engine is: [not verified](#not-verified)) | `launch-flow.md` §3 | a 512×410 window at the desktop's centre, behind the CD prompt, its frame over the bitmap's edges; with a wizard to show it closes within a second. Wine shows the picture colour-reduced: many pixels a step of 8 off the file's |
 | The Renderer list: certified and software devices, or all five sorted; the certified one chosen | `wizard.md` Renderer | Direct3D (detection certified it under wine) and Software Rendering; with "Show all devices", 3dfx Glide, Direct3D, OpenGL, S3 MeTaL, Software, Direct3D still chosen |
 | Driver shows the detected card | `wizard.md` Driver | "AMD Radeon RX 6700 XT", with the web link as a blue underlined button, in Arial at 12 pixels rather than the page's MS Sans Serif |
 | Detail's lines | `wizard.md` Detail | High sound quality, High detail player skins, High detail textures (its quotes stripped), Standard video resolution |

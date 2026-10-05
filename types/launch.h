@@ -103,8 +103,8 @@ struct WConfigPageRenderer {
     struct WButton CompatibleButton; /* +160 IDC_Compatible 1109 */
     struct WButton AllButton;      /* +280 IDC_All         1110 */
     struct WLabel DescriptionLabel;/* +400 IDC_RenderNote  1104 */
-    int CurrentIndex;              /* +448 */
-    struct FArray Classes;         /* +452 std::vector-shaped, 12 bytes */
+    int First;                     /* +448 counts paints: detection runs on the first */
+    struct FArray Classes;         /* +452 a TArray of FRegistryObjectInfo, 12 bytes */
 };                                                            /* 464 */
 
 struct WConfigPageSafeMode {

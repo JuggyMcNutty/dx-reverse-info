@@ -917,6 +917,13 @@ def host_main(argv):
     a = ap.parse_args(argv)
     model, lay, natives, cpp = build(a.game)
     text, sizes = emit(model, lay, natives, cpp)
+    if a.emit:
+        with open(a.emit, "w") as f:
+            f.write(text)
+        print("wrote %s: %d classes" % (a.emit, len(sizes)))
+    if a.sizes:
+        for name in sorted(sizes):
+            print("%s 0x%x" % (name, sizes[name]))
     by_cpp = {v.lower(): k for k, v in cpp.items()}
     for name in a.layout or []:
         key = name.lower()

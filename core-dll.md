@@ -281,6 +281,10 @@ The rest are UE1's own. Where the fork differs is in
 - **Strings:** `==`, `!=` and `<` compare with case, `~=` without; `>` is
   native 116. `Mid(S, i, j)` (`0x1013bdf0`) takes up to 65,535 characters by
   default, and a negative `i` gives an empty string: it clamps as unsigned.
+  Its end -- a count past the string, or a negative one (`Mid("hello", 2, -5)`
+  is `"llo"`) -- is not read here but was settled by running the original, with
+  VibeEngine's `MidConsole`
+  ([the fork's notes](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md#implemented-not-as-the-original)).
   `Chr` and `Asc` take UTF-16 code units, as this build is Unicode.
 - **Math:** an integer divided by 0 is 0 (`0x10133710`), and a byte divided
   by 0 with `/=` is left as it was. `Rand(n)` is 0 for `n` of 0 or less, else

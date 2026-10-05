@@ -3,8 +3,9 @@
 The Windows client and viewport: the window the game draws into, DirectDraw
 for the software renderer's fullscreen modes, DirectInput for the keyboard
 and mouse, the joystick, and which render device a viewport opens with. It
-was read for the command-line flags it honours -- four of the eight that the
-launcher's safe mode emits ([`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode))
+was read for the command-line flags it honours -- four of the nine that the
+launcher's safe mode emits ([`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode)),
+and `-safe`
 -- not in full. How it was read:
 [working on the binaries](README.md#working-on-the-binaries).
 
@@ -41,7 +42,8 @@ and `Y` are at 0x54 and 0x58 and `FullscreenViewportX` and `Y` at 0x60 and
 So the safe mode's "Run the game in a window" (`-nohard -noddraw`) gets there
 by way of the software renderer: without DirectDraw it has no fullscreen mode
 to take, and the viewport falls back to a window. A run with `-safe` on its
-command line -- the SafeMode page's Run -- has no DirectInput either.
+command line -- the SafeMode page's Run, when `-safe` opened the page -- has no
+DirectInput either.
 
 ## Choosing the render device
 

@@ -8,7 +8,8 @@ sockets under it, the script's links and the master server are `IpDrv.dll`'s
 
 Deus Ex's network code is Unreal Tournament's of its day -- native
 replication lists and the world-stats challenge among it --, engine version
-1100, with two Deus Ex additions (below). A client that joins the game's
+1100, with three Deus Ex additions (below), two in `Engine.dll` and one in the
+game's script. A client that joins the game's
 servers speaks this protocol to the bit.
 
 ## The parts

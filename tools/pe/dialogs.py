@@ -5,10 +5,11 @@ The original launcher's pages are dialog templates: resources in Window.dll
 (the wizard frame and its six pages) and in DeusEx.exe (the splash). A
 template is data -- each control's class, id, style and rectangle in dialog
 units, and the dialog's font -- and this prints it, with no IDA and no
-Python package beyond the standard library:
+Python package beyond the standard library (from the parent folder of the
+repositories, beside the game install):
 
-    tools/pe/dialogs.py gamefiles/System/Window.dll 104 2017 2018
-    tools/pe/dialogs.py gamefiles/System/DeusEx.exe
+    dx-reverse-info/tools/pe/dialogs.py gamefiles/System/Window.dll 104 2017 2018
+    dx-reverse-info/tools/pe/dialogs.py gamefiles/System/DeusEx.exe
 
 With no ids it prints every dialog the file has. Rectangles are x, y, width,
 height in dialog units; a dialog unit is a quarter of the font's average

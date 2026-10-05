@@ -53,21 +53,21 @@ Written when the Detail page initialises, based on detected renderer and hardwar
 
 > **Correction.** This table previously described `MinDesiredFrameRate` as
 > *per-renderer*, on the strength of there being two call sites. There are two
-> call sites but only one value: both `push offset a1` where `a1` is the string
-> `"1"`. Read from the disassembly at `0x1090ED0C` and `0x1090ED7E`.
+> call sites but only one value: both pass the same string, `"1"` (read at
+> `0x1090ED0C` and `0x1090ED7E`).
 >
-> The condition, from `WConfigPageDetail__OnInitDialog`, is a single `if` with
-> three alternatives — software renderer, a slow CPU, or Direct3D:
+> The condition, in `WConfigPageDetail__OnInitDialog`, is two branches, one
+> call site each: the first when the renderer is `SoftDrv.SoftwareRenderDevice`
+> or the CPU is slow (`GSecondsPerCycle` × 280,000,000 above 1: under about
+> 280 MHz), the second, otherwise, when it is `D3DDrv.D3DRenderDevice`. Both
+> write the same `1` -- the SDK's own source of the page notes them changed for
+> Deus Ex from 20 and 28 -- so the effect is one condition with three
+> alternatives.
 >
-> ```c
-> if (renderer == "SoftDrv.SoftwareRenderDevice"
->     || 280000000.0 * GSecondsPerCycle > 1.0      /* below ~280 MHz */
->     || renderer == "D3DDrv.D3DRenderDevice")
->     GConfig->SetString("WinDrv.WindowsClient", "MinDesiredFrameRate", "1");
-> ```
->
-> The shipped default is `1.0`, so the write is still a real change. Nothing
-> else in the detail block is renderer-dependent.
+> The shipped default is `1.0`, so the write is still a real change. The skins'
+> and the world's detail depend on the renderer too, through its `DescFlags`
+> (below, and [`wizard.md`](wizard.md#detail-2018)); the rest of the block does
+> not.
 >
 > The audio branch alongside it selects `SoundLow` over `SoundHigh` when
 > `GIsMMX == 0 || GPhysicalMemory <= 0x4000000` (64 MB), at `0x1090EDA1`.
@@ -75,7 +75,9 @@ Written when the Detail page initialises, based on detected renderer and hardwar
 Cross-checks against the shipped `System/DeusEx.ini`: `[FirstRun] FirstRun=0`,
 `[Engine.Engine] CdPath=..\`, `GameRenderDevice=GlideDrv.GlideRenderDevice`,
 and the `[WinDrv.WindowsClient]` / `[Galaxy.GalaxyAudioSubsystem]` sections all exist.
-Every key above is present in both `DeusEx.ini` and `Default.ini` — **except two**.
+Every key above is present in both `DeusEx.ini` and `Default.ini` — **except three**:
+`DescFlags` and `Description` (below), and `SlotNames[%i]`, a key of the `User` file
+that no shipped ini has (the savegame migration writes it).
 
 ### `DescFlags` and `Description` are runtime values, not shipped defaults
 
@@ -87,8 +89,10 @@ Both are **written by the render device during detection and read back by the la
 
 - `-testrendev=<class>` sets `[<class>] DescFlags=2` and flushes (`0x1090A86D`, `0x1090A886`),
   then writes `Detected.ini`. `Detected.ini` is likewise absent from a fresh install.
-- `WConfigPageRenderer__RefreshList` (`0x1090CFC3`) and the detail tuner (`0x1090ECA1`)
-  read `DescFlags` back to decide which devices are "certified/compatible" vs. "all".
+- `WConfigPageRenderer__RefreshList` (`0x1090CFC3`) reads `DescFlags` back for its
+  flag 1, certified, which gives a device its place in the compatible list; the Detail
+  page (`0x1090ECA1`) reads the chosen renderer's for its flags 4 and 8, low-detail
+  world and skins ([`wizard.md`](wizard.md#detail-2018)).
 - `[D3DDrv.D3DRenderDevice] Description` (`0x109103D7`) is the human-readable card name
   shown on the Driver page; the shipped `[D3DDrv.D3DRenderDevice]` section contains only
   static rendering options, no `Description`.
@@ -115,7 +119,7 @@ Shipped value: `GameEngine=DeusEx.DeusExGameEngine`.
 | `Running.ini` | create | `0x1090B903` | unclean-shutdown sentinel |
 | `Running.ini` | probe | `0x1090B569` | triggers RecoveryMode wizard |
 | `Running.ini` | delete | `0x109098CC` | clean-shutdown marker |
-| `Detected.ini` | create | `0x1090A9DB` | output of `-testrendev=` — **also written during first-run renderer detection**, which spawns `-testrendev=` children via `ShellExecute` (`0x1090DB18`) |
+| `Detected.ini` | create | `0x1090A9DB` | output of `-testrendev=` — **also written during first-run renderer detection**, which runs the game once more via `ShellExecute` (`0x1090DB18`), as `testrendev=D3DDrv.D3DRenderDevice log=Detected.log` ([`wizard.md`](wizard.md#renderer-2017)) |
 | `<appPackage()>.ini` | delete | `0x10912508` | SafeOptions "Reset all configuration options" |
 | `..\Save\*.usa` | enumerate | `0x1090A2BA` | savegame migration |
 | `..\Help\<Package>Logo.bmp`, `..\Help\Logo.bmp` | read | `0x1090907F` | splash bitmap |

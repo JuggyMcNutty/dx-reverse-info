@@ -110,9 +110,12 @@ sites, five read the *same* control (`+0xB0`, `IDC_No3DSound`). So ticking
 -defaultres`, and `No3DVideo`, `Window` and `Res` do nothing. Observed live
 too ([`live-verification.md`](live-verification.md#the-second-run-every-page-2026-09-27)).
 A recreation wires all eight correctly; the port
-branches' launcher dropped safe mode, because Surreal Engine honours none of
-its flags (row 1 of
+branches' launcher dropped safe mode while Surreal Engine honoured none of its
+flags (row 1 of
 [what it changes](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-x86_64/docs/LAUNCHER.md#what-it-changes-from-the-original)).
+The fork has honoured `-nosound`, `-defaultres`, `-nohard -noddraw` and
+`-nojoy` since 2026-09-27, from the line `main`'s hand-over gives it
+([the command line](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md#the-command-line)).
 
 **`appStrfind` flags match anywhere.** `readini`, `Server`, `NewWindow`,
 `changevideo`, `TestRenDev` are raw substring matches needing no leading `-` —
@@ -129,6 +132,10 @@ read (`HKLM\software\mpath\mplayer\main`), and `.ICD`→`.EXE` rewriting in
 
 ## Not verified against the original
 
-- The SafeMode/RecoveryMode entry paths and the safe-mode re-exec, live.
-- The three-dead-checkboxes bug, live. Well evidenced statically.
+- The forwarding receiver live: a second launch handing a running game its
+  command line ([`live-verification.md`](live-verification.md#not-verified)).
 - `MainLoop` (`0x10914630`) in depth — a launcher replaces it wholesale.
+
+The SafeMode and RecoveryMode entry paths, the safe-mode re-exec and the
+three dead checkboxes were confirmed live in the second run
+([`live-verification.md`](live-verification.md#the-second-run-every-page-2026-09-27)).

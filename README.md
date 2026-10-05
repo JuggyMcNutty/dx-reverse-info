@@ -15,8 +15,10 @@ from. None of the game's files are here, and no decompiled code
   what Surreal Engine lacks or has wrong and to port it into
   [VibeEngine](https://github.com/JuggyMcNutty/VibeEngine) -- patch 0034 was
   the first ([what the fork changes](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/ENGINE.md#what-the-fork-changes)).
-  Each DLL is read ([the binaries](#the-binaries)); `Render.dll` as far as a
-  feature's drawing lives there, and its mesh detail and lighting. What the
+  Each DLL is read as far as the work needed ([the binaries](#the-binaries)):
+  most in full, `Render.dll` as far as a feature's drawing lives there (and
+  its mesh detail and lighting), `WinDrv.dll` for its command-line flags and
+  `Window.dll` for the launcher's dialog templates. What the
   engine still lacks of them, and the work that would fill it, is VibeEngine's
   [`NATIVES.md`](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md).
 
@@ -35,8 +37,8 @@ in March 2001. The engine recognises the install by `DeusEx.exe`'s SHA1
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, flags, and the game engine and input that put the UI in front of the game | [`extension-dll.md`](extension-dll.md) | read |
 | `ConSys.dll` | package ConSys: conversations and their events, and what binds them to actors | [`consys-dll.md`](consys-dll.md) | read |
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
-| `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas, mesh detail, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; mesh detail and lighting |
-| `D3DDrv.dll` | the Direct3D 7 display driver: gamma, the light maps' brightness on screen, fog, detail textures, and each pass's blending -- the look's reference | [`d3ddrv-dll.md`](d3ddrv-dll.md) | read |
+| `Render.dll` | package Render: UE1's scene renderer -- which actors are drawn, render iterators, render time, coronas, what a pawn holds, which mesh faces are drawn, mesh detail, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; mesh detail and lighting |
+| `D3DDrv.dll` | the Direct3D 7 display driver: gamma, the textures' depth, the light maps' brightness on screen, fog, detail textures, and each pass's blending -- the look's reference | [`d3ddrv-dll.md`](d3ddrv-dll.md) | read |
 | `IpDrv.dll` | package IpDrv: the sockets -- the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library -- channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 | `Fire.dll` | package Fire: the fractal textures -- fire, water (lit, or bending another texture) and ice -- that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
@@ -53,8 +55,7 @@ Beside them in `gamefiles/System/`, copied in by the owner
 - **`ALAudio.dll`** is OldUnreal's OpenAL audio driver built for Deus Ex
   ("OpenAL Audio for DeusEX", 2016): lip sync, EFX reverb with a mode that
   emulates the old one, HRTF, Doppler, OGG, and tracker music through libxmp.
-  It needs `OpenAL32.dll` (copied too), `ALURE32.dll` and `libxmp.dll` (not
-  copied).
+  It needs `OpenAL32.dll`, `ALURE32.dll` and `libxmp.dll`, copied too.
 
 ## Working on the binaries
 
@@ -63,44 +64,37 @@ cloned as `dx-reverse-info/` in the parent folder of its repositories, beside
 the game install (`gamefiles/`) and the reference material (`reference/`);
 the paths below that are not this repository's are that parent folder's.
 
-- **IDA runs headless, in the distrobox.** Windows IDA 9.4 is installed in
-  the Lutris prefix (`~/Games/umu/umu-default`), and
-  [`tools/ida/idalib-mcp.sh`](tools/ida/idalib-mcp.sh) runs
-  ida-pro-mcp's `idalib` supervisor there as Claude Code's `ida` MCP server,
-  over stdio, under the Proton wine Lutris runs IDA with (so IDA's window and
-  the workers share one wineserver). Nothing runs on the host: umu and
-  Proton's own launcher drop a program's stdin, so the script calls that
-  Proton's `wine` directly. Once per machine: the prefix's Python gets IDA's
-  `idapro` wheel (IDA's `idalib\python`), the container gets
-  `lib32-glibc` (this wine starts every program through its 32-bit loader),
-  and `claude mcp add --scope local ida -- "$PWD/dx-reverse-info/tools/ida/idalib-mcp.sh"`,
-  run in the parent folder, where Claude Code starts, registers it, with the
-  plugin's own `plugin:ida-pro-mcp:idalib` (a Linux idalib, which is not here)
-  disabled in `/mcp`. The script enables `py_eval` and `py_exec_file`. IDA
-  sees the parent folder as `X:\Documents\projects\deusex` and the whole
-  filesystem as `Z:\`,
-  so a script in any scratch directory runs through `py_exec_file`. `py_eval`
-  keeps its top-level names as locals, which a function or comprehension
-  defined there cannot see: put the code in a function, or in a file.
+- **IDA runs headless, through Hex-Rays' own IDA MCP server.** IDA Pro 9.4
+  for Linux is in `~/ida-pro-9.4`, its `idalib` named in the user's
+  `~/.idapro/ida-config.json`, and Claude Code runs the server from the
+  plugin `ida-mcp@HexRaysSA`, installed once per machine for the user, so in
+  every folder: `claude plugin marketplace add HexRaysSA/claude-marketplace`,
+  then `claude plugin install ida-mcp@HexRaysSA` (it runs `ida-mcp stdio`
+  under `uv`, over stdio). Its tools: `open_database`, a database by its path,
+  in a headless `idalib` worker of its own; `execute_python`, IDAPython and
+  Hex-Rays' `ida-domain` API against it -- `db` is the open database, and
+  names and imports persist while the session holds it -- with `reference` to
+  look the API up; `list_databases`, `save_database` and `close_database`. A
+  script anywhere runs through `execute_python` by `exec`-ing its file
+  (below). IDA's own window, with the same plugin in `~/.idapro/plugins/`,
+  lends the server a database it has open. Until 2026-10-04 the workspace's
+  machine ran Windows IDA under Proton instead, with ida-pro-mcp's supervisor
+  as the server: [`tools/ida/idalib-mcp.sh`](tools/ida/idalib-mcp.sh), kept
+  for a machine without IDA for Linux.
 - **One database per binary**, beside it: `gamefiles/System/DeusEx.exe.i64`
-  and the like, unpacked while open -- the `.id0`, `.id1`, `.id2`, `.nam` and
-  `.til` files beside it are working files, and the `.i64` is only written on
-  save. Backups in `reference/idb-backup/`. `idb_open` opens one by its `X:\`
-  path in a worker of its own and names the session, which every other call
-  then takes as `database`; up to four are open at once. A worker outlives the
-  session and saves and exits after ten idle minutes (a longer
-  `idle_ttl_sec` on `idb_open` keeps it); `idb_close` saves and exits at
-  once. Either way the close leaves the working files behind -- with
-  `save: true` too, the `.i64` rewritten beside them (2026-09-28) -- and the
-  next `idb_open` opens them rather than the `.i64`: delete them after a
-  close to go back to the saved database, and move them aside to check what
-  a save wrote. A database is open in one place at a time: the
-  supervisor adopts one that IDA's window has open rather than open it twice.
+  and the like; backups in `reference/idb-backup/`. A close writes the
+  database back -- `close_database` rewrites the `.i64` even without
+  `save_database`, and leaves no working files beside it: a copy of
+  `DeusExText.dll.i64`, opened and closed, came back 8 KB smaller with its
+  functions, names and comments the same (2026-10-05). So a session leaves a
+  database no longer byte for byte its backup; back up what it changed.
 - **Types.** [`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) gives a
   database the layout of every native class, struct and enum, from the
   script source in the game's packages, and checks each class against the size
-  the DLL registers for it. Run it in IDA (File > Script file, or the MCP's
-  `py_exec_file`), again after reopening a database without saving. On the
+  the DLL registers for it. Run it in IDA -- File > Script file, or through
+  the server's `execute_python`, `exec`-ing the file (`PXM_GAME_DIR` names
+  the game when the database is not in its `System/`) -- again after
+  reopening a database without saving. On the
   host, `--check` compares a DLL's registrations without IDA, and `--layout
   <class>` prints a class's fields at their offsets -- the quickest way to name
   an offset seen in `objdump`. A class that is C++ only (`ULevel`,
@@ -115,12 +109,13 @@ the paths below that are not this repository's are that parent folder's.
   many for 8-bit ones, which the decompiler shows as nonsense.
   [`tools/ida/utf16_strings.py`](tools/ida/utf16_strings.py), run after
   the types, redefines them; a function decompiled before then needs
-  decompiling again. The MCP's own preview of a string (the `refs` of
-  `decompile`) still shows a UTF-16 one as nonsense: the database is right.
+  decompiling again. A preview that reads a string's bytes as 8-bit text
+  still shows a UTF-16 one as nonsense: the database is right.
 - **Names.** [`tools/ida/ue1_names.py`](tools/ida/ue1_names.py) names
   the functions a UE1 DLL registers its classes and natives from, which IDA
   leaves as `sub_...`, and the class object of each class the DLL does not
-  export (`Engine.dll`'s AI events), with the name its export would have. So
+  export (`Engine.dll`'s AI events, pending levels and `UServerCommandlet`,
+  `IpDrv.dll`'s two commandlets), with the name its export would have. So
   a new database gets the three scripts in turn: types, strings, names; the
   types again after the names checks the unexported classes too.
 - **The script and the headers.** Every native class declares its fields in
@@ -180,6 +175,6 @@ the paths below that are not this repository's are that parent folder's.
 | [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md), [`cli-flags.md`](cli-flags.md), [`ini-keys.md`](ini-keys.md), [`porting-notes.md`](porting-notes.md), [`types/launch.h`](types/launch.h), [`live-verification.md`](live-verification.md) | the launcher's details ([its index](launcher.md)) |
 | [`deusex-dll.md`](deusex-dll.md), [`engine-dll.md`](engine-dll.md), [`core-dll.md`](core-dll.md), [`extension-dll.md`](extension-dll.md), [`consys-dll.md`](consys-dll.md), [`deusextext-dll.md`](deusextext-dll.md), [`render-dll.md`](render-dll.md), [`d3ddrv-dll.md`](d3ddrv-dll.md), [`ipdrv-dll.md`](ipdrv-dll.md), [`galaxy-dll.md`](galaxy-dll.md), [`fire-dll.md`](fire-dll.md), [`windrv-dll.md`](windrv-dll.md) | each DLL: the binary, its classes, what each function does, with addresses |
 | [`network.md`](network.md) | how the original plays over a network: joining, packets, replication, remote calls |
-| [`tools/ida/`](tools/ida/) | the IDA scripts: types, strings, names ([above](#working-on-the-binaries)); `idalib-mcp.sh`, the headless server |
+| [`tools/ida/`](tools/ida/) | the IDA scripts: types (and `Render.dll`'s, `render_types.py`), strings, names ([above](#working-on-the-binaries)); `idalib-mcp.sh`, the previous machine's headless server (Windows IDA under Proton) |
 | [`tools/pe/`](tools/pe/) | `dialogs.py`: a Windows binary's dialog templates as text, without IDA ([above](#working-on-the-binaries)) |
 | [`tools/wine/`](tools/wine/) | `wizard-capture.sh` and `wizard_drive.py`: the original launcher's wizard, captured page by page under wine ([above](#working-on-the-binaries)) |

@@ -138,7 +138,7 @@ centred.
 
 | Control | Id | Kind | Rectangle |
 |---|---|---|---|
-| logo | 1024 | static, bitmap, sunken frame | 6, 6 (sized to its bitmap) |
+| logo | 1024 | static, bitmap, raised modal frame (`WS_EX_DLGMODALFRAME`) | 6, 6 (sized to its bitmap) |
 | line | -- | etched horizontal | 0, 58, 349 × 1 |
 | page holder | 1061 | black frame; each page opens inside it | 3, 59, 344 × 172 |
 | line | -- | etched horizontal | 0, 231, 349 × 1 |
@@ -280,12 +280,9 @@ box is ticked but #6, Reset. Its Next reads "Run!" (`0x10911BD0`).
 
 `GetNext` (`0x10911C00`) reads each box with `BM_GETCHECK` (`0xF0`), appends each
 ticked box's flags to a string -- a space before each, as the table shows them --
-optionally deletes `<appPackage()>.ini`, then:
-
-```
-ShellExecute("open", GModuleFilename, <flags>, appBaseDir(), SW_SHOWNORMAL)
-EndDialog(Owner->hWnd, 0)
-```
+optionally deletes `<appPackage()>.ini`, then opens the game's own file again
+(`ShellExecute`, from the base directory, shown normally) with that string as its
+command line, and ends the wizard with 0 (`EndDialog`).
 
 The new process gets these flags and nothing else of the command line.
 What each flag does in the engine: [`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode).
@@ -295,19 +292,20 @@ and exits.** Any port must reproduce that, or deliberately choose not to.
 
 ## ⚠ Shipped bug: three safe-mode checkboxes are dead
 
-Verified in raw disassembly (not a decompiler artifact) — eight `BM_GETCHECK` sites in
-`0x10911C00`, and their object-offset loads are:
+Read at the instruction level, not from the decompiler's output: `0x10911C00` sends
+`BM_GETCHECK` eight times, and the window handle each send takes is at these offsets
+of the page:
 
-```
-0x10911C46  mov edx, [ecx+38h]    -> #1 NoSound       -nosound
-0x10911D3A  mov eax, [edx+0B0h]   -> #2 No3DSound     -no3dsound
-0x10911E35  mov ecx, [eax+0B0h]   -> #2 again         -nohard
-0x10911F2F  mov edx, [ecx+0B0h]   -> #2 again         -nohard -noddraw
-0x1091202F  mov eax, [edx+0B0h]   -> #2 again         -defaultres
-0x10912148  mov ecx, [eax+308h]   -> #7 NoProcessor   -nommx -nokni -nok6
-0x10912260  mov edx, [ecx+380h]   -> #8 NoJoy         -nojoy
-0x10912378  mov eax, [edx+290h]   -> #6 ResetConfig   delete ini
-```
+| Read at | Handle at | Box read | Flags it decides |
+|---|---|---|---|
+| `0x10911C46` | `+0x38` | #1 NoSound | `-nosound` |
+| `0x10911D3A` | `+0xB0` | #2 No3DSound | `-no3dsound` |
+| `0x10911E35` | `+0xB0` | #2 again | `-nohard` |
+| `0x10911F2F` | `+0xB0` | #2 again | `-nohard -noddraw` |
+| `0x1091202F` | `+0xB0` | #2 again | `-defaultres` |
+| `0x10912148` | `+0x308` | #7 NoProcessor | `-nommx -nokni -nok6` |
+| `0x10912260` | `+0x380` | #8 NoJoy | `-nojoy` |
+| `0x10912378` | `+0x290` | #6 ResetConfig | delete the ini |
 
 Offsets `+0x128`, `+0x1A0`, `+0x218` — checkboxes **#3 No3DVideo, #4 Window, #5 Res** —
 are **never read**. The SDK's source has the same five reads of box #2, so

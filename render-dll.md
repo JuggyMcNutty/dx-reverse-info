@@ -45,9 +45,13 @@ warp zones and the sky.
   sprites that were kept, translucent ones last, then the coronas.
 
 The sky's frame looks out from the zone's `SkyZone`, turned as the viewer is
-and then by the sky zone's own rotation, so the sky's scenery turns the other
-way (Liberty Island's sky zone is turned 5,080, 28°: seen in captures of both
-engines, 2026-09-26; the code is not read).
+and by the sky zone's own rotation (Liberty Island's sky zone is turned 5,080,
+28°). Which way that rotation applies is settled by captures of both engines
+(2026-09-26), not by the code, which is not read: the fork matches the
+original's skyline with its view turned by the inverse of the zone's rotation
+(VibeEngine [`11e582e`](https://github.com/JuggyMcNutty/VibeEngine/commit/11e582e6c005a5b7cd8eaea527f58a277fdd91e4)),
+where turning it by the rotation itself put the city 56° off -- twice the
+zone's 28°.
 
 ## Which actors are drawn
 
@@ -328,7 +332,8 @@ as changing.
 - **To the device.** A map holds a byte a channel, up to 127. The render
   device gets the static map, which it holds already, or the dynamic map,
   marked changed (`bRealtimeChanged`) for it to upload whole; `D3DDrv` shows
-  a byte as 1/128 of the texture's brightness
+  a byte as 1/128 of the texture's brightness in its one-pass path, the
+  game's, and 1/64 in the two-pass one
   ([the light maps' brightness](d3ddrv-dll.md#the-light-maps-brightness)).
 
 ### Meshes
