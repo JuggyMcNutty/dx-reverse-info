@@ -117,6 +117,19 @@ are `exec` exports.
   - lays the tree out again.
 - **`DeusExHUD`** overrides the event to lay the HUD out again as its parts
   come and go, the InfoLink and the log among them.
+- **`Destroy`** (`SafeDestroy`, `0x1004c0b0`, through `PreDestroy`,
+  `0x10050500`, and `CleanUp`, `0x1004bec0`), once per window:
+  1. a window that shows is hidden, as by `Hide`, and the window is made
+     unselectable, so the focus and grabs move away from it;
+  2. its children are destroyed, first to last;
+  3. it gets `DestroyWindow`;
+  4. its parent gets `ChildRemoved` and every ancestor `DescendantRemoved`
+     (a modal's lets go of its `preferredFocus` when that is the window,
+     `0x10037400`);
+  5. the root lets go of it as the window under the mouse and as the grab;
+     its timers go, and it leaves its parent.
+
+  The object is deleted unless its `lockCount` holds it.
 - **The pointer** (`XRootWindow::PaintWindows`, `0x1003ac18`) is drawn last,
   while a window takes the mouse (every modal one does) and the root's
   `bCursorVisible` holds. `Init` sets that as the root starts; `ShowCursor`
@@ -148,6 +161,13 @@ are `exec` exports.
   (`XModalWindow::Init`) and each tab group made under it. It is sorted top
   to bottom, then left to right, by each group's place: that of its first
   traversable window (`ComputeTabGroupLocation`, `0x10045000`).
+- **The focus moving off** (`CheckFocusWindow`, `0x10050b80`), which
+  `SetChildVisibility` and `SetSelectability` call: a focus window that is no
+  longer traversable with the modal check goes to the topmost modal's (or
+  the root's) `preferredFocus` when that is traversable, else on as
+  `MoveFocus` right moves it, and to none when that leaves it where it was.
+  A grab (`CheckGrabbedWindow`, `0x10050c90`) is let go when the window or a
+  parent is hidden or insensitive.
 - **`XWindow::IsTraversable`** (`0x1004c460`): a window can take the focus
   when it is selectable, and it and every parent are visible and sensitive.
   With the modal check, its nearest modal (or the root) must also be the
@@ -162,7 +182,7 @@ are `exec` exports.
   - round the ends (a tab group's default).
 
   With none in the list, or no focus at all, it hands the move to
-  `MoveTabGroup`.
+  `MoveTabGroup`. Both return the focus window, moved or not.
 - **`XWindow::MoveTabGroup`** (`0x1004f440`) works in the topmost modal (or
   the root). `MoveTabGroupNext` and `MoveTabGroupPrev` call it forward and
   back ([small](#small)). It starts at the tab group after or before the

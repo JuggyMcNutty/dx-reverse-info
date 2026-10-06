@@ -924,6 +924,13 @@ forced before a level is saved: `SaveCurrentLevel`
 ([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)), and the
 level a map load leaves ([the map load's collection](#the-map-loads-collection)).
 
+**A decal** leaves the surfaces it is on only through `DetachDecal`
+(`execDetachDecal`, `0x103e9a30`), which the script's `Decal.Destroyed` calls.
+`execAttachDecal` (`0x103e7250`) does not test `bDeleteMe`, and `ADecal`'s
+destructor (`0x1030fd60`) empties only the decal's own list of surfaces. So a
+decal attached again after its `Destroyed` stays on its surfaces, and once the
+cleanup deletes it they point at the deleted decal.
+
 ## The map load's collection
 
 `UGameEngine::LoadMap` (`0x1038c1f0`):
