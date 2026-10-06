@@ -213,7 +213,8 @@ garbage`); it logs `Purging garbage`, with `GObjInGarbageCollection` set:
    the exit purge, every object then.
 2. Every unreachable non-native object is deleted (the virtual at +12, as
    `CriticalDelete`'s).
-3. Every unreachable name is deleted.
+3. Every unreachable name that is not native is deleted
+   (`FName::DeleteEntry`, `0x1014e0b0`; [names](#names-hashed-and-compared)).
 
 It ends with `Garbage: objects: %i->%i; refs: %i`: the objects before, after,
 and the references counted.
@@ -435,3 +436,20 @@ The rest are UE1's own. The details:
   ([events](engine-dll.md#the-manager), [flags](extension-dll.md#flags)).
 - **`appStricmp`** (`0x10123560`) is the C library's `_wcsicmp`, which folds
   A to Z to lower case: an underscore sorts before the letters.
+- **The name table** (`FName::FName(Name, FindType)`, `0x1014b950`): a name is
+  found in 4,096 buckets by `appStrihash`, compared with `appStricmp`, so one
+  entry holds every spelling of a name, spelt as it was first made. With
+  `FNAME_Find` a name not there is None; otherwise it is made, in the slot a
+  deleted name left last (`FName::Available`), else in a new one at the end.
+  `FNAME_Intrinsic` flags it `RF_Native`.
+- **Hard-coded names** (`FName::StaticInit`, `0x1014bbc0`): None, the property
+  types, the probes and the rest of `UnNames.h`, each in its fixed slot
+  (`Hardcode`, `0x1014b7f0`) and `RF_Native`.
+- **A name deleted** (`DeleteEntry`, `0x1014e0b0`, from the collection's
+  purge): never a native one (an assert); it leaves its bucket, is freed, and
+  its slot goes to `Available`.
+- **An object's own name** when none is given (`MakeUniqueObjectName`,
+  `0x101575b0`, from `StaticAllocateObject` and `Rename`): its class's name
+  without trailing digits, then the class's count (`ClassUnique`, at +1160 in
+  a `UClass`), counted up past any number an object of the same outer
+  already has.
