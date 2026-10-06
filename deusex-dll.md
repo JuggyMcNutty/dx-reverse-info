@@ -15,6 +15,8 @@ locations. How it was read: [working on the binaries](README.md#working-on-the-b
 | Exports | 372: 16 classes, 57 `exec` natives |
 | Functions | 834 |
 
+An export is the function's code itself, not a jump to it.
+
 ## Classes
 
 Each size is the one the class's registration passes to `UClass`. Each

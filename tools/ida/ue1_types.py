@@ -20,7 +20,7 @@ On the host:
     python3 tools/ida/ue1_types.py --layout CLASS...  a class's fields at their
                                                       offsets (AScriptedPawn or
                                                       ScriptedPawn)
-In IDA, run this file (File > Script file, or the MCP's py_exec_file). It
+In IDA, run this file (File > Script file, or the MCP's execute_python, exec-ing this file). It
 declares the types, checks every class the open DLL registers against the
 size it passes to UClass's constructor, and types `this` on every member
 function of a declared class. The game directory is found from the database's

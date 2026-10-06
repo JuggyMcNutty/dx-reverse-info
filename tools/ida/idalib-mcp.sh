@@ -1,8 +1,9 @@
 #!/bin/sh
 # Headless IDA for Claude Code: ida-pro-mcp's idalib supervisor as a stdio MCP
 # server. Runs in this distrobox, never on the host: the Windows IDA and its
-# Python live in the Lutris prefix, driven by the same Proton wine Lutris runs
-# IDA with, so a GUI IDA open at the same time shares its wineserver.
+# Python live in a Wine prefix (IDA_PREFIX), driven by a Proton build's wine,
+# so a GUI IDA open at the same time shares its wineserver. Needs the Claude
+# Code plugin ida-pro-mcp@mrexodia installed, whose copy of ida-pro-mcp it runs.
 # Register, in the folder Claude Code starts in:
 # claude mcp add --scope local ida -- "$PWD/dx-reverse-info/tools/ida/idalib-mcp.sh"
 # (README.md#working-on-the-binaries).

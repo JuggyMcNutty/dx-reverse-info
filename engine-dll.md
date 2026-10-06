@@ -921,8 +921,8 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
 So below 128 a destroyed actor stays in memory, and every reference to it stays
 set: the script tests `bDeleteMe`, or the reference's object, to tell. It is
 forced before a level is saved: `SaveCurrentLevel`
-([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)), and a map
-load with `?push`. A level dropped without one is collected with its chain.
+([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)), and the
+level a map load leaves ([the map load's collection](#the-map-loads-collection)).
 
 ## The map load's collection
 

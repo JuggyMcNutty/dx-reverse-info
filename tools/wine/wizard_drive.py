@@ -4,7 +4,8 @@ virtual desktop, with Win32 calls only: no real mouse or keyboard.
     python.exe wizard_drive.py <scenario> <outdir> [<System dir>]
 
 Run by wizard-capture.sh, which sets up wine and the game files around it.
-Scenarios: firstrun, changevideo, splash, safe, recovery, make. Each capture is a
+Scenarios: firstrun, changevideo, safe, recovery, make (wizard-capture.sh runs
+these), and splash, run on its own. Each capture is a
 .bmp of the window as the screen shows it, and a .json of its controls:
 class, id, text, rectangle relative to the window's client area, visible,
 checked, a list's items. Each scenario also writes <scenario>.log.

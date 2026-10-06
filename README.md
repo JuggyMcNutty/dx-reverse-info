@@ -71,7 +71,7 @@ repositories, beside the game install (`gamefiles/`) and the reference material
   own window, with the same plugin in `~/.idapro/plugins/`, lends the server a database it
   has open. Without IDA for Linux, [`tools/ida/idalib-mcp.sh`](tools/ida/idalib-mcp.sh)
   serves databases from Windows IDA under Proton's wine (ida-pro-mcp's idalib supervisor,
-  over stdio, in the distrobox).
+  over stdio, in the distrobox; it needs the plugin `ida-pro-mcp@mrexodia` installed).
 - **One database per binary**, beside it ([the databases](#the-databases)). Closing a
   database (`close_database`) rewrites its `.i64` even without `save_database`, and leaves
   no working files beside it: back it up first.
@@ -112,7 +112,7 @@ repositories, beside the game install (`gamefiles/`) and the reference material
   ([`ConSys.dll`](consys-dll.md#the-binary)).
 - **Without IDA**, `objdump` reads the DLLs. `objdump -p` lists the exports under their C++
   names (`?AICanSee@APawn@@QAEMPAVAActor@@MHHHH@Z`, and `?execAICanSee@...` for its script
-  entry); an `Engine.dll` export is a jump to the code, from incremental linking, to follow.
+  entry); an `Engine.dll`, `Core.dll` or `Render.dll` export is a jump to the code, from incremental linking, to follow.
   `objdump -d -M intel --start-address=... --stop-address=...` gives a function, and its
   calls into `Core.dll` resolve through the import table (`appAtan`, `FVector::Rotation`).
 - **Dialog templates** are resources, data rather than code:

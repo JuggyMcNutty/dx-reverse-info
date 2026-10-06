@@ -4,7 +4,7 @@ Every claim cites the address it was read from. Imagebase `0x10900000`.
 
 ## Entry
 
-`start` (`0x109214B6`, CRT) → `WinMain` thunk (`0x10901366`) → **`LaunchWinMain` (`0x10908A30`)**.
+`start` (`0x109214B6`, CRT) → `WinMain` thunk (`0x10901366`) → **`WinMain` (`0x10908A30`)**.
 
 ## 1. Single-instance forwarding (`0x10908A30`–`0x10908CD1`)
 
@@ -35,7 +35,7 @@ then `Open <first token>` unless that token starts with `-`
 log window gets only when the main loop starts (`MainLoop`, `0x10914630`): a line that
 arrives before then, during the wizard, does nothing.
 
-## 2. Engine bootstrap (`0x10908CDB`–`0x10909205`)
+## 2. Engine bootstrap (`0x10908CDB`–`0x10908E92`)
 
 | Step | Address | Detail |
 |---|---|---|
@@ -64,7 +64,7 @@ template's image is the exe's bitmap #101, a 583×70 "DEUS EX" banner, which the
 bitmap replaces. In the SDK's source the window is sized to the bitmap, centred on the
 screen and put on top once, then released. It closes while the wizard shows and reopens
 after ([§5](#5-initengine-0x1090a050)), and closes for good once there is an engine
-([§9](#9-main-loop-and-shutdown-0x109097eb-onward)).
+([§9](#9-main-loop-and-shutdown-0x10909443-onward)).
 
 > ⚠ **A missing splash bitmap is fatal.** The fallback to `..\Help\Logo.bmp` is taken
 > without checking that it exists (`0x109090A4`). With neither bitmap present, `InitSplash`
@@ -143,7 +143,7 @@ so `Running.ini` stays and the next launch opens in RecoveryMode.
 The shipped `DeusEx.ini` sets `CdPath=..\`, so on a GOG or Steam install the check passes
 against the game's own `Textures\` and never prompts.
 
-## 9. Main loop and shutdown (`0x109097EB` onward)
+## 9. Main loop and shutdown (`0x10909443` onward)
 
 With an engine from `InitEngine`:
 

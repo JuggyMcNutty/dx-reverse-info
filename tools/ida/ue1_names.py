@@ -2,7 +2,7 @@
 
 A UE1 DLL registers each of its classes and natives from small functions the
 C runtime calls at load, which IDA leaves as sub_XXXX. Run this in IDA (File >
-Script file, or the MCP's py_exec_file), after tools/ida/ue1_types.py; it names
+Script file, or the MCP's execute_python, exec-ing this file), after tools/ida/ue1_types.py; it names
 them by what they do:
 
 - ?PrivateStaticClass@<class>@@0VUClass@@A: the class object of a class the

@@ -9,7 +9,7 @@ UnObj.h, UnModel.h, UnLevel.h, UnCamera.h, UnTex.h, Core/Inc/UnCache.h,
 Render/Src/RenderPrivate.h and UnSpan.h, in reference/ReleaseSDK1112f), up to
 the fields the renderer uses, packed to 4 bytes as the DLLs are.
 
-Run it in IDA (File > Script file, or the MCP's py_exec_file) on Render.dll's
+Run it in IDA (File > Script file, or the MCP's execute_python, exec-ing this file) on Render.dll's
 database after tools/ida/ue1_types.py, whose script types it builds on. It
 declares the structures, types URender's methods through their exports (each a
 jump to the code), and names what is not exported: the sprite's constructor

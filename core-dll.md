@@ -49,8 +49,8 @@ The natives the script marks as Deus Ex's (`DEUS_EX`), and a class:
 - section and key match in any case.
 
 Its one caller is the Save Game screen
-(`MenuScreenSaveGame.GenerateNewSnapShot`). It takes the save's picture
-unless `[Engine.Engine] GameRenderDevice` is `OpenGlDrv.OpenGLRenderDevice`.
+(`MenuScreenSaveGame.GenerateNewSnapShot`), for its save picture
+([save pictures](extension-dll.md#save-pictures)).
 
 ### CriticalDelete
 
@@ -165,7 +165,7 @@ Its only users are `DeusExPlayer`'s debug console commands.
 
 An object stays while it is reachable from the root set; everything else is
 destroyed, then deleted. Nothing is reference-counted. The game engine
-collects at each map load ([`Engine.dll`](engine-dll.md#the-map-loads-collection));
+collects at each map load but Entry's ([`Engine.dll`](engine-dll.md#the-map-loads-collection));
 the console's `OBJ GARBAGE` collects at once, keeping what is native (and, in
 the editor, what is standalone), even under `-NOGC`.
 
@@ -270,7 +270,7 @@ it walks every property instead and calls `Modify` before each change.
   section of that name (the bindings are in `[Engine.Input]`), so nothing is
   copied: the input objects only read their bindings from `User.ini` again,
   and the player's bindings stay.
-- **The console's `GET` and `SET`** (`UObject::StaticExec`, `0x101531b0`),
+- **The console's `GET` and `SET`** (`UObject::StaticExec`, `0x10153110`),
   with which the game's menus read and write their settings:
   - The class is found by its name in any package loaded (the menus name
     `DeusExMPGame`, `DXMapList`, `Player`, not their packages); the property

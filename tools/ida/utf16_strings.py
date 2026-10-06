@@ -3,7 +3,7 @@
 This build of the game is Unicode: every TEXT("...") in the DLLs is UTF-16,
 and IDA takes many of them for 8-bit strings, which the decompiler then shows
 as nonsense ("湅扡敬汃慯" for "EnableCloak"). Run it in IDA (File > Script file,
-or the MCP's py_exec_file) after tools/ida/ue1_types.py. It redefines as
+or the MCP's execute_python, exec-ing this file) after tools/ida/ue1_types.py. It redefines as
 UTF-16:
 
 - every string IDA already has, or data it named "a...", in .rdata and .data

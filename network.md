@@ -220,7 +220,7 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   - No net driver for the URL (`UGameEngine::Browse`, `0x1038ad30`):
     `Networking Failed` and the error for 6 s.
 - **Lost.** A client level whose server connection closes
-  (`ULevel::TickNetClient`, `0x103a3030`), or which the server sends `FAILURE`
+  (`ULevel::TickNetClient`, `0x103a2f10`; the browse at `0x103a3030`), or which the server sends `FAILURE`
   after the join (`ULevel::NotifyReceivedText`), browses `?failed` (`?entry`
   alike, less the message). `Browse` logs `Failed; returning to Entry`, drops
   the level's net driver, makes the Entry level the one played with no level
