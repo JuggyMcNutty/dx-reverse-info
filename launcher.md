@@ -26,7 +26,7 @@ and `Window.dll`.
 | Size | 253,952 bytes |
 | Imagebase | `0x10900000` |
 | `GPackage` | `"Launch"` (string at `0x1092C534`) |
-| Functions | 762 (367 named — mostly import thunks — / 371 unnamed) |
+| Functions | 763: 353 import thunks, 186 incremental-link jumps, 224 of its own (22 of them the C runtime's) |
 | MD5 | `795137104d97da1bf4282fd6979bb38d` |
 | **SHA1** | **`2a933e26aa9cfb33b37f78afe21434caa031f14a`** |
 | Build | Nov 2021 GOG repack of the 1112f-era binary |
