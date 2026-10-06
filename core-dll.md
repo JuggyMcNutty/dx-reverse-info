@@ -66,9 +66,21 @@ Nothing checks for references: whatever still points at it is left pointing
 at freed memory. `None` does nothing. The int it is declared to return is
 never set.
 
-The game's 20 calls delete objects of their own (nano keys, logs, notes, the
-conversation history, text parsers, save-game pictures and save directories)
-and clear their reference on the next line.
+The game's 20 calls, all in `DeusEx.u`, delete objects of their own:
+
+| What | Callers |
+|---|---|
+| a nano key | `NanoKeyRing.RemoveKey`, `RemoveAllKeys` |
+| an image's note | `DataVaultImage.DeleteNote` |
+| the log, the conversation history | `DeusExPlayer.ClearLog`, `ResetConversationHistory` |
+| the player's debug object | `DeusExPlayer.Destroyed` |
+| a dump location | `DeusExGameInfo.Login`, `DeusExPlayer.DXDumpInfo`, `DumpLocationBaseWindow.DestroyDumpLoc`, `BehindTheCurtain.ViewDumps` |
+| a text parser | `InformationDevices.CreateInfoWindow`, `CreditsScrollWindow.ProcessText`, `ComputerUIWindow.ProcessDeusExText` |
+| a save-game picture | `MenuScreenSaveGame.DestroyWindow`, `DeusExRootWindow.ShowSnapshot` |
+| a save or map directory | `MenuScreenSaveGame.NewSaveGame`; `MenuScreenLoadGame`'s `UpdateSaveInfo`, `PopulateGames`, `UpdateFreeDiskSpace`; `LoadMapWindow.DestroyWindow` |
+
+Most drop their reference on the next line. `RemoveAllKeys` reads the deleted
+key's `NextKey` to go on, from freed memory.
 
 ### AllObjects
 
@@ -148,6 +160,72 @@ Its only users are `DeusExPlayer`'s debug console commands.
     (`Purging outdated file from cache: %s (%i days old)`).
   - The GOG build's ini: `CachePath=..\Cache`, `CacheExt=.uxx`,
     `PurgeCacheDays=30`.
+
+## Garbage collection
+
+An object stays while it is reachable from the root set; everything else is
+destroyed, then deleted. Nothing is reference-counted. The game engine
+collects at each map load ([`Engine.dll`](engine-dll.md#the-map-loads-collection));
+the console's `OBJ GARBAGE` collects at once, keeping what is native (and, in
+the editor, what is standalone), even under `-NOGC`.
+
+**`CollectGarbage(KeepFlags)`** (`0x10158500`) logs `Collecting garbage`, makes
+the tag archive, marks from the root set (`SerializeRootSet`) and purges
+(`PurgeGarbage`).
+
+**The tag archive** (made at `0x1015eac0`):
+
+- It tags every object `RF_TagGarbage | RF_Unreachable` and every name
+  `RF_Unreachable`.
+- **A reference** (`operator<<(UObject*&)`, `0x1015ec90`) counts one. A target
+  flagged `RF_EliminateObject` (0x400) is set to None there, in the holder's
+  own memory, and is not followed. An unreachable target loses
+  `RF_Unreachable`; the first time (it still has `RF_TagGarbage`) it loses that
+  too and is serialized into the archive, so its own references are followed.
+  A serialize that does not reach `UObject::Serialize` is fatal
+  (`%s failed to route Serialize`).
+- **A name** reached loses `RF_Unreachable`.
+
+**The root set** (`SerializeRootSet`, `0x101580b0`): `GObjRoot` (the objects
+`AddToRoot` keeps), then every object that has one of `KeepFlags` and still
+carries `RF_TagGarbage`. Script classes are not native: a class nothing uses
+goes with its package and is loaded again when next asked for.
+
+**What an object marks** (`UObject::Serialize`, `0x10150210`, as the archive
+neither loads nor saves):
+
+- its class, name, outer and linker (so an object keeps its package and its
+  linker);
+- with a state frame (`RF_HasStack`), the frame's node and state;
+- its properties, by its class's `SerializeBin`: every object property, each
+  element of a static array, the objects inside structs and dynamic arrays;
+- a native class adds its own members in its `Serialize`. A linker
+  (`ULinker::Serialize`, `0x1011df90`) marks its root and each import's object,
+  never its exports: a loaded package's objects stay only while something
+  reaches them.
+
+**The purge** (`PurgeGarbage`, `0x101581f0`), unless `-NOGC` (`Not purging
+garbage`); it logs `Purging garbage`, with `GObjInGarbageCollection` set:
+
+1. Every object still `RF_Unreachable` is destroyed (`ConditionalDestroy`,
+   `0x1014fdb0`: once only, `RF_Destroyed`; `Destroy` frees its properties'
+   strings and arrays, `UObject::Destroy` at `0x1014fa50`) -- natives only in
+   the exit purge, every object then.
+2. Every unreachable non-native object is deleted (the virtual at +12, as
+   `CriticalDelete`'s).
+3. Every unreachable name is deleted.
+
+It ends with `Garbage: objects: %i->%i; refs: %i`: the objects before, after,
+and the references counted.
+
+**`UStruct::CleanupDestroyed(Data)`** (`0x10127170`), which a level calls on
+each live actor ([destroyed actors](engine-dll.md#destroyed-actors)): through
+the struct's `RefLink`, every element of every object property that points at
+an object that `IsPendingKill` (an actor with `bDeleteMe`) becomes None; through
+`StructLink`, each element of a struct property is cleaned the same way. Dynamic
+arrays are left alone. A reference to an invalid object is fatal. In the editor
+it walks every property instead and calls `Modify` before each change.
+
 
 ## Configuration
 

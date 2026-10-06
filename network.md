@@ -184,7 +184,7 @@ failed download's temporary file is left for the cache's next cleaning.
 
 **Going** (`UGameEngine::LoadMap`, `0x1038c1f0`): a package stays loaded while
 anything uses it, and a map load collects the garbage once the new map is in
-(`CollectGarbage`, keeping what is native). So a server's downloads go at the
+([the map load's collection](engine-dll.md#the-map-loads-collection)). So a server's downloads go at the
 next map that does not use them (the menu's map after a `DISCONNECT`), and
 another server's package of that name loads in their place. Its version is
 checked as the map loads, before that collection (`GetPackageLinker`'s GUID), so

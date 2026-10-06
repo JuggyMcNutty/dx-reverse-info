@@ -67,7 +67,7 @@ calls the listeners' script.
 - **Ticked by the level.** `ULevel::Tick` calls `UEventManager::Tick`
   (`0x103828f0`) after the actors, on a full tick, unpaused (`LevelInfo.Pauser`
   empty): `AIProcess`, then `CleanupEvents`.
-- **Told of destroyed actors.** `ULevel::CleanupDestroyed` passes each to
+- **Told of destroyed actors.** [`ULevel::CleanupDestroyed`](#destroyed-actors) passes each to
   `DestroyActor` (`0x10382760`): its events are marked for deletion, and it
   stops being any listener's best sender.
 - **What it holds.** 256 hash buckets of event types (`XAIEventType`, a name):
@@ -881,6 +881,63 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   place of `Tick`, its player's input read, `PlayerInput` and `PlayerTick`, and
   the input read again with −1 (cleared); so its physics, later in the same
   tick, take the move `PlayerTick` makes.
+
+## Destroyed actors
+
+**`ULevel::DestroyActor(actor, bNetForce)`** (`0x10395ba0`):
+
+- It refuses a `bStatic` or `bNoDelete` actor (0), and returns 1 at once for
+  one already `bDeleteMe`. A client destroys only what it has authority over,
+  unless forced or the actor is `bNetTemporary`; a player pawn with a live net
+  connection has the connection closed instead.
+- Then, any step stopping once the script has destroyed the actor itself: the
+  `EndState` of its state, if it probes it; its base cleared, and every actor
+  standing on it set free; out of the collision hash; `Destroyed`; every actor
+  it owns loses its owner, every actor it touches is untouched; its owner's
+  `LostChild`; the net and demo drivers told.
+- Its slot in `Actors` becomes None, `bDeleteMe` is set, the audio subsystem is
+  told (`NoteDestroy`), and the actor is destroyed (`ConditionalDestroy`: its
+  strings and arrays emptied, [Core](core-dll.md#garbage-collection)). It goes
+  to the head of the level's `FirstDeleted` chain, linked through its
+  `Deleted`. Its memory is not freed yet.
+
+**`ULevel::CleanupDestroyed(bForce)`** (`0x103965a0`), the last thing every
+`ULevel::Tick` does (unforced):
+
+1. Unforced, `CompactActors` (`0x103963e0`): the None slots after
+   `iFirstDynamicActor` are taken out of `Actors`, the actors' order kept; an
+   actor still in the list with `bDeleteMe` is logged (`Undeleted %s`) and
+   taken out too.
+2. With 128 or more actors on `FirstDeleted`, or forced: every live actor in
+   `Actors` has its class clear its references to pending-kill actors
+   ([`UStruct::CleanupDestroyed`](core-dll.md#garbage-collection)).
+3. Then each actor on the chain, from its head: the event manager is told
+   (`UEventManager::DestroyActor`, [the manager](#the-manager)), and the actor
+   is deleted (the virtual at +12).
+
+So below 128 a destroyed actor stays in memory, and every reference to it stays
+set: the script tests `bDeleteMe`, or the reference's object, to tell. It is
+forced before a level is saved: `SaveCurrentLevel`
+([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)), and a map
+load with `?push`. A level dropped without one is collected with its chain.
+
+## The map load's collection
+
+`UGameEngine::LoadMap` (`0x1038c1f0`):
+
+- **The old level.** Its loaders are reset, its brush tracker, net driver and
+  demo driver deleted; with `?push` it is cleaned (`CleanupDestroyed(1)`) and
+  saved as `Game%04i.dxs`. `GLevel` is then None; nothing flags the old
+  level's objects.
+- **The new level, once loaded,** unless its package is `Entry`, before its
+  actors' collision, game info, `BeginPlay` and the player's login: the
+  engine's `Flush(0)`; every actor inside the new level's
+  package is flagged `RF_EliminateObject`, and the flag is cleared again on each
+  actor in its `Actors`; then `CollectGarbage(RF_Native)` (the call at
+  `0x1038d1e1`).
+- So the old level goes by reachability alone, and an actor of the new
+  package left out of its list (an orphan) goes too, every reference to it made
+  None.
 
 ## Small
 

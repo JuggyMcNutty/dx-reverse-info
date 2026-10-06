@@ -188,8 +188,9 @@ turn:
 
 1. The directory: `Current` for -2, `QuickSave` for -1, else `Save%04d`.
 2. It marks the level as saving (`LevelInfo.LevelAction` 2), shows "Saving"
-   (not for the quick save), and drops the brush tracker and destroyed
-   actors.
+   (not for the quick save), deletes the brush tracker and frees the destroyed
+   actors (`CleanupDestroyed(1)`,
+   [destroyed actors](engine-dll.md#destroyed-actors)).
 3. It saves the level package as `<MapName>.<ext>`.
 4. It sets every mover's `SavedPos` to (-1,-1,-1), then restores the tracker
    and the level action and flushes the cache.
