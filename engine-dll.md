@@ -862,6 +862,9 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   zone; every actor's `LastRenderTime` set to −10 s, whatever its map kept;
   `PostBeginPlay`; `SetInitialState`; the actors' bases. A level already begun
   (from a save, or returned to) keeps its own time and render times.
+- **The game** is spawned only for a level whose `LevelInfo.Game` is None, on a
+  server or standalone: a level returned to keeps the game it was saved with,
+  its mutators and all.
 - **The time** (`ULevel::Tick`, `0x103a51a0`): the frame's time × the level's
   `TimeDilation` is added to the level's time, paused or not. The actors, the
   players' input and the event manager get that time held to 0.005..0.4 s.
