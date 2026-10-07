@@ -374,25 +374,35 @@ fields, after their properties (none):
   the actor moves by it, and its velocity after is twice it less the old
   when it gained downward or was rising, else the mean itself. A decoration
   with more buoyancy than mass rises to the surface and bobs there.
-- **Landing** (`processLanded`, `0x103cef60`), from `physFalling` when its move
-  (each a `MoveActor`, above) meets a floor (normal > 0.7):
-  - in a `bBounceVelocity` zone with a velocity, a non-pawn is thrown again: the
+- **Landing** (`processLanded(HitNormal, HitActor, remaining)`, `0x103cef60`),
+  from `physFalling` when its move (each a `MoveActor`, above) meets a floor
+  (normal > 0.7). Any move of a decoration that hits a `PlayerPawn` first takes
+  one off its `numLandings` (not under 0). The remaining time is what the tick
+  has not stepped yet, and the part of this step the move did not take; unless
+  `bJustTeleported`, the velocity becomes the move's own, the distance gone
+  over the time it took, when the hit's time is over 0.1 and the time it took
+  over 0.003 s. A floor met sliding along a wall lands with neither: no
+  velocity taken, the step's time spent. Then:
+  - a non-pawn in a `bBounceVelocity` zone with a velocity is thrown again: the
     zone's velocity and 80 up;
-  - a pawn with nothing under 0.9 of its box within its radius × 0.2 + 8 down is
-    fitted (`FindSpot`, 1.1 of its size) and, if moved, put there with up to 30
-    units/s across added at random, still falling;
-  - a decoration landed fewer than five times in a row (`numLandings`), with
-    nothing under its middle within its height and radius + 8, traces four boxes
-    (half its radius, its height) 8 down from its corners. More than one free,
-    one of each diagonal pair at least, sends it off the ledge at (x, y, ½) × 2v
-    (x, y: each axis's free corners less the other side's; v: its fall speed
-    held to 30..radius + 30) and counts the landing;
-  - a `bSlidingCarcass` landing on a slope (normal < 0.9) bounces off it: 120
-    along the normal, 70 up;
-  - else the count goes to 0 and `Landed` is sent; an actor still falling has
-    `setPhysics` take walking (a pawn) or none, with the floor hit as its base
-    (the `LevelInfo` for the world). A pawn walking walks out the rest of the
-    tick.
+  - a pawn with nothing under 0.9 of its box within its radius × 0.2 + 8 down
+    (flags 55) is fitted (`FindSpot`, 1.1 of its size) and, if that moved it,
+    put there (`FarMoveActor`) with −30 to 30 units/s added at random along X
+    and along Y, still falling;
+  - a decoration that has landed five times in a row (`numLandings`) lands, the
+    count 0. Below five, with nothing under a line from 0.8 of its height down
+    to its height + radius + 8 below its middle (flags 55), it traces four boxes
+    (half its radius across, its height) 8 down from its corners (flags 23).
+    More than one free, one of each diagonal pair at least, sends it off the
+    ledge at (x, y, ½) × 2v (x, y: each axis's free corners less the other
+    side's; v: its fall speed held to 30..radius + 30) and counts the landing.
+    Otherwise a `Carcass` with `bSlidingCarcass` landing on a slope (normal <
+    0.9) bounces off it, 120 along the normal and 70 up, and counts the landing
+    one time in five (`FRand` < 0.2); any other decoration's count goes to 0;
+  - what is left lands: `Landed`; an actor still falling has `setPhysics` take
+    walking (a pawn) or none, with the floor hit as its base (the `LevelInfo`
+    for the world). A pawn then walking has its acceleration made unit length
+    and walks out the remaining time, if over 0.01 s.
 
 ### Reaching
 
@@ -498,13 +508,13 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   Within max(its radius, 48) of it across and its height up or down, the pawn is
   anchored there; otherwise that node is **the** end point, its `bestPathWeight`
   its distance. None left: no path.
-- **Anchored**, the goal may be a step away:
+- **Anchored**, the goal may be a step away. Either test ends the search at
+  once (`0x103db6ad`), the route the goal when it is a navigation point, else
+  the anchor:
   - a navigation-point goal that is one of the anchor's own reach specs, which
-    the pawn fits and nothing it cannot open blocks (`CanMoveTo`, `0x103dad20`),
-    is the route itself;
-  - any other goal within 800 units of the anchor, in its line of sight and
-    `pointReachable` with the pawn moved onto the anchor (`0x103da880`), makes
-    the anchor the route;
+    the pawn fits and nothing it cannot open blocks (`CanMoveTo`, `0x103dad20`);
+  - any goal within 800 units of the anchor, in its line of sight and
+    `pointReachable` with the pawn moved onto the anchor (`0x103da880`);
   - otherwise **`definePathsFor`** (`0x103daaa0`) marks the anchor's forward
     neighbours as the end points. The anchor's `cost` goes to 1,000,000. Each of
     its `Paths` (`0x360`), and once those end at a -1 its `PrunedPaths`
