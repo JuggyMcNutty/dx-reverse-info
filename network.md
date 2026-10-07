@@ -341,7 +341,10 @@ many bits as the maximum needs (`FBitWriter::WriteInt`).
   connection is open from a client's first packet,
   [`UTcpNetDriver::TickDispatch`](ipdrv-dll.md)) closes (`Tick`, `0x10404a40`).
   Sending stops for the tick when the bytes queued pass the connection's rate
-  (`IsNetReady`).
+  (`IsNetReady`): the queue drains by the rate each tick, down to two ticks'
+  worth below 0, and there is room while it and the packet being built come to
+  0 or less. So the faster the frames, the less room an unreliable call finds
+  ([remote functions](#replication)).
 - **Frames:** a client runs at most its connection's speed / 64 frames a second
   (40 at 2,600); a dedicated server (the game started with `-SERVER`, no client:
   [the command line](cli-flags.md)) at `NetServerMaxTickRate`
