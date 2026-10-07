@@ -347,6 +347,19 @@ test.
 
 ## Drawing
 
+### Styles
+
+- **`GC.SetStyle`** (`0x10027170`) sets only how tiles draw. `DSTY_None`
+  stops drawing and leaves the rest. Any other style draws: `DSTY_Masked`,
+  `DSTY_Translucent` or `DSTY_Modulated` with that one of the three, and
+  `DSTY_Normal` with none.
+- **A tile's flags** (`GeneratePolyFlags`, `0x1002af00`): two-sided, then
+  masked, translucent and modulated as set, and no smoothing unless
+  smoothing is on.
+- **Text** keeps its own flags, which only `EnableTranslucentText`
+  (`0x10027610`) sets: masked, or translucent when it is on, never
+  modulated, whatever the style.
+
 ### Borders
 
 `GC.DrawBorders` (`0x10028df0`) draws a box from nine textures: four
