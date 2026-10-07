@@ -322,4 +322,5 @@ of segments:
 (3020–3040) keep bug locations in dump files per user, to list, add, delete
 and go back to: map, position, view, game version, title and description
 (the script's `DumpLocationStruct`). `DeusExGameInfo.Login` asks
-`HasLocationBeenSaved` on every map; nothing a player uses depends on it.
+`HasLocationBeenSaved` on every map but a save's (`?loadgame`); nothing a
+player uses depends on it.
