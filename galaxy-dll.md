@@ -78,7 +78,7 @@ a setting of this class, and nothing in the game reads it.
   (`0x10608100`) only queues the sound; the next update starts it. With no
   viewport or no sound it plays nothing; a radius of 0 fails an assertion. A
   sound with no slot gets an ID of its own, counting down in steps of 16 from
-  −16. The ID packs the slot ([`Engine.dll`](engine-dll.md#small)).
+  −16. The ID packs the slot ([`Engine.dll`](engine-dll.md#sounds)).
 - **Its priority** (`SoundPriority`, `0x10604460`) is (1 − distance ÷
   radius) × volume, the distance from the player's view target (or the
   player). It is worked out as the sound starts and again each frame.
@@ -89,7 +89,7 @@ a setting of this class, and nothing in the game reads it.
   once. So a sound beyond its radius, whose priority is below 0, is dropped
   even when a channel is free.
 - **`StopSoundId(Id)`** (`0x10607ef0`) stops the channel with that ID
-  (`Actor.StopSound`, [`Engine.dll`](engine-dll.md#small)).
+  (`Actor.StopSound`, [`Engine.dll`](engine-dll.md#sounds)).
 - **`NoteDestroy(Actor)`** (`0x106083a0`), when an actor goes: its ambient
   sound stops, and its other sounds play on where they are, without it.
 - **`SetViewport`** (`0x10605c40`) stops every sound. For a new viewport it

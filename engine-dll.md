@@ -977,6 +977,50 @@ cleanup deletes it they point at the deleted decal.
   package left out of its list (an orphan) goes too, every reference to it made
   None.
 
+## Sounds
+
+Who hears a sound an actor plays. What the audio subsystem then does with it:
+[`Galaxy.dll`](galaxy-dll.md#playing-a-sound).
+
+- **`PlaySound(Sound, Slot, Volume, bNoOverride, Radius, Pitch)`**
+  (`0x103e1f60`; by default `SLOT_Misc`, the actor's `TransientSoundVolume` and
+  `TransientSoundRadius`, pitch 1): with no sound, nothing. A radius ≤ 0 is
+  800. While the level records a demo, and is not a client's, the actor's
+  `DemoPlaySound` event gets the same. Deus Ex returns its ID: the actor's
+  object index × 16 + the slot × 2, + 1 with `bNoOverride`. Each hearer is
+  asked (`CheckHearSound`) with the volume × 100, the radius and the pitch ×
+  100, and the radius squared:
+  - on a client, or called from a script function marked simulated (state code
+    never is), the player of each viewport in the actor's level;
+  - otherwise each pawn in the level's `PawnList` with `bIsPlayer`: in single
+    player, the player's.
+- **`CheckHearSound(Hearer, Id, Sound, Parameters, RadiusSq)`**
+  (`0x103e1b00`): the listener is a player pawn's `ViewTarget` when it has one,
+  else the hearer, at its location, not its eyes. It hears within the radius ÷
+  √1.3 (0.88 of it). When the level's BSP stands between the actor and the
+  listener (`FastLineCheck`, [traces](#traces)), the volume is × 0.35, the
+  range's square × 0.6 (the radius × 0.77) unless the hearer is the actor's
+  `Instigator`, and a hearer on the range's edge hears it too. Then the
+  hearer's event `ClientHearSound(Actor, Id, Sound, the actor's location,
+  Parameters)`.
+- **`Pawn.ClientHearSound`**, a native event, is replicated unreliably while
+  the server has authority (`Engine.u`): a remote player's goes to that
+  player's client ([remote functions](network.md#replication)), a local
+  player's runs at once. Its native (`0x103dfc40`) plays the sound only for a
+  player pawn whose `Player` is a viewport, with an audio subsystem: the volume
+  and pitch ÷ 100, a radius of 0 as 1,600, an actor with `bDeleteMe` as None.
+- **An event** reaches an actor only once its level has begun play
+  (`AActor::ProcessEvent`, `0x10369100`).
+- **`PlayOwnedSound`** (`0x103e29d0`; the same arguments and defaults): no ID
+  and no 800, its range 1,600 for a radius of 0. A client's viewports hear it;
+  off a client, every player pawn but the actor's own remote player, who plays
+  the sound itself: the actor, if a player pawn whose `Player` is not a
+  viewport, else its owner by the same test. In single player, the player.
+- **`DemoPlaySound`** (`0x103e1d00`): the viewports' players, a radius of 0 as
+  1,600.
+- **`StopSound(Id)`** (`0x103e27d0`) hands the ID to the audio subsystem (its
+  virtual at +0x78), which stops that sound.
+
 ## Small
 
 - **`LevelInfo`'s clock** (`Year`, `Month`, `Day`, `DayOfWeek`, `Hour`,
@@ -1010,11 +1054,3 @@ cleanup deletes it they point at the deleted decal.
 - **`ResetKeyboard()`** (`0x103b96d0`): `UObject::ResetConfig` of the class of
   the viewport's input; `DeusExPlayer.TravelPostAccept` calls it on every level.
   What that does in Deus Ex: [configuration](core-dll.md#configuration).
-- **`PlaySound(Sound, Slot, Volume, bNoOverride, Radius, Pitch)`**
-  (`0x103e1f60`; by default `SLOT_Misc`, the actor's `TransientSoundVolume` and
-  `TransientSoundRadius`, pitch 1; a radius ≤ 0 is 800): each player pawn hears
-  it (`CheckHearSound`). Deus Ex returns its ID: the actor's object index × 16 +
-  the slot × 2, + 1 with `bNoOverride`. **`StopSound(Id)`** (`0x103e27d0`) hands
-  the ID to the audio subsystem (its virtual at +0x78), which stops that sound.
-  What the audio subsystem does with both:
-  [`Galaxy.dll`](galaxy-dll.md#playing-a-sound).
