@@ -708,11 +708,18 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   mover with no brush (`09_NYC_ShipBelow` has one) collides as a cylinder. A
   model with no BSP nodes answers every line and point check at once with no hit
   (`UModel::LineCheck`, `0x103f3c20`; `PointCheck`, `0x103f1570`).
-- **The multi-hit line check** under the two iterators
+- **The multi-hit line check** under the two iterators and `TraceActors`
   (`ULevel::MultiLineCheck`, `0x1039b220`): the level's BSP first, a hit there
   (its actor the `LevelInfo`) cutting the line to 5 units past it; then the
-  actors along the rest, up to 64 hits in all, nearest first. Nothing beyond the
-  first wall is listed.
+  actors along the cut line, each hit given short by a thousandth of the cut
+  line, up to 64 hits in all, nearest first. Nothing beyond the first wall is
+  listed.
+- **`Trace(HitLocation, HitNormal, TraceEnd, TraceStart, bTraceActors, Extent)`**
+  (`0x103e3330`): the first hit (`SingleLineCheck`, flags 55 with
+  `bTraceActors`, else 6); with nothing hit the location and normal are zero.
+- **`TraceActors(BaseClass, Actor, HitLoc, HitNorm, End, Start, Extent)`**
+  (`0x103e4bc0`): every hit of the multi-hit check, in turn, the level's
+  among them; `BaseClass` (by default `Actor`) is not tested.
 - **`TraceTexture(BaseClass, Actor, texName, texGroup, flags, HitLoc, HitNorm, End, Start, Extent)`**
   (`0x1036e450`; from the actor, with no extent, by default): every hit, in turn
   (`BaseClass` read and not used). A hit on the level gives the surface's

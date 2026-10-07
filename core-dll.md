@@ -400,8 +400,9 @@ How the original runs UnrealScript.
 The rest are UE1's own. The details:
 
 - **To a string:** a float is `%f`, a vector `%f,%f,%f`, a rotator
-  `%i,%i,%i` of its values as they are, a bool the localized `True` or
-  `False`, an object its path name or `None` (`0x10131f00`).
+  `%i,%i,%i` of its parts each wrapped to 0..65535 (`0x10137550`: a pitch of
+  −5691 prints as 59845), a bool the localized `True` or `False`, an object
+  its path name or `None` (`0x10131f00`).
 - **From a string:**
   - a bool is true for `True`, false for `False` (in any case, or the
     localized word), and otherwise true for a number other than 0
@@ -425,6 +426,14 @@ The rest are UE1's own. The details:
     the first inside the unit sphere, scaled to length 1: a direction with
     none favoured;
   - `Normal` of a zero vector is zero.
+- **Rotators:**
+  - `rotator(v)` (`FVector::Rotation`, `0x10144390`): yaw `atan2(Y, X)` and
+    pitch `atan2(Z, √(X² + Y²))`, each × 65535 / 2π, truncated and not
+    wrapped (straight down is −16383); roll 0.
+  - `vector(r)` (`FRotator::Vector`, `0x1011d1c0`), `GetAxes` and `GetUnAxes`
+    take a sine table of 16384 steps round the turn (an angle's index its
+    value >> 2, so its low 2 bits are dropped), a cosine the same table a
+    quarter turn (0x4000) on. `GetUnAxes` gives `GetAxes`' axes transposed.
 
 ## Names hashed and compared
 
