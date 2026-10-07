@@ -439,6 +439,16 @@ The rest are UE1's own. The details:
     take a sine table of 16384 steps round the turn (an angle's index its
     value >> 2, so its low 2 bits are dropped), a cosine the same table a
     quarter turn (0x4000) on. `GetUnAxes` gives `GetAxes`' axes transposed.
+- **`DynamicLoadObject(ObjectName, ObjectClass, MayFail)`** (`0x1013eb30`):
+  `StaticLoadObject` (`0x10154d50`), a failure logged as a warning unless
+  `MayFail`. Whatever groups the name gives, the object is looked for in the
+  package its first part names: that package's export of the name after the
+  last `.`, of exactly the class asked for (a `Mesh` finds a `LodMesh` too),
+  in any group (`ULinkerLoad::Create`, `0x10161cc0`); else an object already
+  loaded of that name and class, a subclass too, right in that package. So
+  `Effects.Laser.LaserBeam1`, `Effects.LaserBeam1` and
+  `Effects.Wrong.LaserBeam1` are the one `FireTexture`, which a `Texture`
+  asked for does not find.
 
 ## Names hashed and compared
 

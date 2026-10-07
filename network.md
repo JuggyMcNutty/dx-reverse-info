@@ -289,6 +289,18 @@ A URL names a server in what comes before its options (`?`) and portal (`#`)
 The Join screens join with the console's `open` and the address typed or picked
 (Join LAN adds `?lan`).
 
+The scripts' own addresses:
+
+- **`PlayerPawn.GetPlayerNetworkAddress()`** (`0x103df310`): for a pawn whose
+  `Player` is a net connection -- a remote player's, on the server -- that
+  connection's address, `a.b.c.d:port` (`LowLevelGetRemoteAddress`,
+  [`IpDrv.dll`](ipdrv-dll.md#the-net-driver)); for any other, the host's own
+  player included, "". An admin's `KickBan` bans what comes before its `:`.
+- **`GameInfo.GetNetworkNumber()`** (`0x103e69d0`): the address the level's
+  net driver is bound to (`LowLevelGetNetworkNumber`): `0.0.0.0` but with
+  `MULTIHOME=` or `-PRIMARYNET`. "" with no net driver. `StatLog` writes it in
+  the server's info.
+
 ## Packets
 
 UDP datagrams of bits, first bit lowest. A number with a known maximum takes as

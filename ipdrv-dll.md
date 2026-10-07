@@ -35,6 +35,12 @@ The natives are the links': eight of `InternetLink`, nine of `TcpLink`, five of 
   128 KB for a server. A client binds any port. A server binds its URL's port (7790 in
   `DeusEx.ini`), or the next free one of the 20 from it; only that one when the command line
   gives `PORT=`.
+- **Its address**, which it binds (`getlocalhostaddr`, `0x10703eb0`): every one of the
+  machine's (`0.0.0.0`), unless the command line names one (`MULTIHOME=a.b.c.d`) or gives
+  `-PRIMARYNET`, which takes the first address of the machine's own name.
+  `LowLevelGetNetworkNumber` (`0x1070a9e0`) answers it as `a.b.c.d`;
+  `LowLevelGetRemoteAddress` (`0x10709800`) a connection's other end as `a.b.c.d:port`, the
+  port left off when 0 ([the scripts' addresses](network.md#addresses)).
 - **Receiving** (`TickDispatch`, `0x1070a440`): each tick, every datagram waiting, up to
   576 bytes each, goes to the connection whose address sent it. One from an unknown address,
   on a server that accepts it (`NotifyAcceptingConnection`), opens a new connection.
