@@ -368,7 +368,12 @@ fields, after their properties (none):
     (`DeusExDecoration`).
 - **Falling in water** (`physFalling`, `0x103d0a50`): gravity × (1 − `Buoyancy`
   / `Mass`), the mass floored at 1, so a massless actor (Deus Ex's
-  `GeneratorScout`, a pawn of mass 0) falls at full gravity.
+  `GeneratorScout`, a pawn of mass 0) falls at full gravity. Each step of at
+  most 0.1 s, the mean velocity is the old one × (1 − 2 × the step ×
+  `ZoneFluidFriction`) plus (that gravity + acceleration) × half the step;
+  the actor moves by it, and its velocity after is twice it less the old
+  when it gained downward or was rising, else the mean itself. A decoration
+  with more buoyancy than mass rises to the surface and bobs there.
 - **Landing** (`processLanded`, `0x103cef60`), from `physFalling` when its move
   (each a `MoveActor`, above) meets a floor (normal > 0.7):
   - in a `bBounceVelocity` zone with a velocity, a non-pawn is thrown again: the
