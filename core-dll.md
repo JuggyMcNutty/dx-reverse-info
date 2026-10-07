@@ -130,6 +130,11 @@ Its only users are `DeusExPlayer`'s debug console commands.
   | the save info | 0x70004 (public) |
   | the event manager's parts | 0x70000 |
 
+  No object flagged `RF_Transient` is written (`SavePackage`, `0x10155980`),
+  and `StaticAllocateObject` (`0x101579c0`) flags so every object of a class
+  with `CLASS_Transient`: a reference to one reads as None. A level's mission
+  script (`MissionScript` is transient) is in no save.
+
 - **A package's file** (`appFindPackageFile`, `0x10148ec0`). A name ending in
   `.dll` finds none. The search:
   1. the name as given, if a file of it exists in the working directory
