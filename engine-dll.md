@@ -872,8 +872,20 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   yet begun (`bBegunPlay` unset), in order: the level's time set to 0; the
   game's `InitGame`; every actor's `PreBeginPlay` and `BeginPlay`; each actor's
   zone; every actor's `LastRenderTime` set to −10 s, whatever its map kept;
-  `PostBeginPlay`; `SetInitialState`; the actors' bases. A level already begun
-  (from a save, or returned to) keeps its own time and render times.
+  `PostBeginPlay`; `SetInitialState`; the actors' bases. Each pass runs over
+  the actor list as it grows: an actor spawned during the start takes the
+  later passes too, after the same events from its spawn (a map's carcass
+  spawns its items in `PostBeginPlay`, and the start's `SetInitialState`
+  sends them to the `Idle2` the carcass names). A level already begun (from a
+  save, or returned to) keeps its own time and render times. Then, begun or
+  not, every actor's `PostPostBeginPlay`, the load's last call into the
+  actors.
+- **The player's login** (`ULevel::SpawnPlayActor`, `0x10396bd0`), after the
+  load, a save's too: the game's `Login`; the player's `TravelPreAccept`; its
+  travelling items' `TravelPreAccept`; the game's `AcceptInventory`; the
+  items' `TravelPostAccept`, then the player's; the game's `PostLogin`. Deus
+  Ex's player spawns the level's mission script in its `TravelPostAccept` when
+  none runs: a save holds none, `MissionScript` being transient.
 - **The game** is spawned only for a level whose `LevelInfo.Game` is None, on a
   server or standalone: a level returned to keeps the game it was saved with,
   its mutators and all.
