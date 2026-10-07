@@ -95,11 +95,23 @@ are `exec` exports.
   `VirtualKeyPressed`. Typed characters go the same way as `KeyPressed`.
   Windows that are not modal pass them over while Alt is down
   (accelerators).
-- **Mouse buttons** (`HandleButtons`, `0x1003b960`) go to the window under
-  the pointer, then up its parents. A press grabs the mouse for that window,
-  and may give it focus. Presses of one button on one window within a short
-  time and distance count up, wrapped at the window's `maxClicks`, so a list
-  sees a double click as 2.
+- **Mouse buttons** (`HandleButtons`, `0x1003b960`) go to the window the
+  mouse acts on (`GetMouseWindow`, `0x1003b0d0`): the one that grabbed it,
+  else the one under the pointer in the topmost modal, else that modal.
+  Under the pointer (`FindWindowByPoint`, `0x1004f740`) is the deepest
+  window that shows, is sensitive and holds the point, passing over other
+  modals. From there the button goes up the parents, each asked
+  `RawMouseButtonPressed`, then `MouseButtonPressed` or
+  `MouseButtonReleased`, until one handles it.
+  - A press grabs the mouse for that window and, when the modal's
+    `focusMode` is set, gives focus to it or its nearest selectable parent.
+    A release of any button lets that window's grab go before it is passed
+    on.
+  - Presses of one button on one window, each within `multiClickTimeout`
+    (0.5 s, set by `Init`) of the last and `maxMouseDist` (10 units) of the
+    first, count up, wrapped at the window's `maxClicks`, so a list sees a
+    double click as 2. The clock is real time
+    (`GetWindowsTickOffset`, `0x1003a3b0`).
 - **`LockMouse(bLockMove, bLockButton)`** (`0x1003a290`): with movement
   locked the pointer stays where it is; with buttons locked the UI takes and
   ignores them. The Customize Keys screen locks movement while it waits for
