@@ -88,7 +88,8 @@ are `exec` exports.
   grabbed the keyboard, and every mouse button while any window has grabbed
   the mouse. Taking a button clears the player's `bFire` and `bAltFire`.
   Every modal window grabs both while it is shown: the menus and the game's
-  screens.
+  screens. A release of a key not down (the root marks every press and
+  release) is taken but goes to no window.
 - **Keys** go to the focus window, else the topmost modal window, then up its
   parents until one handles them: `RawKeyPressed`, then, for a press,
   `VirtualKeyPressed`. Typed characters go the same way as `KeyPressed`.
