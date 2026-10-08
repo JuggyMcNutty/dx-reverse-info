@@ -286,8 +286,24 @@ A URL names a server in what comes before its options (`?`) and portal (`#`)
   as any URL's port);
 - after the `/` comes the map (the default map without one).
 
+As text (`FURL::String`, `0x103f9210`): the protocol and `:` only when it is not
+the default (or the URL is asked whole), `//` after them with a host; the host
+when it, or the port, is not the default, then `:port` only for a port not the
+default, then `/`; the map; `?` and each option; `#` and the portal when there
+is one.
+
 The Join screens join with the console's `open` and the address typed or picked
 (Join LAN adds `?lan`).
+
+**A server's own URL.** `LoadMap` gives the level the URL it loads (the level's
+`URL`), and a server listens before its level begins play (`ULevel::Listen`,
+`0x1039e7c0`): the net driver writes the address and port it bound into that
+URL ([`IpDrv.dll`](ipdrv-dll.md#the-net-driver)). At the end `LoadMap` keeps
+the URL as it was given, with no host, as the game engine's last URL
+(`UGameEngine` + 0x74). The last URL is what a travel is relative to -- the
+server's (`?RESTART` too) and a client's (`Tick`, `0x1038fe90`) -- and what the
+console's `open` and `start` build on and `reconnect` opens again (`Exec`,
+`0x1038a030`). So a server never travels to its own address.
 
 The scripts' own addresses:
 
@@ -300,6 +316,14 @@ The scripts' own addresses:
   net driver is bound to (`LowLevelGetNetworkNumber`): `0.0.0.0` but with
   `MULTIHOME=` or `-PRIMARYNET`. "" with no net driver. `StatLog` writes it in
   the server's info.
+- **`LevelInfo.GetLocalURL()`** (`0x103df900`): the level's URL as text: a
+  listen server's `0.0.0.0/DXMP_Cathedral?...` (its port the default, 7790).
+- **`LevelInfo.GetAddressURL()`** (`0x103dfa90`): the level's URL's host and
+  port, `host:port`: a listen server's `0.0.0.0:7790`.
+- **`PlayerPawn.UpdateURL(NewOption, NewValue, bSaveDefault)`** (`0x103b87c0`):
+  `NewOption=NewValue` into the last URL's options, in place of one of that
+  name (`FURL::AddOption`, `0x103f9960`, any case); with `bSaveDefault` written
+  to `[DefaultPlayer]` in the user ini as well.
 
 ## Packets
 

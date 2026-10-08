@@ -37,7 +37,10 @@ The natives are the links': eight of `InternetLink`, nine of `TcpLink`, five of 
   gives `PORT=`.
 - **Its address**, which it binds (`getlocalhostaddr`, `0x10703eb0`): every one of the
   machine's (`0.0.0.0`), unless the command line names one (`MULTIHOME=a.b.c.d`) or gives
-  `-PRIMARYNET`, which takes the first address of the machine's own name.
+  `-PRIMARYNET`, which takes the first address of the machine's own name. A server's
+  `InitListen` (`0x1070a1d0`) writes it, as `a.b.c.d`, and the port it bound into the
+  level's URL ([a server's own URL](network.md#addresses)), and logs
+  `TcpNetDriver on port <port>`.
   `LowLevelGetNetworkNumber` (`0x1070a9e0`) answers it as `a.b.c.d`;
   `LowLevelGetRemoteAddress` (`0x10709800`) a connection's other end as `a.b.c.d:port`, the
   port left off when 0 ([the scripts' addresses](network.md#addresses)).
