@@ -88,8 +88,9 @@ are `exec` exports.
   grabbed the keyboard, and every mouse button while any window has grabbed
   the mouse. Taking a button clears the player's `bFire` and `bAltFire`.
   Every modal window grabs both while it is shown: the menus and the game's
-  screens. A release of a key not down (the root marks every press and
-  release) is taken but goes to no window.
+  screens. The root marks every press and release of a key or button, taken
+  or not; a release of one not down is taken, while the grab holds, and goes
+  to no window. With no grab it goes to the game as any other.
 - **Keys** go to the focus window, else the topmost modal window, then up its
   parents until one handles them: `RawKeyPressed`, then, for a press,
   `VirtualKeyPressed`. Typed characters go the same way as `KeyPressed`.
@@ -184,8 +185,8 @@ are `exec` exports.
 - **`XWindow::IsTraversable`** (`0x1004c460`): a window can take the focus
   when it is selectable, and it and every parent are visible and sensitive.
   With the modal check, its nearest modal (or the root) must also be the
-  root's topmost modal child, or the root when no modal is up: nothing under
-  a buried modal takes it.
+  topmost modal: the root's topmost child that shows and is a modal, or the
+  root when none is. Nothing under a buried modal takes it.
 - **`XWindow::MoveFocus`** (`0x1004ef30`), behind `MoveFocusLeft`,
   `MoveFocusRight`, `MoveFocusUp` and `MoveFocusDown`, steps from the focus
   window to the first window traversable with the modal check:
@@ -204,11 +205,12 @@ are `exec` exports.
   takes the focus. A group with none is passed over the same way, round the
   ends.
 - **The root's tick** (`XRootWindow::Tick`, `0x1003a540`), while nothing has
-  the focus: the topmost modal (or the root) gives the focus to its
-  `preferredFocus` when that is traversable, else as `MoveTabGroup` forward
-  does. It does not when its `focusMode` is `MFOCUS_EnterLeave`. So a
-  conversation's first choice takes the focus as the choices appear. The
-  keypad (`HUDKeypadWindow`) sets `MFOCUS_EnterLeave`.
+  the focus: the topmost modal (or the root, with none up) gives the focus to
+  its `preferredFocus` when that is traversable with the modal check, else as
+  `MoveTabGroup` forward does from the table's first group. It does not when
+  its `focusMode` is `MFOCUS_EnterLeave` (3). So a conversation's first
+  choice takes the focus as the choices appear. The keypad
+  (`HUDKeypadWindow`) sets `MFOCUS_EnterLeave`.
 - **A button's look** (`XButtonWindow::ChangeButtonAppearance`,
   `0x10008380`):
   - the insensitive pair of textures and colours when the button or a parent
