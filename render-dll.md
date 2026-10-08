@@ -130,11 +130,22 @@ The renderer keeps it; the engine and the scripts read it
 ([stasis and render time](engine-dll.md#stasis-and-render-time)).
 
 - **An actor's `LastRenderTime`** is the level's `TimeSeconds` each time it
-  is drawn (`DrawActorSprite`): as a sprite the occlusion kept, or on its
-  own through `DrawActor` (`0x10b262c0`), which `GC.DrawActor` calls
-  ([actors in a window](extension-dll.md#actors-in-a-window)). For an
-  iterator the actor stamped is its proxy, which is what `ParticleGenerator`
-  and `LaserEmitter` ask (`proxy.LastRendered()`).
+  is drawn (`DrawActorSprite`, first thing): as a sprite the occlusion kept,
+  or on its own through `DrawActor` (`0x10b262c0`). For an iterator the
+  actor stamped is its proxy, which is what `ParticleGenerator` and
+  `LaserEmitter` ask (`proxy.LastRendered()`).
+- **`DrawActor`** draws, and so stamps, whenever the sprite's `Setup` gives
+  the actor a rectangle on the frame
+  ([which actors are drawn](#which-actors-are-drawn)): a mesh whose location
+  is not behind the viewer and whose render box `BoundVisible` puts on the
+  frame; a sprite whose texture's rectangle lands on it. No span buffer is
+  asked, so walls in front do not matter.
+  - `GC.DrawActor` calls it on the scene's frame, narrowed to the window with
+    `bConstrain` ([actors in a window](extension-dll.md#actors-in-a-window)):
+    an NPC the vision augmentation draws through a wall counts as drawn.
+  - `Canvas.DrawActor` (`UCanvas::execDrawActor`, `Engine.dll` `0x10377ed0`;
+    the first-person weapons) calls it too, clearing `bHidden` for the call
+    and setting it after, whatever it was.
 - **A zone's** (`Zones[i].LastRenderTime` in the level's model) is stamped by
   `OccludeBsp`: the frame's first zone, and each zone seen through a portal.
   `InStasis` reads it.
