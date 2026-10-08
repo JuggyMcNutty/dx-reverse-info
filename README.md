@@ -28,7 +28,7 @@ what each function does, with addresses.
 |---|---|---|---|
 | `DeusEx.exe` | the `Launch` module: a bootstrap shell, not the game | [`launcher.md`](launcher.md), the index of [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md), [`cli-flags.md`](cli-flags.md), [`ini-keys.md`](ini-keys.md), [`types/launch.h`](types/launch.h) | complete |
 | `DeusEx.dll` | package DeusEx: the player, NPCs (`ScriptedPawn`), saving and the save directory, particle and laser effects | [`deusex-dll.md`](deusex-dll.md) | read |
-| `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, traces, and the network protocol (joining, packets, replication, remote calls), with Deus Ex's additions (AI senses and events, NPC movement tests, blend animations, stasis) | [`engine-dll.md`](engine-dll.md), [`network.md`](network.md) | read |
+| `Engine.dll` | package Engine: UE1's actors, pawns, levels and rendering interfaces, traces, and the network protocol (joining, packets, replication, remote calls), with Deus Ex's additions (AI senses and events, NPC movement tests, ladders, blend animations, stasis) | [`engine-dll.md`](engine-dll.md), [`network.md`](network.md) | read |
 | `Core.dll` | package Core: objects, names, packages, configuration and the script interpreter, with Deus Ex's `GetConfig`, `CriticalDelete` and debug system | [`core-dll.md`](core-dll.md) | read |
 | `Extension.dll` | package Extension: the UI's windows and graphics contexts, flags, and the game engine and input that put the UI in front of the game | [`extension-dll.md`](extension-dll.md) | read |
 | `ConSys.dll` | package ConSys: conversations and their events, and what binds them to actors | [`consys-dll.md`](consys-dll.md) | read |
