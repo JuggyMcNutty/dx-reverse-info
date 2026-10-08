@@ -257,6 +257,27 @@ fields, after their properties (none):
     encroaches on something there does not move (`CheckEncroachment`); then the
     hit's `Bump`s (Deus Ex's `BumpWall` for the level) and the touches of what
     it passed before the hit.
+- **A wall hit** (`AActor::processHitWall(HitNormal, HitActor)`, `0x103cecc0`):
+  nothing when the actor hit is a pawn. Any other actor gets `HitWall` if its
+  state probes it. A pawn gets it only with an acceleration, the direction to
+  its `Destination` (both made level when it walks) `MinHitWall` or less along
+  the normal; then, with `HitWall` not probed and the pawn not falling, its
+  `MoveTimer` goes to −1 and `bFromWall` is set instead.
+- **Ladders and the floor's texture** (`0x103cc450`), first in `physWalking`,
+  `physFalling` and `physSwimming`, for a player only. Lines 2 × its radius
+  long, from 0.95 of its height under its middle, toward its facing, its left,
+  its right and its back, each at 0 to 32 units up in steps of 4 (flags 6),
+  look for a wall whose texture is in a group named `Ladder` (`0x103ccc40`).
+  - On one, its `WalkTexture` event is given that texture (with the hit's
+    place and normal) and it climbs: with an acceleration, `bIsWalking` is set
+    and the velocity's Z becomes half `GroundSpeed` × the Z of its view's
+    direction, the pitch 6,144 farther from 0; `physFlying` moves it; with no
+    acceleration it stops after the move. That tick's own physics is skipped.
+  - With none, `WalkTexture` is given the texture a line straight down from
+    its middle, 2 × its radius + its height long, meets. A walking player on
+    a texture whose `Friction` is under 1 moves by the zone's gravity × the
+    tick² / (2 × that friction, at least 0.025), less its part along the
+    floor's normal.
 - **Walking over the floor** (`APawn::physWalking`, `0x103ca540`): a walking
   pawn floats. Standing still on the same base, a line 20 units down from its
   cylinder's bottom centre that finds the floor 4.1 to 4.6 away leaves it be.
@@ -293,9 +314,25 @@ fields, after their properties (none):
     in water is given up by a pawn that cannot swim.
   - `APawn::performPhysics` counts the move's time down and keeps
     `AvgPhysicsTime` = 0.8 × itself + 0.2 × the tick (`0x103c9c37`).
-- **The speed** (`APawn::calcVelocity`, `0x103cd7a0`): an acceleration over
-  `AccelRate` (over 0.3 of it for a walking player, `bIsWalking`) is cut to it;
-  one under is left.
+- **The speed**
+  (`APawn::calcVelocity(AccelDir, deltaTime, maxSpeed, friction, bFluid, bBrake, bBuoyant)`,
+  `0x103cd7a0`). It turns and brakes with the larger of `friction` and
+  `bFluid` (1 in water).
+  - Braking (`bBrake`, no acceleration): in slices of 0.03 s and the rest,
+    each takes 2 × the velocity × the slice × that friction off it. The
+    velocity becomes the slices' velocities that still point the old way,
+    weighted by their time; one turned against the old, or under 10, stops.
+  - Otherwise an acceleration over `AccelRate` (over 0.3 of it for a walking
+    player, `bIsWalking`) is cut to it; one under is left. The velocity turns
+    toward the acceleration's direction, losing (itself − that direction × its
+    speed) × the tick × that friction.
+  - Then it is × (1 − `bFluid` × `friction` × the tick), plus the acceleration
+    × the tick, and with `bBuoyant` plus the zone's gravity × the tick × (1 −
+    `Buoyancy` / `Mass`), the mass as it is.
+  - Over `maxSpeed` (× `DesiredSpeed` but for a player) it is cut to it. A
+    walking player's is 0.3 of it, 0.6 in a net game (`NetMode` not
+    standalone), and comes down to that no faster than to (1 − 2 × that
+    friction × the tick) of its speed a tick.
 - **The next node** a pawn takes after a search: [the search](#the-search)
   ("after a search", "the second way").
 - **`RandomBiasedRotation(centralYaw, yawDistribution, centralPitch, pitchDistribution)`**
@@ -366,14 +403,52 @@ fields, after their properties (none):
     player off the one it lands on and have it stomped (`ScriptedPawn`,
     `DeusExPlayer`), and push off a decoration that cannot be a base
     (`DeusExDecoration`).
-- **Falling in water** (`physFalling`, `0x103d0a50`): gravity × (1 − `Buoyancy`
-  / `Mass`), the mass floored at 1, so a massless actor (Deus Ex's
-  `GeneratorScout`, a pawn of mass 0) falls at full gravity. Each step of at
-  most 0.1 s, the mean velocity is the old one × (1 − 2 × the step ×
-  `ZoneFluidFriction`) plus (that gravity + acceleration) × half the step;
-  the actor moves by it, and its velocity after is twice it less the old
-  when it gained downward or was rising, else the mean itself. A decoration
-  with more buoyancy than mass rises to the surface and bobs there.
+- **Falling** (`physFalling`, `0x103d0a50`), for an actor in a zone (in none:
+  `FellOutOfWorld`, logged on the server for an inventory item, a decoration
+  or a pawn), after the ladder check:
+  - A pawn's air control is its `AirControl`, cut to 0.05 when over 0.15 and
+    a box of its size meets the world (flags 6) along its velocity + its
+    acceleration's direction × that × `AccelRate`, over the tick, level. Its
+    acceleration is made level and held to air control × `AccelRate`, that +
+    (10 − its horizontal speed) / the tick under a horizontal speed of 10. At
+    `GroundSpeed` or over, it is held to 1 with an air control of 0.05 or less,
+    and otherwise the horizontal speed is held where it is. The acceleration
+    is put back after the tick.
+  - Steps of at most 0.1 s (half the time left between 0.1 and 0.2 s), up to
+    8 counting the caller's. Each takes the step's mean velocity, from the
+    old one:
+    - in a water zone, the old × (1 − 2 × the step × `ZoneFluidFriction`) +
+      (gravity × (1 − `Buoyancy` / `Mass`, the mass floored at 1) +
+      acceleration) × half the step, so a massless actor (Deus Ex's
+      `GeneratorScout`, a pawn of mass 0) falls at full gravity there;
+    - a decoration with `bBobbing`, the old + (half gravity + acceleration) ×
+      half the step;
+    - a player falling (its Z velocity < 0) with its feet in water, the old ×
+      (1 − the step × the feet's zone's `ZoneFluidFriction`) + (gravity +
+      acceleration) × half the step;
+    - anything else, the old + (gravity + acceleration) × half the step.
+  - A step whose Z velocity turns over, over 5 either way before and after,
+    is split at the turn when both parts are over 0.015 s, its first part's
+    mean taken again; the second part goes back to the time left. The step
+    after a split is not split.
+  - The move is (the mean + the zone's velocity) × the step: the zone's
+    velocity for any but a pawn, for a player, and for a pawn in a zone moving
+    over 200.
+  - A pawn the move made swim (its script's `ZoneChange`) swims the rest
+    (into the water, below).
+  - A move that hits: with `bBounce`, `HitWall`, and the first two bounces in
+    the tick give the rest of the step back to the time left. On a floor
+    (normal > 0.7) it lands (below). Else `processHitWall` and a slide along
+    the wall, the rest of the move less its part into the normal, if not
+    turned back. A floor the slide meets lands; another wall: `processHitWall`,
+    `TwoWallAdjust`, the slide again, which lands on a floor or in a ditch
+    (both walls facing up and against each other, the slide level). After a
+    slide the old velocity's horizontal part is the move's.
+  - The velocity after, unless it bounced off something or `bJustTeleported`:
+    the move's own (the distance over the step) less the zone's velocity, then
+    twice that less the old when it gained downward or the old was not
+    falling, held to `ZoneTerminalVelocity`. A decoration with more buoyancy
+    than mass rises to the surface and bobs there.
 - **Landing** (`processLanded(HitNormal, HitActor, remaining)`, `0x103cef60`),
   from `physFalling` when its move (each a `MoveActor`, above) meets a floor
   (normal > 0.7). Any move of a decoration that hits a `PlayerPawn` first takes
@@ -403,6 +478,68 @@ fields, after their properties (none):
     walking (a pawn) or none, with the floor hit as its base (the `LevelInfo`
     for the world). A pawn then walking has its acceleration made unit length
     and walks out the remaining time, if over 0.01 s.
+- **Into the water**
+  (`APawn::startSwimming(OldVelocity, timeTick, remaining, Iterations)`,
+  `0x103d2b70`): a pawn whose move took it into water and swims (its
+  script's `ZoneChange`) is moved back to the water line between where the
+  step began (`OldLocation`) and where it is (`findWaterLine`, below), just
+  in the water; the step's time for the way given back goes to the time left.
+  Unless `bBounce` or `bJustTeleported`, its velocity becomes the move's own
+  (the distance from `OldLocation` over the step's time less that given
+  back), doubled less the old, cut to 4,000. A Z velocity between −160 and 0
+  becomes −80 − 0.7 × the horizontal speed. With over 0.01 s left it swims.
+  - From `physFalling`: the step's old velocity and time, the time left with
+    the part of the step the move did not take.
+  - From `physWalking`: its velocity as the old, the step's time and the time
+    left; after a move that met nothing, after a step up, and after the step
+    down to the floor.
+- **Swimming** (`APawn::physSwimming`, `0x103d3cd0`), the whole tick at once,
+  after the ladder check:
+  - With its head out of water, a Z velocity over 100 is × (1 − the tick).
+  - The speed: `calcVelocity` with `WaterSpeed` and the zone's
+    `ZoneFluidFriction`, as a fluid, buoyant, no braking (the speed, above).
+  - The move is (the velocity + the zone's velocity × 25 × the tick) × the
+    tick, by `Swim`: the zone's velocity for a player, and for another pawn in
+    a zone moving over 300. The time left is the tick × what `Swim` gave back.
+  - A wall hit (its normal's Z under 0.2 either way) while the velocity's
+    direction is between 0.5 down and 0.2 up (its Z) is stepped up (`stepUp`,
+    below) with the rest of the move, the step's rise kept out of the
+    velocity. Any other
+    hit: `processHitWall` and a slide along it, the rest of the move less its
+    part into the normal, if not turned back; a second hit: `processHitWall`,
+    `TwoWallAdjust`, the slide again. Each slide makes the time left × (1 −
+    its hit's time) × what its `Swim` gave back.
+  - The velocity, unless `bJustTeleported`, and if the move took any time:
+    the distance moved over that time; a Z velocity something changed during
+    the move is kept.
+  - Out of the water then, it falls (`PHYS_Falling`), and a Z velocity between
+    0 and 160 becomes 40 + 0.4 × the horizontal speed: a pawn swimming up out
+    of the water hops.
+  - With over 0.01 s left, `physFalling` or `physFlying` takes it, as the
+    physics now is.
+- **`APawn::Swim(Delta, Hit)`** (`0x103d3850`): a `MoveActor` by the delta.
+  One that took the pawn out of the water is followed by a move back down to
+  the water line between its start and its end, just out of the water; it
+  returns the part of the delta given back, otherwise 0.
+- **The water line** (`APawn::findWaterLine(Start, End)`, `0x103d3b10`): the
+  segment is halved until under a unit long, End taking the middle when the
+  middle's zone has the pawn's zone's water, Start otherwise. End ends within
+  a unit of the line, on the pawn's zone's side.
+- **Stepping up** (`APawn::stepUp(GravDir, DesiredDir, Delta, Hit)`,
+  `0x103ce4a0`): up `MaxStepHeight` against gravity, then the delta. If that
+  hits:
+  - a player meeting a `bPushable` decoration head on (`DesiredDir` · the
+    normal < −0.9): `bJustTeleported`, the velocity × its mass / (its mass +
+    the decoration's), `processHitWall`;
+  - a wall (its normal's Z under 0.2 either way), the hit's time × the
+    delta's squared length over 144: `stepUp` again with the rest of the
+    delta;
+  - else `processHitWall` and a slide along it (as swimming's); a second hit:
+    `processHitWall`, `TwoWallAdjust`, the slide again.
+
+  Then it goes down `MaxStepHeight`, sliding the rest of the way down along a
+  floor steeper than 0.5 (normal) it meets, if not turned back -- unless it
+  is falling after the first case, the second, or the third's second hit.
 
 ### Reaching
 
