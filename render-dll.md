@@ -62,9 +62,11 @@ over one that is:
   surface, not here;
 - a brush: a mover goes to the level's brush tracker, the rest is the world.
 
-Each other actor gets one sprite. A light with a type, brightness and radius
-that is `bDynamicLight`, or neither `bStatic` nor `bNoDelete`, becomes a
-dynamic light when its radius reaches into the view.
+Each other actor gets one sprite. A light, hidden or not, with a type,
+brightness and radius, that is `bDynamicLight` or neither `bStatic` nor
+`bNoDelete`, becomes one of the frame's dynamic lights when its sphere is not
+wholly outside one of the view's four sides: 25 × (`LightRadius` + 1), or
+25 × (`VolumeRadius` + 1) when that is larger.
 
 **A sprite kept** (`FDynamicSprite`, `0x10b233c0`; its `Setup`,
 `0x10b23910`):
@@ -190,7 +192,12 @@ brightness from 0 to 1.
 - **Which lights:** those with `bCorona` and a `Skin` texture, shining into
   the BSP leaf the viewport's actor stands in (its `Region.iLeaf`, not the
   eye's): the static lights that reach it (its `iPermeating` list) and the
-  dynamic lights in it.
+  frame's dynamic lights ([which actors are drawn](#which-actors-are-drawn))
+  that reach it (`URender::LeafLights`). A dynamic light goes down the BSP as
+  the occlusion walk visits each node (`FDynamicLight_Filter`, `0x10b24a10`):
+  to each side of the node's plane its sphere, 25 × (`LightRadius` + 1),
+  reaches, and into that side's leaf when it is one. So it only has to reach
+  the viewer's leaf, not stand in it.
 - **Seen** (`CoronaTest`, `0x10b1bc00`) when the line from the eye to the
   light meets no level geometry or mover, and no pawn or other actor but the
   viewer's own pawn.

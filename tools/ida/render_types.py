@@ -13,8 +13,9 @@ Run it in IDA (File > Script file, or the MCP's execute_python, exec-ing this fi
 database after tools/ida/ue1_types.py, whose script types it builds on. It
 declares the structures, types URender's methods through their exports (each a
 jump to the code), and names what is not exported: the sprite's constructor
-and Setup, the light manager's methods and helpers, and the globals of the
-weapon triangle and of the lighting. Running it again changes nothing.
+and Setup, a dynamic light's filter, the light manager's methods and helpers,
+and the globals of the weapon triangle and of the lighting. Running it again
+changes nothing.
 """
 import ida_name
 import ida_nalt
@@ -180,6 +181,9 @@ JUMPS = {
     0x10B0117C: ("FDynamicSprite_ctor",
                  "struct FDynamicSprite * __thiscall f(struct FDynamicSprite *this, struct FSceneNode *Frame, int iNode, AActor *Actor);"),
     0x10B010E6: ("FDynamicSprite_Setup", "int __thiscall f(struct FDynamicSprite *this, struct FSceneNode *Frame);"),
+    0x10B01073: ("FDynamicLight_Filter",
+                 "void __thiscall f(struct FDynamicItem *this, struct UViewport *Viewport, struct FSceneNode *Frame, int iNode,"
+                 " int Outside);"),
     # The light manager: its vtable's entries, in FLightManagerBase's order, and its helpers.
     0x10B01159: ("FLightManager_Init", "void __thiscall f(void *this);"),
     0x10B01154: ("FLightManager_Exit", "void __thiscall f(void *this);"),
