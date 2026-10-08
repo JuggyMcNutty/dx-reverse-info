@@ -316,8 +316,10 @@ fields, after their properties (none):
     `AvgPhysicsTime` = 0.8 × itself + 0.2 × the tick (`0x103c9c37`).
 - **The speed**
   (`APawn::calcVelocity(AccelDir, deltaTime, maxSpeed, friction, bFluid, bBrake, bBuoyant)`,
-  `0x103cd7a0`). It turns and brakes with the larger of `friction` and
-  `bFluid` (1 in water).
+  `0x103cd7a0`), once a tick: walking asks it at `GroundSpeed` with the zone's
+  `ZoneGroundFriction`, braking, the velocity and acceleration made level first;
+  swimming at `WaterSpeed` with its `ZoneFluidFriction`, as a fluid, buoyant. It
+  turns and brakes with the larger of `friction` and `bFluid` (1 in water).
   - Braking (`bBrake`, no acceleration): in slices of 0.03 s and the rest,
     each takes 2 × the velocity × the slice × that friction off it. The
     velocity becomes the slices' velocities that still point the old way,

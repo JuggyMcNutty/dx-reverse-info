@@ -47,8 +47,9 @@ The natives are the links': eight of `InternetLink`, nine of `TcpLink`, five of 
 - **Receiving** (`TickDispatch`, `0x1070a440`): each tick, every datagram waiting, up to
   576 bytes each, goes to the connection whose address sent it. One from an unknown address,
   on a server that accepts it (`NotifyAcceptingConnection`), opens a new connection.
-- **A connection** (`UTcpipConnection`): packets of at most 512 bytes (`MaxPacket`);
-  `LowLevelSend` (`0x10709580`) sends each as one datagram.
+- **A connection** (`UTcpipConnection`, `0x107092d0`): packets of at most 512 bytes
+  (`MaxPacket`), each counted against the rate as 32 bytes more (`PacketOverhead`,
+  [packets](network.md#packets)); `LowLevelSend` (`0x10709580`) sends each as one datagram.
 
 ## The script's links
 
