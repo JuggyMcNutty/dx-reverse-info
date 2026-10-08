@@ -9,6 +9,11 @@
  * offset observed in the binary. See the size ledger at the bottom.
  */
 
+/* wchar_t, for a C compiler; IDA's parser has it built in. */
+#ifdef __GNUC__
+#include <stddef.h>
+#endif
+
 /* ---- Core containers ------------------------------------------------ */
 
 struct FArray { void *Data; int ArrayNum; int ArrayMax; };   /* 12 */
@@ -116,6 +121,19 @@ struct WConfigPageSafeMode {
     struct WCoolButton WebButton;   /* +436 IDC_Web      1058 */
 };                                                            /* 564 */
 
+struct WConfigPageSafeOptions {
+    struct WWizardPage base;
+    struct WWizardDialog *Owner;      /* +48 */
+    struct WButton NoSoundButton;     /* +52  IDC_NoSound     1108 */
+    struct WButton No3DSoundButton;   /* +172 IDC_No3DSound   1109 */
+    struct WButton No3dVideoButton;   /* +292 IDC_No3dVideo   1110 */
+    struct WButton WindowButton;      /* +412 IDC_Window      1112 */
+    struct WButton ResButton;         /* +532 IDC_Res         1111 */
+    struct WButton ResetConfigButton; /* +652 IDC_ResetConfig 1113 */
+    struct WButton NoProcessorButton; /* +772 IDC_NoProcessor 1114 */
+    struct WButton NoJoyButton;       /* +892 IDC_NoJoy       1115 */
+};                                                            /* 1012 */
+
 /* ---- Core.h: engine-global interface vtables ------------------------- */
 /* NOTE: MSVC emits overload GROUPS in REVERSE declaration order, so the two
  * GetString overloads are swapped relative to Core/Inc/Core.h:195.
@@ -160,7 +178,8 @@ struct FMalloc { struct FMallocVtbl *vtbl; };
  *   WWindow        44   (derived; anchors every size below)
  *   WControl       48   = 44 + WNDPROC
  *   WLabel         48   -> ConfigPageRenderer slot 400..448   OK
- *   WButton       120   -> ConfigPageRenderer slots 160,280   OK
+ *   WButton       120   -> ConfigPageRenderer slots 160,280,
+ *                          ConfigPageSafeOptions 52..1012     OK
  *   WCoolButton   128   -> ConfigPageSafeMode slots 52..564   OK
  *   WListBox      108   -> ConfigPageRenderer slot  52..160   OK
  *   WDialog        44   -> WWizardDialog total 620            OK
@@ -168,7 +187,8 @@ struct FMalloc { struct FMallocVtbl *vtbl; };
  *   FDelegate      12   -> WButton 48+6*12=120                OK
  *   FString/FArray 12   -> stack locals at ebp-0x98/-0x94/-0x90 OK
  *
- *   WConfigPageRenderer 48+4+108+120+120+48+4+12 = 464  == GMalloc(464)  OK
- *   WConfigPageSafeMode 48+4+128*4               = 564  == GMalloc(564)  OK
- *   WWizardDialog       44+128*4+48+12+4         = 620  == ebp span 0x26C OK
+ *   WConfigPageRenderer    48+4+108+120+120+48+4+12 = 464  == GMalloc(464)  OK
+ *   WConfigPageSafeMode    48+4+128*4               = 564  == GMalloc(564)  OK
+ *   WConfigPageSafeOptions 48+4+120*8               = 1012 == GMalloc(1012) OK (0x109114C9)
+ *   WWizardDialog          44+128*4+48+12+4         = 620  == ebp span 0x26C OK
  * ==================================================================== */
