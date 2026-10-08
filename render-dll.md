@@ -66,7 +66,13 @@ Each other actor gets one sprite. A light, hidden or not, with a type,
 brightness and radius, that is `bDynamicLight` or neither `bStatic` nor
 `bNoDelete`, becomes one of the frame's dynamic lights when its sphere is not
 wholly outside one of the view's four sides: 25 × (`LightRadius` + 1), or
-25 × (`VolumeRadius` + 1) when that is larger.
+25 × (`VolumeRadius` + 1) when that is larger. As the occlusion walk visits
+each node, a dynamic light goes on to each side of the node's plane its
+sphere, 25 × (`LightRadius` + 1), reaches (`FDynamicLight_Filter`,
+`0x10b24a10`): into that side's leaf when it is one (`URender::LeafLights`),
+and onto the node's lit surfaces (`SurfLights`). `OccludeFrame` (`0x10b19fc0`)
+then gives each surface its lights and each sprite its leaf's
+(`FDynamicSprite.LeafLights`), and empties every list.
 
 **A sprite kept** (`FDynamicSprite`, `0x10b233c0`; its `Setup`,
 `0x10b23910`):
@@ -191,13 +197,13 @@ brightness from 0 to 1.
 
 - **Which lights:** those with `bCorona` and a `Skin` texture, shining into
   the BSP leaf the viewport's actor stands in (its `Region.iLeaf`, not the
-  eye's): the static lights that reach it (its `iPermeating` list) and the
-  frame's dynamic lights ([which actors are drawn](#which-actors-are-drawn))
-  that reach it (`URender::LeafLights`). A dynamic light goes down the BSP as
-  the occlusion walk visits each node (`FDynamicLight_Filter`, `0x10b24a10`):
-  to each side of the node's plane its sphere, 25 × (`LightRadius` + 1),
-  reaches, and into that side's leaf when it is one. So it only has to reach
-  the viewer's leaf, not stand in it.
+  eye's): the static lights that reach it (its `iPermeating` list). The pass
+  reads the leaf's dynamic lights too (`URender::LeafLights`), but
+  `DrawWorld` runs `OccludeFrame` before `DrawFrame`, and `OccludeFrame` has
+  emptied every leaf's list by then
+  ([which actors are drawn](#which-actors-are-drawn)): no dynamic light gets
+  a corona. A spawned movable light with a corona shows none, in the
+  viewer's leaf or out of it.
 - **Seen** (`CoronaTest`, `0x10b1bc00`) when the line from the eye to the
   light meets no level geometry or mover, and no pawn or other actor but the
   viewer's own pawn.
