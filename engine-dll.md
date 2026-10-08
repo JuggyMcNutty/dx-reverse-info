@@ -264,10 +264,13 @@ fields, after their properties (none):
   the normal; then, with `HitWall` not probed and the pawn not falling, its
   `MoveTimer` goes to −1 and `bFromWall` is set instead.
 - **Ladders and the floor's texture** (`0x103cc450`), first in `physWalking`,
-  `physFalling` and `physSwimming`, for a player only. Lines 2 × its radius
-  long, from 0.95 of its height under its middle, toward its facing, its left,
-  its right and its back, each at 0 to 32 units up in steps of 4 (flags 6),
-  look for a wall whose texture is in a group named `Ladder` (`0x103ccc40`).
+  `physFalling` and `physSwimming`, for a player only. Lines from 0.95 of its
+  height under its middle, 2 × its radius out toward its facing (level), its
+  left, its right and its back, each ending 0 to 32 units higher in steps of 4
+  (flags 6), look for a wall whose texture is in a group named `Ladder`, the
+  name as spelled; the texture last met is the answer (`0x103ccc40`), a ladder
+  if its group is `Ladder` in any case. A line that meets a mover first meets
+  no texture.
   - On one, its `WalkTexture` event is given that texture (with the hit's
     place and normal) and it climbs: with an acceleration, `bIsWalking` is set
     and the velocity's Z becomes half `GroundSpeed` × the Z of its view's
@@ -318,8 +321,9 @@ fields, after their properties (none):
   (`APawn::calcVelocity(AccelDir, deltaTime, maxSpeed, friction, bFluid, bBrake, bBuoyant)`,
   `0x103cd7a0`), once a tick: walking asks it at `GroundSpeed` with the zone's
   `ZoneGroundFriction`, braking, the velocity and acceleration made level first;
-  swimming at `WaterSpeed` with its `ZoneFluidFriction`, as a fluid, buoyant. It
-  turns and brakes with the larger of `friction` and `bFluid` (1 in water).
+  swimming at `WaterSpeed` with its `ZoneFluidFriction`, as a fluid, buoyant;
+  flying at `AirSpeed` with its `ZoneFluidFriction`, as a fluid. It turns and
+  brakes with the larger of `friction` and `bFluid` (1 in water).
   - Braking (`bBrake`, no acceleration): in slices of 0.03 s and the rest,
     each takes 2 × the velocity × the slice × that friction off it. The
     velocity becomes the slices' velocities that still point the old way,
@@ -519,6 +523,16 @@ fields, after their properties (none):
     of the water hops.
   - With over 0.01 s left, `physFalling` or `physFlying` takes it, as the
     physics now is.
+- **Flying** (`APawn::physFlying`, `0x103d3040`): out of the world (zone 0) a
+  flyer that collides with the world goes, unless a player, and nothing moves.
+  Otherwise the speed (`calcVelocity`, above), then one move a tick by (the
+  velocity + the zone's velocity) × the tick: the zone's velocity for a player,
+  and for another pawn in a zone moving over 300. A wall hit (its normal's Z
+  under 0.2 either way) while the velocity's direction is between 0.5 down and
+  0.2 up is stepped up with the rest of the move, the rise kept out of the
+  velocity; any other hit: `processHitWall` and a slide along it, a second
+  hit: `processHitWall`, `TwoWallAdjust`, the slide again. The velocity is the
+  move's own, unless `bJustTeleported`.
 - **`APawn::Swim(Delta, Hit)`** (`0x103d3850`): a `MoveActor` by the delta.
   One that took the pawn out of the water is followed by a move back down to
   the water line between its start and its end, just out of the water; it
