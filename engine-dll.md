@@ -782,6 +782,11 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   way; after `PostBeginPlay`, unless `bNoCollisionFail`, it checks the actor's
   encroachment without touches: stopped, the actor is destroyed and the spawn
   fails.
+  - It refuses, logged, a class that is abstract, not an actor's, or (out of
+    the editor) one whose defaults are `bStatic` or `bNoDelete` ("SpawnActor
+    failed because class %s has bStatic or bNoDelete").
+  - A new actor's `bTicked` is the opposite of the level's mark: not yet
+    ticked ([a level's tick](#a-levels-tick)).
 - Unless a test, whatever stands on it is unbased (`SetBase(None)`, with the
   event) and it is marked `bJustTeleported`, so physics does not take the jump
   for speed.
@@ -1058,8 +1063,16 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   spawns its items in `PostBeginPlay`, and the start's `SetInitialState`
   sends them to the `Idle2` the carcass names). A level already begun (from a
   save, or returned to) keeps its own time and render times. Then, begun or
-  not, every actor's `PostPostBeginPlay`, and each viewport's player logs in
-  with the load's URL (`Spawning new actor for Viewport`).
+  not, every actor's `PostPostBeginPlay`; the actor list put in order; and each
+  viewport's player logs in with the load's URL (`Spawning new actor for
+  Viewport`).
+- **The actor list's order**, at every load, a save's included: its first two
+  slots as they are (the `LevelInfo`, the default brush), then every `bStatic`
+  actor, then the rest, each part in its old order, empty slots dropped. The
+  first two parts' count is the level's first dynamic actor
+  (`iFirstDynamicActor`, `ULevel`+0x110), where every pass of its tick starts,
+  so a static actor is never ticked: on Liberty Island, 1,833 of some 2,600
+  actors at its start. A spawned actor, never static, goes on the list's end.
 - **The player's login** (`ULevel::SpawnPlayActor`, `0x10396bd0`), a save's
   load's too: the game's `Login`, its options the URL's (a save's
   `?load?loadonly?loadgame` and the default player's, so `GameInfo.Login`
@@ -1078,16 +1091,23 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   players' input and the event manager get that time held to 0.005..0.4 s.
 - **Unpaused** (`Pauser` empty): each dynamic actor's `DistanceFromPlayer`
   ([stasis](#stasis-and-render-time)); each dynamic actor's `Tick`, once, in the
-  list's order (one whose owner has not yet ticked this frame waits in a list,
-  ticked after the pass once its owner has); then the event manager
+  list's order, the list read to its end as it grows (an actor spawned in the
+  pass is ticked in it); then the event manager
   ([each frame](#each-frame-aiprocess-0x10384080)). An actor ticked carries the
   level's mark in `bTicked`, which the level flips after each tick. The mark
-  only tells whether an owner has ticked; nothing is passed over for its own
-  mark, so a level's first tick ticks every actor its map loaded.
+  only tells whether an owner has ticked; the pass passes over nothing for its
+  own mark, so a level's first tick ticks every dynamic actor its map loaded.
+- **An owner first.** An actor whose owner does not carry the level's mark is
+  put at the head of a list (`ULevel`+0x104) and is not ticked. After the pass,
+  that list is ticked from its head, passing over an actor that carries the
+  mark, again until a round ticks none. An owner that is never ticked -- a
+  static one, or one in stasis, which keeps its old mark -- has what it owns
+  ticked every other frame, when the level's flipping mark matches its own.
 - **Paused:** the players' input, and the actors with `bAlwaysTick`.
 - **An actor's tick** (`AActor::Tick`, `0x103a1aa0`), as a standalone game's
-  ([by role](network.md#replication)): nothing else in stasis; its animation;
-  then its script `Tick`, its state code, its timer, its `LifeSpan` and its
+  ([by role](network.md#replication)): nothing else in stasis (counted as
+  ticked); the owner's test (above); the level's mark; its animation; then
+  its script `Tick`, its state code, its timer, its `LifeSpan` and its
   physics, in that order. A player's pawn with a player (not a camera) has, in
   place of `Tick`, its player's input read, `PlayerInput` and `PlayerTick`, and
   the input read again with −1 (cleared); so its physics, later in the same
