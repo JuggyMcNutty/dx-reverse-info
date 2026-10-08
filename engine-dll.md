@@ -693,12 +693,29 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   collides the same way (`UMesh::LineCheck`, `0x103a6d10`, passes it on).
 - **`FastTrace(TraceEnd, TraceStart)`** (`0x103e35e0`): whether the line is
   clear of the level's BSP, the segment itself and nothing past it
-  (`UModel::FastLineCheck`, `0x103f3280`); other actors are not asked. While the
-  level runs the BSP holds the movers' polygons too (UE1's moving-brush tracker
-  files them in, `GNewBrushTracker`, `0x1037c860`), so a closed door stops it.
-  The same check answers `LineOfSightTo`, `CanHear`, `pointReachable`, the path
-  searches and network relevance; `actorReachable` uses a line check of the
-  level and movers instead.
+  (`UModel::FastLineCheck`, `0x103f3280`; its walk `0x103f33a0` lets a line
+  through only a node flagged `NF_NotCsg`, not one flagged as not blocking
+  visibility); other actors are not asked. The BSP holds the movers' polygons
+  too (below), so a closed door stops it. The same check answers
+  `LineOfSightTo`, `CanHear`, `pointReachable`, the path searches, network
+  relevance and the mixer's sounds behind walls
+  ([`Galaxy.dll`](galaxy-dll.md#sounds-behind-walls)); `actorReachable` uses a
+  line check of the level and movers instead.
+- **The movers in the BSP** (UE1's moving-brush tracker: `GNewBrushTracker`,
+  `0x1037c860`; its update `0x1037a400`):
+  - `LoadMap` makes the level one for every map but `Entry`, and `SaveGame`
+    one again after it saves. It files every moving brush -- an `ABrush` with
+    a brush that is not `bStatic`, so every mover, whatever its collision --
+    into the level's BSP: each polygon, at the mover's place, split down the
+    tree into new nodes (`0x1037c0c0`, `0x1037bb00`). A polygon's node blocks
+    the line check but for a `PF_NotSolid` polygon (`NF_NotCsg`);
+    `PF_Invisible` or `PF_Portal` makes it a node that does not block
+    visibility, `PF_Masked` a shoot-through one.
+  - Each frame drawn, `Render.dll`'s `SetupDynamics` updates it for every
+    moving brush not hidden, in view or not: one that has moved or turned
+    since it was filed is taken out and filed again where it is. So with
+    nothing drawn (a dedicated server), and for a hidden mover, the BSP keeps
+    the mover where the map's load or the last save filed it.
 - **`VisibleActors(BaseClass, Actor, Radius, Loc)`** (`0x103e5260`): each actor
   in the level's list, not hidden, of the class, whose location lies strictly
   within `Radius` of `Loc` (a radius of 0, the default: no limit), with

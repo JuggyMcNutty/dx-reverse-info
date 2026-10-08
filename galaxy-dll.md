@@ -148,13 +148,16 @@ Each channel keeps an obstruction time:
 
 - A line runs from the player's eyes (the player's own place and
   `EyeHeight`, even when viewing through another actor) to the sound's actor.
-- When it meets the level's BSP (`UModel::FastLineCheck`, which movers and
-  other actors do not block), the time grows by the time step, up to 0.5 s.
-  When clear, it shrinks back to 0.
+- When it meets the level's BSP (`UModel::FastLineCheck`, `Engine.dll`
+  `0x103f3280`, `FastTrace`'s test), the time grows by the time step, up to
+  0.5 s. When clear, it shrinks back to 0. The BSP holds the movers' polygons
+  ([traces](engine-dll.md#traces)), so a closed door muffles; no other actor
+  does.
 - The channel plays at 1 − 2 × that time, at least 0.33: a sound behind a
   wall fades over half a second to a third of its volume, and back as it
   clears.
-- Speech is never muffled, nor a sound whose actor has gone.
+- Speech and a sound whose actor has gone run no line: their time only
+  shrinks. So speech is never muffled.
 
 `IsObstructed` (`0x10607fc0`) is the same test as a function.
 
