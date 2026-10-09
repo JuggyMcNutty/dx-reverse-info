@@ -56,10 +56,20 @@ warp zones and the sky.
     four sides once a frame, however many surfaces share it. A surface whose
     points are all outside one side goes without a clip; one that crosses a
     side is clipped against that side only. Its edges are rasterized into a
-    span a row, which `FSpanBuffer::CopyFromRaster` (or
+    span a row (`0x10b19cc0`), which `FSpanBuffer::CopyFromRaster` (or
     `CopyFromRasterUpdate`, for a surface that also occludes) lays into the
     zone's span buffer; one with nothing left showing is flagged
     `NF_PolyOccluded` (0x08).
+  - **The pixels.** A surface's rows run from the one its top falls in to
+    the one before the one its bottom falls in; a row's span, from where its
+    left edge crosses the row's lower boundary to where its right edge does,
+    each floored (16.16 fixed point): a pixel is in when its lower right
+    corner is. A span buffer's spans are half open, `[Start, End)`, and so
+    is the box `BoxIsVisible` (`0x10b21a20`) tests. A sprite's rectangle
+    goes by the same rule ([which actors are drawn](#which-actors-are-drawn)).
+  - **What occludes**: a surface neither masked, translucent, modulated nor
+    invisible, and besides an invisible zone portal (`PF_Portal` and
+    `PF_Invisible`) and a mirror (`PF_Mirrored`).
 - **`DrawFrame`** draws the world's surfaces with their decals, then the
   sprites kept (translucent ones last), then the coronas.
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
