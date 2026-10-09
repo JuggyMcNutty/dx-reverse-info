@@ -41,6 +41,25 @@ warp zones and the sky.
     It passes over a surface seen from behind, but for a zone portal or a
     two-sided one. A portal passes what shows through it to the span buffer
     of the zone beyond.
+  - **A node's box** (its `iRenderBound`) is tested only while the node is
+    flagged hidden (`NF_BoxOccluded`, 0x10 of its flags at +55), and
+    otherwise one frame in 16: when its index and a counter `DrawWorld`
+    counts each frame agree in their low four bits. A node not tested is
+    taken as showing. The test (`BoundVisible`, then the box against each
+    zone's span buffer that the node's zone mask names) sets the flag when
+    the box is off the frame or hidden, and clears it when some part shows;
+    a flagged node's subtree is passed over.
+  - **A surface** (`ClipBspSurf`, `0x10b14cb0`; with 3DNow!, `AMD3DClipBspSurf`, `0x10b1f7e0`) takes
+    its points from a cache of the frame's transformed points
+    (`URender::PointCache`, each stamped with the frame's `URender::Stamp`):
+    each point is transformed and given its outcode against the view's
+    four sides once a frame, however many surfaces share it. A surface whose
+    points are all outside one side goes without a clip; one that crosses a
+    side is clipped against that side only. Its edges are rasterized into a
+    span a row, which `FSpanBuffer::CopyFromRaster` (or
+    `CopyFromRasterUpdate`, for a surface that also occludes) lays into the
+    zone's span buffer; one with nothing left showing is flagged
+    `NF_PolyOccluded` (0x08).
 - **`DrawFrame`** draws the world's surfaces with their decals, then the
   sprites kept (translucent ones last), then the coronas.
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
