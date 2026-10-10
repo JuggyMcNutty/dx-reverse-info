@@ -95,12 +95,22 @@ are `exec` exports.
   Every modal window grabs both while it is shown: the menus and the game's
   screens. The root marks every press and release of a key or button, taken
   or not; a release of one not down is taken, while the grab holds, and goes
-  to no window. With no grab it goes to the game as any other.
+  to no window. With no grab it goes to the game as any other. `IsKeyDown`
+  (`0x1004c980`) reads those marks.
 - **Keys** go to the focus window, else the topmost modal window, then up its
   parents until one handles them: `RawKeyPressed`, then, for a press,
   `VirtualKeyPressed`. Typed characters go the same way as `KeyPressed`.
-  Windows that are not modal pass them over while Alt is down
-  (accelerators).
+  Windows that are not modal pass them over while Alt is down.
+- **Accelerators**: a character the modal's script leaves, with Alt down
+  and the modal on top, goes to the window whose accelerator it is
+  (`XModalWindow::KeyPressed`, `0x10037510`; `GetAcceleratorWindow`,
+  `0x100372a0`) as `AcceleratorKeyPressed`, by which the base button script
+  presses the button. The modal's table (`SetAcceleratorWindows`,
+  `0x10036a50`, built again once marked dirty) holds for each key the first
+  window -- the modal, then its shown children bottom to top, each in
+  turn, passing over a modal inside and an insensitive window's children --
+  that shows, is sensitive with every parent and is selectable; a letter
+  under both its cases.
 - **Mouse buttons** (`HandleButtons`, `0x1003b960`) go to the window the
   mouse acts on (`GetMouseWindow`, `0x1003b0d0`): the one that grabbed it,
   else the one under the pointer in the topmost modal, else that modal.
@@ -255,8 +265,11 @@ from the player.
 - **`SetPos(x, y)`** (`Move`, `0x1004ce80`) makes the window left- and
   top-aligned with x and y its margins. **`SetSize`**, `SetWidth` and
   `SetHeight` (`Resize`, `0x1004cf70`) set its size, none below 0;
-  `ResetSize` takes it away. Each lays the window out again when it changes
-  anything.
+  `ResetSize` takes it away; `SetConfiguration` (`Configure`, `0x1004cd40`)
+  does both. **`SetWindowAlignments`** (`0x1004d300`) sets the alignments
+  and all four margins -- from a script (`0x10052360`) a first margin not
+  given is 0, a second the first. Each lays the window out again when it
+  changes anything.
 - **Its preferred size** (`QueryPreferredSize`, `0x1004e790`): a side the
   window has a size for counts as asked for. With a side not asked for, the
   window says (`ParentRequestedPreferredSize`), -1 standing for that side;
@@ -273,10 +286,16 @@ from the player.
   which no parent placed, places itself by its alignment at its preferred
   size (`ResizeChild`, `0x1004eab0`): centred (the half truncated) plus its
   first margin, right less it, else at it; full, the parent's size less
-  both margins.
+  both margins. The base `Window` script takes every child's request by
+  placing the child so.
+- **A parent laid out** (`ChangeConfiguration`, `0x10050f90`) counts its
+  left- and top-aligned children as placed; after its
+  `ConfigurationChanged`, each other child that shows and that it did not
+  place places itself by its alignment.
 - **`ConfigureChild(x, y, w, h)`** (`0x1004ec50`) sets just what it is given
   -- a size set on the window is only what it asks for -- and the window
-  gets `ConfigurationChanged` when its size changed or it was marked.
+  gets `ConfigurationChanged` when its size changed or it was marked. A
+  window that does not show is only counted as placed.
 - **Showing an area** (`AskParentToShowArea(x, y, w, h)`, `0x1004e230`;
   from a script, 0, 0 and the window's own size for a size of 0): of the
   area, the part inside the window; when the window's parents clip any of
@@ -320,7 +339,12 @@ from the player.
   `GetText` gives the break.
 - **A text window** (`XTextWindow::Init`, `0x10045af0`): margins of 3,
   centred both ways, word wrap on, no line limits, no minimum width, its
-  text its accelerator. It draws (`Draw`, `0x10046930`) its alignments and
+  text its accelerator. `SetText` (`0x10045d50`) takes no text that differs
+  only in case; it and `AppendText` (`0x10045e60`, laid out again even for
+  nothing added) keep the accelerator with the text while the text is the
+  accelerator (`EnableTextAsAccelerator`, `0x100464e0`, on when a script
+  gives no value; `SetAcceleratorText`, `0x1004f310`: the character after
+  the first `|&`, none past 254). It draws (`Draw`, `0x10046930`) its alignments and
   word wrap into the GC, the script's `DrawWindow`, then its text within the
   margins. Its size (`ParentRequestedPreferredSize`, `0x100465a0`), with its
   own fonts and text settings: the text's extent -- wrapped at the width
@@ -329,8 +353,15 @@ from the player.
   size, else the script's say. A width not given is at least the minimum
   width: an empty text window is 0 wide.
 - **A large text window** (`XLargeTextWindow`, `Init` `0x1002d480`) lays its
-  text out in rows spaced by its vertical spacing (1) and is not its
-  accelerator; it measures through its rows (`0x1002e1d0`).
+  text out in rows (`GenerateLines`, `0x1002da70`) spaced by its vertical
+  spacing (1) and is not its accelerator. Its size (`0x1002e1d0`): rows of
+  the font's height, at least 1 (`ComputeLineHeight`, `0x1002d9d0`), the
+  spacing between rows alone -- an empty text one row high -- as wide as
+  the widest, wrapped as a text window's; a line limit its own rows pass
+  holds it to that many rows of the font's height and line spacing, its
+  vertical spacing between. It draws (`Draw`, `0x1002e500`) only the rows
+  its clip shows, the block of rows placed by its alignment -- centred by
+  the whole half of the room, margins and all -- each row by its own.
 - **An edit field** (`XEditWindow::Init`, `0x1001cea0`): from the top left,
   3 in from the sides; editable and on several lines -- no game script
   makes one single-line, so Enter is the script's line break in every one;
@@ -338,6 +369,17 @@ from the player.
   64 undos; the cursor blinking each second after 0.75 s; no special text;
   selectable. Measured (`0x10020ac0`) as a large text window, a single line
   as one line high, a width not given a space wider.
+  - A script's `SetText` (`0x1001e260`) selects the whole text and puts the
+    new one in as typing does (`InsertText`, `0x1001e3c0`, without undo:
+    the undo list cleared, the text marked changed), then sets the
+    insertion point at the start; `AppendText` (`0x1001e310`) puts its text
+    in at the end, the insertion point then at the start too.
+  - A change of anything (`ReplaceText`, `0x1001fe20`) announces
+    `TextChanged` to the field and up its parents until one takes it
+    (`ChangeText`, `0x1001fab0`), lays the field out again and leaves the
+    insertion point after what it put in.
+  - With nothing selected the selection is -1, so `GetSelectedArea`
+    (`0x1001d5c0`) gives 0 and 0.
 
 ## Buttons
 
