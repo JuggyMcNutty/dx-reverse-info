@@ -290,6 +290,29 @@ it walks every property instead and calls `Modify` before each change.
     subclass reads it, each then told of the change (`PostEditChange`); then
     the class's defaults; then the class's config is saved.
 
+## RELAUNCH
+
+`USystem::Exec` (`0x1016b790`), beside `EXIT` and `QUIT`, takes `RELAUNCH`
+with the rest of the line:
+
+1. It logs `Relaunch: <rest>`.
+2. It writes the configuration back to its files.
+3. It starts `deusex.exe` -- that name, relative, not the running module's
+   path, which it asks for and only logs -- with the rest as its command
+   line, in the base directory (`ShellExecute`, `open`).
+4. It asks the engine to exit (`appRequestExit(0)`), and the process ends
+   through its main loop as any clean exit does. It does not wait for the new
+   one.
+
+Deus Ex's scripts send it twice. The Display screen's Rendering Device sends
+`RELAUNCH -changevideo`, after saving the menu's settings: the launcher's
+renderer page ([the wizard](wizard.md)). The Host screen's dedicated server
+sends `Relaunch <map>?game=<class>?-server?log=server.log`: `ParseParam`
+finds `-server` in the URL, as it checks nothing after a flag's name
+([the parsers](cli-flags.md)). The new launcher does not forward either line
+to the instance still ending: both hold one of the words that keep a launch
+from forwarding ([the launch](launch-flow.md)).
+
 ## The platform's start
 
 `appPlatformInit` (`0x1016d720`), the Windows half of `appInit`
