@@ -127,8 +127,14 @@ are `exec` exports.
 - **`SetChildVisibility(bNewVisibility)`** (`0x1004ee20`) sets the window's
   flag. When that changes whether it can be seen, it:
   - moves focus and grabs away from what is hidden;
-  - sends `VisibilityChanged` to the window and to its descendants;
+  - sends `VisibilityChanged` to the window and to its descendants, each
+    then playing its `visibleSound` or `invisibleSound`;
   - lays the tree out again.
+- **A new window** (`NewChild`, `CreateNewWindow`, `0x1004df70`) starts
+  hidden. Its parent gets `ChildAdded`, then the parent and each ancestor
+  `DescendantAdded`, all before the window's `InitWindow`. Then, unless
+  `NewChild` was asked not to, it is shown as `Show` shows it, so
+  `VisibilityChanged` reaches it and every window its `InitWindow` made.
 - **`DeusExHUD`** overrides the event to lay the HUD out again as its parts
   come and go, the InfoLink and the log among them.
 - **`Destroy`** (`SafeDestroy`, `0x1004c0b0`, through `PreDestroy`,
@@ -211,6 +217,10 @@ are `exec` exports.
   its `focusMode` is `MFOCUS_EnterLeave` (3). So a conversation's first
   choice takes the focus as the choices appear. The keypad
   (`HUDKeypadWindow`) sets `MFOCUS_EnterLeave`.
+- **What takes no focus.** A scroll area makes its scales, its four buttons
+  and itself unselectable (`XScrollAreaWindow::Init`, `0x10042d80`): the
+  focus goes to what it holds, a list or a text. A list and a button are
+  made selectable by their `Init`.
 - **A button's look** (`XButtonWindow::ChangeButtonAppearance`,
   `0x10008380`):
   - the insensitive pair of textures and colours when the button or a parent
@@ -240,8 +250,11 @@ new game.
 
 ### Rows and fields
 
-- **Rows.** A row's text is split at the delimiter into its columns' fields.
-  A row ID is the row itself; 0 is none.
+- **Rows.** A row's text is split at the delimiter's first character into a
+  field for each column (`FillRow`, `0x100322a0`): a field past the last
+  column is dropped, a column past the last field gets an empty one, and a
+  field keeps at most 2,047 characters. A row ID is the row itself; 0 is
+  none.
 - **Column types:** string, float and time.
   - A float or time field keeps the number read from the text
     (`StringToFloat`, `0x100317c0`): a sign; octal after a leading `0` and
@@ -249,8 +262,12 @@ new game.
     hours, `:` or `"` as minutes; anything else ends it.
   - A float field shows its number through the column's format, `%f` by
     default. A time field shows it as `%f` too: its own format (`%02h:%02m`
-    by default) is not used.
-  - A string field's number is 0.
+    by default) is not used. The field's text is that shown text:
+    `GetField` gives `1.000000` for a float field set to `1`.
+  - A string field's number is 0. `SetFieldValue` on one sets its text to
+    the number as `%f`.
+  - `SetColumnType` (`0x10030480`) sets every row's field again from its
+    text as the new type reads it.
 - **Defaults** (`Init`, `0x1002e900`):
   - the delimiter is `;`;
   - auto sort is off; auto-expanding columns, multiple selection and hot
@@ -306,16 +323,33 @@ every column to its margins.
   below.
 - **When it changes.** Each of these asks the parent to lay the list out
   again (`AskParentForReconfigure`): adding, changing or deleting rows;
-  setting a field's text or number; a column's number, width, font, title or
+  setting a field's text or number when that widens its column
+  (`0x1002f170`, `0x1002f2f0`); a column's number, width, font, title or
   hiding; the margins.
 
 ### Moving, selecting, activating
 
+- **The selection and the focus row** move together (`MoveToRow`,
+  `0x10032e30`). `SetRow(row, bSelect, bClearRows, bDrag)` (`0x1002f8c0`;
+  the script's defaults true, true, false) clears the selection, selects
+  the row and gives it the focus and the anchor; with `bDrag` it selects the
+  span from the anchor instead, the old span let go. A single selection list
+  always clears and never spans. `ListSelectionChanged` goes up the parents
+  only when the selection changed; a new focus row plays the move sound.
+  `SetFocusRow(row, bMoveTo, bAnchor)` (`0x1002f970`, defaults true, true)
+  moves the focus alone; `SelectRow` (`0x1002f480`) selects alone, a single
+  selection list letting go of the others first; `SelectToRow`
+  (`0x1002f600`) moves the selection, not the focus.
+- **Shown** (`VisibilityChanged`, `0x10033d90`), a list with rows and no
+  focus row selects and focuses its first. A screen that fills a list in its
+  `InitWindow` so selects the first entry as it opens: the images, the logs,
+  the load game list.
 - **`MoveRow(move, bSelect, bClearRows, bDrag)`** (`0x1002f790`) moves the
-  focus row: up, down, a page up or down, first, last. It is clamped to the
-  rows, and starts from the first row when there is no focus. A page is the
-  rows that fit the list's clipped height (`GetPageSize`, at least 1). The
-  list's script calls it for the arrow keys, Page Up and Down, Home and End.
+  focus row: up, down, a page up or down, first, last, then as `SetRow`. It
+  is clamped to the rows; with no focus every move but to the last lands on
+  the first row. A page is the rows that fit the list's clipped height
+  (`GetPageSize`, at least 1). The list's script calls it for the arrow
+  keys, Page Up and Down, Home and End.
 - **A click** (`0x10033750`) selects the row under the pointer, the last row
   when below them all. Shift extends from the anchor; Ctrl toggles. Dragging
   moves the selection, scrolling every 0.1 s.
