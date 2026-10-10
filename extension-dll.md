@@ -69,7 +69,12 @@ are `exec` exports.
     `DrawWindow` and the rest; `Extension_RegisterNames`).
   - `Browse` (`0x10026330`), after a level loads, makes the player's root
     window.
-  - `Tick` (`0x100266a0`) ticks the windows, then the engine.
+  - `Tick` (`0x100266a0`) ticks the windows, then the engine. The windows
+    tick by the real time since they last ticked (`TickWindows`,
+    `0x1003a4a0`, by `GetWindowsTickOffset`, `0x1003a3b0`), not the level's.
+    `GetTickOffset` (`0x1004fda0`) is that time at any moment: a timer
+    added, and a held button's or scale's first repeat, count what of the
+    frame has gone.
   - The mouse's position and movement go to the player's root window first
     (`0x100264b0`, `0x10026580`). Typed characters go to it after the
     console (`0x10026650`).
@@ -172,9 +177,9 @@ are `exec` exports.
   of Root!" and stays 1. A modal and the root are tab groups too, so a
   conversation window is its choices' group.
 - **The tables.** A tab group lists its selectable windows twice
-  (`ResortWindowTables`, `0x10045140`): by row (top to bottom, then left to
-  right) and by column (left to right, then top to bottom), ties broken by
-  address. It keeps each window's index in both. `SetSelectability`
+  (`ResortWindowTables`, `0x10045140`) by where each lies on the screen (its
+  clip rectangle's corner): by row (top to bottom, then left to right) and
+  by column (left to right, then top to bottom), ties broken by address. It keeps each window's index in both. `SetSelectability`
   (`0x1004c390`) puts a window in its group's lists or takes it out
   (`AddWindowToTables`, `0x10045350`).
 - **A modal's tab groups.** A modal keeps a table of its tab groups: itself
@@ -210,6 +215,16 @@ are `exec` exports.
   first window of a group's row list traversable without the modal check
   takes the focus. A group with none is passed over the same way, round the
   ends.
+- **`SetFocusWindow`** (`0x1004f0e0`) gives the focus to the nearest
+  selectable window at or above the one asked for, only when that is
+  traversable with the modal check, and its modal keeps it as its
+  `preferredFocus`. The window that had the focus gets `FocusLeftWindow`
+  and its unfocus sound, and it and each ancestor `FocusLeftDescendant`; the
+  new one is shown (`AskParentToShowArea` of all of it, so a clip window
+  scrolls to it), plays its focus sound and gets `FocusEnteredWindow`, and
+  it and each ancestor `FocusEnteredDescendant`. None asked for clears the
+  focus. A window not yet shown -- one a screen's `InitWindow` makes before
+  it shows itself -- does not take it.
 - **The root's tick** (`XRootWindow::Tick`, `0x1003a540`), while nothing has
   the focus: the topmost modal (or the root, with none up) gives the focus to
   its `preferredFocus` when that is traversable with the modal check, else as
@@ -219,17 +234,8 @@ are `exec` exports.
   (`HUDKeypadWindow`) sets `MFOCUS_EnterLeave`.
 - **What takes no focus.** A scroll area makes its scales, its four buttons
   and itself unselectable (`XScrollAreaWindow::Init`, `0x10042d80`): the
-  focus goes to what it holds, a list or a text. A list and a button are
-  made selectable by their `Init`.
-- **A button's look** (`XButtonWindow::ChangeButtonAppearance`,
-  `0x10008380`):
-  - the insensitive pair of textures and colours when the button or a parent
-    is insensitive;
-  - else the focused pair while it has the focus;
-  - else the normal pair.
-
-  Of the pair, the pressed one while pressed. A state with no texture takes
-  the pressed one while pressed, else the normal one.
+  focus goes to what it holds, a list or a text. A list, an edit field, a
+  computer window and a button make themselves selectable (their `Init`).
 
 ### Window sounds
 
@@ -241,6 +247,268 @@ from the player.
   edge. Otherwise it is straight ahead.
 - The point defaults to the window's centre, and the volume to the window's
   own.
+
+## Layout
+
+- **A new window** (`XWindow::Init`, `0x1004bb30`) is 10 by 10 at its
+  parent's corner, left- and top-aligned with no margins and no size set.
+- **`SetPos(x, y)`** (`Move`, `0x1004ce80`) makes the window left- and
+  top-aligned with x and y its margins. **`SetSize`**, `SetWidth` and
+  `SetHeight` (`Resize`, `0x1004cf70`) set its size, none below 0;
+  `ResetSize` takes it away. Each lays the window out again when it changes
+  anything.
+- **Its preferred size** (`QueryPreferredSize`, `0x1004e790`): a side the
+  window has a size for counts as asked for. With a side not asked for, the
+  window says (`ParentRequestedPreferredSize`), -1 standing for that side;
+  a side it leaves below 0 is its background's size, else its own size now.
+  The answer is kept while it is asked the same, until the window next asks
+  to be laid out. `QueryPreferredWidth` and `QueryPreferredHeight`
+  (`0x1004e5f0`, `0x1004e680`) ask it with the other side given.
+  - So a plain window stays 10 by 10, and an empty text window is 0 wide --
+    its minimum width takes the -1 ([text](#text)) -- and keeps its height.
+- **Laying out again** (`AskParentForReconfigure`, `0x1004e060`) marks the
+  window and, if it and every parent show, asks its parent
+  (`ChildRequestedReconfiguration`); a parent that does not take it asks its
+  own, up to the root, which lays itself out. A window still marked then,
+  which no parent placed, places itself by its alignment at its preferred
+  size (`ResizeChild`, `0x1004eab0`): centred (the half truncated) plus its
+  first margin, right less it, else at it; full, the parent's size less
+  both margins.
+- **`ConfigureChild(x, y, w, h)`** (`0x1004ec50`) sets just what it is given
+  -- a size set on the window is only what it asks for -- and the window
+  gets `ConfigurationChanged` when its size changed or it was marked.
+- **Showing an area** (`AskParentToShowArea(x, y, w, h)`, `0x1004e230`;
+  from a script, 0, 0 and the window's own size for a size of 0): of the
+  area, the part inside the window; when the window's parents clip any of
+  that, its parent is asked to show it (`ChildRequestedShowArea`) -- a clip
+  window scrolls to it -- and then asks its own parent, the area in its
+  coordinates. Only a window that shows asks.
+- **Granularity** (`QueryGranularity`, `0x1004e9e0`), the steps a window
+  scrolls by, at least 1 each way: a text window's line (its font's height
+  with the line spacing, `0x10046880`), a large text window's (its font's
+  height, at least 1, plus its vertical spacing, `0x1002e380`), a list's
+  row, and with equal widths or heights a tile's child and its spacing
+  (`0x10048860`). The script's event has the last say, but for a tile's.
+
+## Text
+
+- **The GC** (`XGC`) draws with word wrap and special text on, a line
+  spacing of 1, and an underline 1 high, 2 up from a character's foot, in
+  its class's underline texture (`Solid`).
+- **Codes** (`GetNextChar`, `0x100294d0`), with special text on: `|b` bold;
+  `|c` and up to three hex bytes a colour; `|p0` to `|p7` a palette colour
+  (black, white, red, green, yellow, blue, magenta, cyan); `|&` the next
+  character an accelerator, underlined; each undone by `|!` before it
+  (`|!c` and `|!p` back to the GC's text colour). Any other `|x` is x.
+- **Lines** (`ParseLine`, `0x10029ae0`) break at spaces; the first
+  character always fits; trailing spaces count unless the line broke there;
+  a final line break makes one more, empty line. A width of 0 or less is
+  taken as 500,000: `GetTextExtent(0, ...)` measures each line whole. The
+  multiplayer message window measures its progress lines so, before drawing
+  them in a box of that width.
+- **Measuring** (`GetTextExtent`, `0x10027bb0`): the widest line, and each
+  line as tall as its tallest character (a space when it has none) plus the
+  line spacing.
+- **Drawing** (`DrawText`, `0x10028180`) clips to its box. It hands its wrap
+  width (the width with word wrap on, 0 with it off) only to line breaking,
+  and places the lines in the width and height it was given: centred by the
+  whole half the room left, right-aligned, or (full) left. A character
+  (`DrawChar`, `0x10029e40`) lands on whole pixels; a font's character is
+  found on its page alone, none from another.
+- **`|n`** becomes a line break as a script sets text (`ConvertScriptString`,
+  `0x10050710`, by `SetText`, `AppendText` and `InsertText` alone), so
+  `GetText` gives the break.
+- **A text window** (`XTextWindow::Init`, `0x10045af0`): margins of 3,
+  centred both ways, word wrap on, no line limits, no minimum width, its
+  text its accelerator. It draws (`Draw`, `0x10046930`) its alignments and
+  word wrap into the GC, the script's `DrawWindow`, then its text within the
+  margins. Its size (`ParentRequestedPreferredSize`, `0x100465a0`), with its
+  own fonts and text settings: the text's extent -- wrapped at the width
+  given less the margins with word wrap on -- held within the line limits
+  when no height is given, plus the margins; with no text its background's
+  size, else the script's say. A width not given is at least the minimum
+  width: an empty text window is 0 wide.
+- **A large text window** (`XLargeTextWindow`, `Init` `0x1002d480`) lays its
+  text out in rows spaced by its vertical spacing (1) and is not its
+  accelerator; it measures through its rows (`0x1002e1d0`).
+- **An edit field** (`XEditWindow::Init`, `0x1001cea0`): from the top left,
+  3 in from the sides; editable and on several lines -- no game script
+  makes one single-line, so Enter is the script's line break in every one;
+  a white insertion point and grey selection; up to 200,000 characters and
+  64 undos; the cursor blinking each second after 0.75 s; no special text;
+  selectable. Measured (`0x10020ac0`) as a large text window, a single line
+  as one line high, a width not given a space wider.
+
+## Buttons
+
+- **Defaults** (`XButtonWindow::Init`, `0x10007640`): no repeat, a press
+  from the keyboard shown 0.3 s, a held repeat after 0.5 s every 0.1 s, no
+  sounds, white tiles and green text in every state, selectable.
+- **The mouse**: the script first; then the left button, or the right
+  where `EnableRightMouseClick` is on:
+  - a press (`0x10007bd0`) shows the button pressed; one that repeats
+    activates at once with its click sound, any other plays its press sound;
+  - held (`Tick`, `0x10008190`), one that repeats activates again with its
+    click sound every repeat rate while the pointer is over it, the first
+    after its initial delay;
+  - while held (`MouseMoved`, `0x10007e30`), it shows pressed only with the
+    pointer over it;
+  - the release (`0x10007d10`) lets it go; over it, one that does not repeat
+    plays its click sound and activates.
+- **Activating** (`ActivateButton`, `0x100077e0`) sends `ButtonActivated` up
+  the parents until one takes it; a right click, `ButtonActivatedRight`, a
+  script function `Window` declares no event for (the game's menu choices
+  step back a value by it).
+- **From the keyboard or a script** (`PressButton`, `0x10007b20`, Space by
+  default), the button shows pressed for its activate delay, plays its
+  click sound and activates. The script's Enter, Space and accelerator
+  press it.
+- **Made insensitive** while the mouse holds it, it lets go
+  (`SensitivityChanged`, `0x10007f10`).
+- **Its look** (`ChangeButtonAppearance`, `0x10008380`):
+  - the insensitive pair of textures and colours when the button or a parent
+    is insensitive;
+  - else the focused pair while it has the focus;
+  - else the normal pair.
+
+  Of the pair, the pressed one while pressed. A state with no texture takes
+  the pressed one while pressed, else the normal one.
+- **The game's** menu buttons click `Menu_Press`; the scroll arrows repeat.
+- **A toggle** (`XToggleWindow`) keeps its state in the pressed flag, so one
+  on looks pressed. The left button released over it flips it
+  (`0x10049b30`), after the sound of the state it leaves -- the enable
+  sound as it turns off; the press is taken and shows nothing. From the
+  keyboard (`PressButton`, `0x10049c30`) it flips, then plays the sound of
+  its new state. `SetToggle` sends `ToggleChanged` up the parents when the
+  state changes, and `ChangeToggle` sends it without changing it. A toggle
+  never activates.
+- **A checkbox** (`XCheckboxWindow`, `Init` `0x1000a710`): the box -- the
+  on or off texture, at the size given or the larger texture's -- 3 from its
+  text, on the left unless put on the right. It draws (`Draw`, `0x1000aad0`)
+  the script's `DrawWindow`, its text in the button's text colour for its
+  state, a line down from the top margin, beside the box, which is centred
+  down the window; no button texture. Its size (`0x1000acb0`) is a text
+  window's plus the box and its spacing beside the text, never smaller than
+  the box within the margins.
+- **A radio box** (`XRadioBoxWindow`) holds the toggles under it with no
+  nearer radio box (`DescendantAdded`, `0x10038b90`), one of them on at a
+  time (`ToggleChanged`, `0x10038a60`): a toggle turned on becomes the one,
+  the last one turned off; while one must be on (`bOneCheck`, set by `Init`)
+  the one on cannot be turned off, and another's turning off is taken
+  without a word; the rest goes to the script. It sizes its shown children
+  to itself (`0x10038840`) and asks for the largest of their sizes.
+
+## Scales and scrolling
+
+- **A scale** (`XScaleWindow`, `Init` `0x1003d200`) keeps a tick position
+  among its ticks, 10 by default. A slider's thumb sits on a tick; a
+  scrollbar's (`SetThumbSpan` of 1 or more, `0x1003de40`) spans that many,
+  stopping that many short of the end.
+  - **Values** (`TickToValue`, `0x1003ebb0`): the ticks share the value
+    range, 0 to 1 by default, evenly (a scrollbar's one more than it has).
+    `SetValue` goes to the nearest tick, halves away from 0, and `GetValue`
+    reads the tick's value.
+  - **The value text** (`GetValueString`, `0x1003e460`): the tick's own text
+    (`SetEnumeration`, ticks 0 to 511) when it has one, else the value
+    through the value format, `%1.2f` by default.
+  - **A move** (`ChangeThumbPosition`, `0x1003f170`) is held to the ticks. A
+    new position goes up the parents until one takes it, as
+    `ScaleRangeChanged` from a scrollbar or `ScalePositionChanged` from a
+    slider; a new position, count or span sends `ScaleAttributesChanged`,
+    from a scale that shows. A new range, format, or text for the position
+    sends the move again.
+  - **Steps** (`MoveThumb`, `0x1003e860`): a step is the thumb step (1 by
+    default, at least 1), a page a scrollbar's span or a slider's 4 ticks.
+    The script's arrows step it, and Home, End, Page Up and Page Down move
+    it.
+  - **The mouse** (`0x1003fdc0`, `0x10040030`, `0x10040150`): on the thumb
+    the left button drags it, the move sent as not final until the release;
+    on a slider's scale it drags from there, the thumb jumping to the tick;
+    beside a scrollbar's thumb it pages toward the click, and while held and
+    still beside it again every 0.1 s after 0.5 s (`Tick`, `0x10040250`;
+    across, the far side is measured by the thumb's height). Each with the
+    scale's click, drag and set sounds.
+  - **The geometry** (`ConfigurationChanged`, `0x1003f8f0`;
+    `ComputeThumbConfig`, `0x1003ed60`): the scale centred in the window, a
+    stretched one (`EnableStretchedScale`, its texture then repeated) filling
+    its length within the margins; the ticks run from its start offset to
+    its end offset, inside its border. The thumb is its texture with its
+    caps added along the scale, centred across; a scrollbar's is as long as
+    its span's share of the scale, 6 at least, its caps cut to fit.
+  - **Drawing** (`Draw`, `0x1003fb10`), with no script `DrawWindow`: the
+    scale, the ticks (the end ones unless left out), then the thumb with its
+    caps, each within its border, tiled across it, and along it when
+    repeated.
+- **A scale manager** (`XScaleManagerWindow`) lines its shown children up
+  along its orientation, each at its preferred size and placed across by
+  the child alignment; the room left goes to the scale and the value field
+  that stretch, shared evenly if both do (`ConfigurationChanged`,
+  `0x10042260`). Its arrows step its scale (`ButtonActivated`,
+  `0x10042720`). The decrement arrow is sensitive unless the scale is at its
+  start, the increment arrow unless its span reaches the end
+  (`ScaleAttributesChanged`, `0x10042640`); the value field shows the value
+  text.
+- **A scroll area** (`XScrollAreaWindow`, `Init` `0x10042d80`): for each
+  axis a scale manager, made hidden, with an arrow, a scrollbar of one tick
+  spanning one, and an arrow, then a clip window; the arrows repeat; only
+  vertical scrolling is on; margins and the scrollbar distance are 3, and a
+  bar hides while not needed.
+  - **Sizes** (`ComputeChildSizes`, `0x100432d0`): the clip window within
+    the margins, each shown bar beside it at the distance. A bar that hides
+    shows only while the clip's child does not fit: the sizes are tried with
+    the bars as last shown, then a bar put in or taken out as the fit asks,
+    a try for each, all shown if that does not settle it; a hidden bar keeps
+    its place at no width. Down, the size asked for adds the margin width
+    twice, not the height.
+  - **Events**: the clip window's size and its child's in units become the
+    scales' spans and tick counts (`ClipAttributesChanged`, `0x10043b50`),
+    its position their ticks (`ClipPositionChanged`, `0x10043c40`), and a
+    scale's first tick the child's position (`ScaleRangeChanged`,
+    `0x10043a50`). The wheel steps the vertical scale while it shows
+    (`MouseButtonPressed`, `0x10043d10`).
+- **A clip window** (`XClipWindow`, `Init` `0x1000b320`) shows a larger
+  child -- its topmost shown one -- moved by whole units: the child's
+  granularity while it snaps to units (on by default), else pixels.
+  - **Laying out** (`ConfigurationChanged`, `0x1000c560`; `ReconfigureChild`,
+    `0x1000c0e0`): the child as wide or high as the clip on an axis whose
+    size is forced, at its preferred size on another; filling the clip when
+    smaller (on by default); placed at its position in units and kept over
+    the clip. Its size and the clip's in units go up as
+    `ClipAttributesChanged` when they change.
+  - **`SetChildPosition`** (`0x1000b470`) moves the child, but along a forced
+    axis, keeps it over the clip and sends `ClipPositionChanged`.
+  - **Showing an area** (`ChildRequestedShowArea`, `0x1000c360`): the child
+    moved by the least whole units that bring the area in, its start when it
+    does not fit.
+  - Its preferred size is its child's, or a preferred size in units
+    (`SetUnitSize`). `ResetUnitHeight` resets the width in units, not the
+    height; no script calls it.
+
+## Tiles and tab groups
+
+- **A tile** (`XTileWindow`, `Init` `0x10048360`): left to right, wrapping,
+  filling its parent, equal heights, margins of 3, 1 between children and
+  between rows, each child as thick as its row.
+  - **Layout** (`ComputeChildSizes`, `0x10048a90`): each shown child at its
+    preferred size -- a tile that fills its parent and does not wrap gives
+    each its space across less the margins -- made as wide and high as the
+    widest and highest where those are equal. The children go into rows
+    along the orientation, from the side its directions say, a new row where
+    the next would pass the space less the margins; each row as thick as its
+    thickest child, each child placed across it by the child alignment
+    (centred by a whole half; full, made as thick as the row). Its preferred
+    size is the rows' plus the margins.
+  - `SetOrder` (`0x10048560`) sets the orientation, both directions and
+    whether it wraps. Each setter lays the tile out again. A child's request
+    goes on up (`ChildRequestedReconfiguration`, `0x100421d0`, takes none).
+- **A tab group** (`XTabGroupWindow`) -- every modal, the root and a clip
+  window are ones -- sizes itself to its children unless told not to
+  (`bSizeParentToChildren`, on by `Init`, `0x10044d90`): the largest of its
+  shown children's sizes, each with its margins unless they are sized to it
+  (`0x10045700`); with neither, the script's say. With
+  `bSizeChildrenToParent` it sizes its shown children to itself
+  (`ConfigurationChanged`, `0x10045640`), else its layout is the script's.
+  `MenuUIWindow` turns the first off, for its script's.
 
 ## Lists
 
@@ -526,16 +794,6 @@ What the game shows under a menu, by the player's UI background option
   ([keyboard focus](#keyboard-focus)). The root window's script calls them
   for Tab and Shift+Tab. `GetTabGroupWindow` (`0x1004c560`) is the nearest
   tab group at or above a window.
-- **No width is no limit.** `XGC::ParseLine` (`0x10029ae0`) breaks the lines
-  that `GetTextExtent` (`0x10027bb0`) measures and `DrawText` draws. It takes
-  a width of 0 or less as 500,000: `GetTextExtent(0, ...)` measures each line
-  whole. The multiplayer message window measures its progress lines so,
-  before drawing them in a box of that width.
-- **Aligned text.** `XGC::DrawText` (`0x10028180`) hands its wrap width (the
-  width with word wrap on, 0 with it off) only to line breaking. It centres
-  or right-aligns each line within the width it was given.
-- **`GetTickOffset`** (`0x1004fda0`): the real time since the windows were
-  last ticked.
 - **Text windows.** No script calls these: `ResetLines` (`0x10046310`) and
   `ResetMinWidth` (`0x10046450`) lift a text window's line limits and
   minimum width; `LargeTextWindow.SetVerticalSpacing` (`0x1002d7e0`) sets the
