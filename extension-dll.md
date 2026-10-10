@@ -189,9 +189,10 @@ are `exec` exports.
 - **The tables.** A tab group lists its selectable windows twice
   (`ResortWindowTables`, `0x10045140`) by where each lies on the screen (its
   clip rectangle's corner): by row (top to bottom, then left to right) and
-  by column (left to right, then top to bottom), ties broken by address. It keeps each window's index in both. `SetSelectability`
-  (`0x1004c390`) puts a window in its group's lists or takes it out
-  (`AddWindowToTables`, `0x10045350`).
+  by column (left to right, then top to bottom), ties broken by address. It
+  keeps each window's index in both. `SetSelectability` (`0x1004c390`) puts
+  a window in its group's lists or takes it out (`AddWindowToTables`,
+  `0x10045350`).
 - **A modal's tab groups.** A modal keeps a table of its tab groups: itself
   (`XModalWindow::Init`) and each tab group made under it. It is sorted top
   to bottom, then left to right, by each group's place: that of its first
@@ -344,14 +345,14 @@ from the player.
   nothing added) keep the accelerator with the text while the text is the
   accelerator (`EnableTextAsAccelerator`, `0x100464e0`, on when a script
   gives no value; `SetAcceleratorText`, `0x1004f310`: the character after
-  the first `|&`, none past 254). It draws (`Draw`, `0x10046930`) its alignments and
-  word wrap into the GC, the script's `DrawWindow`, then its text within the
-  margins. Its size (`ParentRequestedPreferredSize`, `0x100465a0`), with its
-  own fonts and text settings: the text's extent -- wrapped at the width
-  given less the margins with word wrap on -- held within the line limits
-  when no height is given, plus the margins; with no text its background's
-  size, else the script's say. A width not given is at least the minimum
-  width: an empty text window is 0 wide.
+  the first `|&`, none past 254). It draws (`Draw`, `0x10046930`) its
+  alignments and word wrap into the GC, the script's `DrawWindow`, then its
+  text within the margins. Its size (`ParentRequestedPreferredSize`,
+  `0x100465a0`), with its own fonts and text settings: the text's extent --
+  wrapped at the width given less the margins with word wrap on -- held
+  within the line limits when no height is given, plus the margins; with no
+  text its background's size, else the script's say. A width not given is at
+  least the minimum width: an empty text window is 0 wide.
 - **A large text window** (`XLargeTextWindow`, `Init` `0x1002d480`) lays its
   text out in rows (`GenerateLines`, `0x1002da70`) spaced by its vertical
   spacing (1) and is not its accelerator. Its size (`0x1002e1d0`): rows of
