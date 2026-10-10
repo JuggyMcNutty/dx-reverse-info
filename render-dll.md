@@ -71,7 +71,10 @@ warp zones and the sky.
     invisible, and besides an invisible zone portal (`PF_Portal` and
     `PF_Invisible`) and a mirror (`PF_Mirrored`).
 - **`DrawFrame`** draws the world's surfaces with their decals, then the
-  sprites kept (translucent ones last), then the coronas.
+  sprites kept (translucent ones last), then the coronas. A surface's decals
+  are drawn only while the client's `Decals` is on and the render device is
+  not span-based (`SpanBased`, the software renderer's); off, they are not
+  stamped either.
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
   viewer is and by the inverse of the sky zone's rotation (observed, not
   read). Liberty Island's sky zone is turned 5,080 (28°).

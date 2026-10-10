@@ -1223,6 +1223,10 @@ Who hears a sound an actor plays. What the audio subsystem then does with it:
 
 ## Small
 
+- **`AttachDecal`** (`execAttachDecal`, `0x103e7250`) attaches nothing and
+  returns false while the client's `Decals` (the Display menu's Decals) is
+  off or there is no client: the game's decals then destroy themselves as
+  they are made (`Decal.PostBeginPlay`).
 - **`LevelInfo`'s clock** (`Year`, `Month`, `Day`, `DayOfWeek`, `Hour`,
   `Minute`, `Second`, `Millisecond` at `ALevelInfo+0x47c` to `0x49c`;
   `transient` in `Engine.u`; the script's one reader is `StatLog`'s date string)
