@@ -64,13 +64,27 @@ time it has played, when its lip sync is next worked out, the sample's mean
 | `LowSoundQuality` | False | read by the engine as it loads each sound: 16-bit ones become 8-bit, and ones at 22,050 Hz or more are halved in rate (`Engine.dll`, `0x1036f040`) |
 | `Latency` | 40 | the output's mix-ahead in milliseconds |
 | `OutputRate` | 44100Hz | the mixing rate, 8,000 to 48,000 Hz; the reverb's delays are whole samples of it |
-| `EffectsChannels` | 16 | the voices for sounds |
+| `EffectsChannels` | 16 | the voices for sounds, 0 to 32; a change applies at once (below) |
 | `MusicVolume`, `SoundVolume`, `SpeechVolume` | 153, 204, 255 | the Sound options' sliders |
 | `AmbientFactor` | 0.7 | the scale of ambient sounds' volume |
 | `DopplerSpeed` | 6,500 | the speed of sound for Doppler, in units a second |
 
 `UseSpatial`, also in `DeusEx.ini` (the original launcher writes it), is not
 a setting of this class, and nothing in the game reads it.
+
+A `SET` (the Sound menu's) ends in `PostEditChange` (`0x10605ad0`), which
+holds the subsystem's own copy, not the class default that `GET` reads:
+`OutputRate` to 48,000 Hz at most, `Latency` to 10–250, `EffectsChannels` to
+0–32, `DopplerSpeed` to 1–100,000 and `AmbientFactor` to 0–10; then the
+volumes are set again.
+
+`EffectsChannels` is handed to Galaxy once, by `Init`: that many voices for
+sounds, the music's voices after them. Every loop over the channels (a new
+sound's choice of one, `Update`, `SetViewport`, `StopSoundId`, `NoteDestroy`,
+the `ASTAT` display) reads the setting as it stands, so a change applies at
+once. Lowered, a sound on a channel past it plays on, out of the driver's
+reach. Raised, the channels past the start's count play on the voices after
+it, the music's: channel n starts its sound on voice n + 1.
 
 ## Playing a sound
 
