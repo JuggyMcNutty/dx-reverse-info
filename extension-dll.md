@@ -89,6 +89,18 @@ are `exec` exports.
 
 ### The root window
 
+- **Its size and scale** (`ResizeRoot`, `0x1003adf0`, each frame from
+  `PreRender`): one multiplier for both axes, the smaller of the viewport's
+  width over 640 and its height over 480, each truncated and at least 1,
+  kept as both the root's `hMultiplier` and `vMultiplier`. The root, at 0, 0
+  and aligned top and left with no margins, is the viewport divided by it,
+  unrounded: 1280x720 and 1600x900 take 1 (the root as big as the viewport),
+  1920x1080 2 (960x540), 2560x1440 3 (853.3x480); below 640x480 the root is
+  the viewport. The window tree draws through a GC given the same
+  multipliers (`PaintWindows`, `SetMultipliers`), and the rectangle
+  `SetRenderViewport` gives in the root's units is multiplied by them into
+  the frame's pixels (`PreRender`, `0x1003a760`); the mouse and
+  `ConvertVectorToCoordinates` divide by them.
 - **What it takes** (`Process`, `0x1003b3e0`): every key while any window has
   grabbed the keyboard, and every mouse button while any window has grabbed
   the mouse. Taking a button clears the player's `bFire` and `bAltFire`.
