@@ -279,16 +279,21 @@ many times, moving it before each.
 
 **`UParticleIterator`** holds 64 particles (`FsParticle` in
 `DeusEx/Inc/uparticle.h`), which the script adds from `ParticleGenerator`.
-`UpdateParticles(dt)` (`0x1001ac50`) ages each live particle and deletes one
-whose life has run out (`DeleteParticle`, `0x1001aaf0`). A living one:
+`UpdateParticles(dt)` (`0x1001ac50`) takes `dt` off each live particle's life
+while it is above 0 -- one whose life is 0 stays so, living on -- and deletes
+one whose life runs out (`DeleteParticle`, `0x1001aaf0`). A living one, its
+age the generator's life span less the life it has left, each update:
 
 - **drifts:** its horizontal velocity is its initial one plus a new random
-  offset each frame, from -3 to +2;
-- **rises or falls:** under zone gravity when the generator asks for it,
-  else faster with age at the generator's rise rate;
-- **grows** with age, from 0.01 to 3 times the draw scale, when asked;
-- **fades** with its remaining life, when asked;
-- **moves** by its velocity.
+  offset, from -3 to +2;
+- **rises or falls:** with the generator's gravity its Z velocity gains
+  `dt` × the zone's gravity × 0.2; without, it is its initial one plus its
+  age × the generator's rise rate × 0.9 to 1.1, drawn anew;
+- **grows** when asked: its draw scale is (its age + 1) × the generator's,
+  held to 0.01 to 3; else the generator's;
+- **fades** when asked: its glow is the life it has left over the
+  generator's life span; else 1;
+- **moves** by its velocity × `dt`.
 
 The proxy is hidden while no particle lives. `CurrentItem` (`0x1001ab20`)
 moves the proxy to the current particle (`FarMoveActor`) with its scale and
