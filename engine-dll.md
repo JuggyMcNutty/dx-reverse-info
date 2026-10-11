@@ -919,18 +919,40 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
 - **The movers in the BSP** (UE1's moving-brush tracker: `GNewBrushTracker`,
   `0x1037c860`; its update `0x1037a400`):
   - `LoadMap` makes the level one for every map but `Entry`, and `SaveGame`
-    one again after it saves. It files every moving brush -- an `ABrush` with
-    a brush that is not `bStatic`, so every mover, whatever its collision --
-    into the level's BSP: each polygon, at the mover's place, split down the
-    tree into new nodes (`0x1037c0c0`, `0x1037bb00`). A polygon's node blocks
-    the line check but for a `PF_NotSolid` polygon (`NF_NotCsg`);
-    `PF_Invisible` or `PF_Portal` makes it a node that does not block
-    visibility, `PF_Masked` a shoot-through one.
+    one again after it saves, the old one's nodes cut from the BSP. It files
+    every moving brush -- an `ABrush` with a brush that is not `bStatic`,
+    which must be a mover (any other is a fatal error), whatever its
+    collision, hidden or not -- into the level's BSP: each polygon, at the
+    mover's place, split down the tree, each fragment that lands in empty
+    space a node of its own and one that lands in solid dropped
+    (`FilterPoly`, `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`). A
+    polygon's node blocks a line but for a `PF_NotSolid` polygon
+    (`NF_NotCsg`); `PF_Invisible` or `PF_Portal` makes it a node that does
+    not block visibility, `PF_Masked` a shoot-through one. It has no
+    collision hull.
+  - A filing is recorded in the mover's `SavedPos` and `SavedRot`, its
+    `Location` and `Rotation` as filed: it has moved or turned since when
+    either differs.
   - Each frame drawn, `Render.dll`'s `SetupDynamics` updates it for every
     moving brush not hidden, in view or not: one that has moved or turned
-    since it was filed is taken out and filed again where it is. So with
+    since it was filed is taken out and filed again where it is, and so is
+    every mover filed under the nodes taken out (`0x1037c4f0`). So with
     nothing drawn (a dedicated server), and for a hidden mover, the BSP keeps
     the mover where the map's load or the last save filed it.
+  - **A destroyed mover stays filed.** `ULevel::DestroyActor` does not tell
+    the tracker (only the editor's `AMover::SetWorldRaytraceKey` takes a mover
+    out without filing it again), so its polygons stay in the BSP until the
+    tracker is made again. Deus Ex's scripts destroy no mover they break:
+    `DeusExMover.BlowItUp` moves it 20,000 units up and makes it not collide,
+    so the next frame drawn files it up there.
+  - **What meets them: a line, not a box.** The line walk of
+    `UModel::LineCheck` with no extent (`0x103f3560`) takes a polygon node's
+    plane for a solid boundary, as `FastLineCheck`'s does, but for an
+    `NF_NotCsg` node and the node flags its caller passes: so `Trace` and the
+    multi-hit check's BSP part (the iterators, `TraceActors`, `TraceTexture`)
+    stop at a mover where it was filed, the hit the level's. A box is stopped
+    only by the hull of a leaf of the level's own BSP, which no filed polygon
+    has: a filed mover stops no box.
 - **`VisibleActors(BaseClass, Actor, Radius, Loc)`** (`0x103e5260`): each actor
   in the level's list, not hidden, of the class, whose location lies strictly
   within `Radius` of `Loc` (a radius of 0, the default: no limit), with
