@@ -61,8 +61,23 @@ What decides how bright a lit wall is:
   Observed: two passes draw lit surfaces twice as bright as one (1.6 times
   through the frames' gamma of 1.5) and unlit ones alike; `OpenGLDrv` draws
   as one pass.
+- **A macro texture** sends a surface down the two-pass path and is a pass
+  of its own, between the base and the light map, in the modulated blend
+  too (`0x1000420b`): twice its colour, so grey leaves the base as it is.
+  No texture of the game has one: no package names `MacroTexture` but
+  `Engine.u`, which declares the property.
 - **A 3dfx Voodoo3** (known by its device ID in `SetRes`): stage 0 takes the
   texture alone while light-mapping, so the diffuse is not applied twice.
+
+## Where a light map lies
+
+`DrawComplexSurface` lays a light map on its surface (the one-pass path at
+`0x10003cc6`, the light-map pass at `0x10004771`), and a fog map the same
+way (`0x10004f78`). A point whose texture coordinate along the facet's U
+axis, from its origin, is u falls at `(u − Pan.X) ÷ UScale + 0.5` texels of
+the map, and v likewise by `Pan.Y` and `VScale`. So texel i's centre lies
+at u = `Pan.X + i × UScale`, where Render.dll lights it
+([light maps](render-dll.md#light-maps)).
 
 ## Textures
 

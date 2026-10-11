@@ -445,6 +445,11 @@ least 1), from `LightPhase`'s 256ths of a turn.
     others move on that step for each tick passed. 16 ticks or more without
     a frame start it over with fresh draws. So an entry glides to a new
     value every 16 ticks (under half a second), each held to 0-1.
+- **A texel's place** (`SetupLight`, from `0x10b0615e`): texel (i, j) is lit
+  at the point of the surface whose texture coordinates are
+  `(Pan.X + i × UScale, Pan.Y + j × VScale)`, by the light map's own pan and
+  scales: where a render device draws the texel's centre
+  ([where a light map lies](d3ddrv-dll.md#where-a-light-map-lies)).
 - **A texel's byte**, 0 to 127 a channel:
   - **The start:** the zone's ambient light, `FGetHSV`'s colour times 64,
     rounded down.
