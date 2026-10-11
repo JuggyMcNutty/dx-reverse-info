@@ -287,10 +287,15 @@ factor = 430 × (0.3 + 0.7 × width / 640) × DrawScale × LODBias × MeshScaleM
   draws only the faces whose `FaceLevel` is within the budget, and moves
   each corner of those down its collapse list to a vertex within the budget
   too. Only the vertices of faces turned to the eye get lit.
-- **Morphing.** With `LODMorph` above 0, the vertices in that top fraction of
-  the budget slide toward the vertex they collapse to, the nearer the top
-  the further, their texture coordinates with them. Detail fades rather than
-  pops, beginning before the first vertex goes.
+- **Morphing.** With `LODMorph` above 0 and the mode's first bit set (below),
+  on the budget before it is held to the mesh, B (at least `LODMinVerts`):
+  past s, the whole number under (1 − `LODMorph`) × B, each vertex within the
+  budget slides toward the vertex it collapses to by (its index − s) ÷
+  (`LODMorph` × B), at most the whole way, toward that vertex's own place
+  before it slides; one that collapses to the first vertex does not slide.
+  A corner on a vertex that slides moves its texture coordinates as far
+  toward those of the wedge it collapses to, as bytes, rounded down. Detail
+  fades rather than pops, beginning before the first vertex goes.
 
 **The settings** are `URender`'s. `Init` sets the shape LOD to 0.25, its
 adjustment to 1 (nothing changes it), the mode to 1 and the fixed factor
