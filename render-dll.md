@@ -506,7 +506,7 @@ least 1), from `LightPhase`'s 256ths of a turn.
     - **Rotor** (`0x10b03ae0`): × `(1 + cos(3.5t + 6 atan2(dx, dy))) ÷ 2`,
       blended toward 1 within 100 units of the axis by
       `(dx² + dy²) × 0.0001`: six blades turning at 3.5/6 radians a second,
-      lit full at the axis. Its period and phase are not read.
+      lit full at the axis. The light's period and phase play no part.
     - **Disco** (`0x10b046f0`): × `(1 − u)`, `u = A + B − AB` for `A` and
       `B` each `(1 + cos(11x + 5t)) ÷ 2`, `x` the azimuth `atan2(dx, dy)` and
       the angle from the vertical `atan2(√(dx² + dy²), dz)`, and `u` faded to
