@@ -454,6 +454,56 @@ least 1), from `LightPhase`'s 256ths of a turn.
   - **The spotlight's** (`SpatialSpotlight`, `0x10b04f80`): the same times
     `((cos − c) ÷ (1 − c))²` inside its cone, `c = 1 − LightCone ÷ 256`,
     rounded down.
+  - **Each effect's** (a table of a function, whether the shape changes
+    each frame, and whether it wavers, at `0x10b2a0f0`): the plain shape for
+    `LE_None`, the wavers, `LE_Warp`, `LE_OmniBumpMap` and `LE_Unused`; the
+    spotlight's for `LE_StaticSpot` too; `LE_CloudCast` the plain shape
+    again (`0x10b04380`), but counted as changing. The others, each within
+    the light's radius (`d < r`) but the cylinder, rounded down (half a unit
+    taken off, then rounded) and the waves', shock's, searchlight's,
+    rotor's, disco's and interference's on the plain shape; (dx, dy, dz) the
+    texel less the light, `t` the level's `TimeSeconds`, the angles from the
+    sine table:
+    - **Cylinder** (`0x10b04a80`): the shadow byte ×
+      `(1 − (dx² + dy²) ÷ r²)`, held at 0: a fall-off round the light's
+      vertical axis, with no angle and no height.
+    - **Non-incidence** (`0x10b054e0`): the shadow byte × `(1.02 − d ÷ r)`,
+      with no angle. Its byte is not held: a lit texel within 1.4% of the
+      radius from the light makes over 255 and wraps to a few.
+    - **Slow wave** (`0x10b03de0`): × `0.7 + 0.3 sin(2π (n − 35t) ÷ 64)`, `n`
+      the distance in whole units: a wave 64 units long going out at 35
+      units a second.
+    - **Fast wave** (`0x10b040b0`): the same with `n` a quarter of that,
+      rounded down, over 32: 128 units long, going out at 140 a second.
+    - **Shock** (`0x10b043a0`): × `(0.9 + 0.1 cos(2π (n + 4000t) ÷ 4096))`
+      × `(0.9 + 0.1 sin(2π (2n − 4000t) ÷ 4096))` ×
+      `(0.9 + 0.1 sin(2π (n ÷ 2 − 4000t) ÷ 4096))`, `n` the distance in
+      eighths of a unit and `n ÷ 2` rounded down: three ripples of a tenth,
+      512, 256 and 1024 units long, the first coming in at 500 units a
+      second, the others going out at 250 and 1000.
+    - **Shell** (`0x10b05740`): the shadow byte × `(1 − 10 |d ÷ r − 0.9|)`
+      from 0.8 to 1 of the radius, dark elsewhere: a thin shell, brightest
+      at 0.9 of the radius, with no fall-off and no angle.
+    - **Interference** (`0x10b04c80`): × `(1 + cos(11x + 5t)) ÷ 2`, `x` the
+      angle from the vertical `atan2(√(dx² + dy²), dz)`: rings round the
+      axis by that angle, disco's second term alone.
+    - **Searchlight** (`0x10b03770`): × `(1 + cos a) ÷ 2` for
+      `a = 4 atan2(dx, dy) + LightPhase × π/32 + 35t ÷ LightPeriod + 2π`
+      (no time term with no period) taken mod 8π, between π and 3π, and
+      dark elsewhere; times `(dx² + dy²) × 0.00006` within some 129 units of
+      the light's vertical axis. One beam a quarter turn wide round that
+      axis, fading to nothing near it, turning once in
+      `8π × LightPeriod ÷ 35` s.
+    - **Rotor** (`0x10b03ae0`): × `(1 + cos(3.5t + 6 atan2(dx, dy))) ÷ 2`,
+      blended toward 1 within 100 units of the axis by
+      `(dx² + dy²) × 0.0001`: six blades turning at 3.5/6 radians a second,
+      lit full at the axis. Its period and phase are not read.
+    - **Disco** (`0x10b046f0`): × `(1 − u)`, `u = A + B − AB` for `A` and
+      `B` each `(1 + cos(11x + 5t)) ÷ 2`, `x` the azimuth `atan2(dx, dy)` and
+      the angle from the vertical `atan2(√(dx² + dy²), dz)`, and `u` faded to
+      nothing within some 141 units of the axis by `(dx² + dy²) × 0.00005`.
+      Away from the axis it is `(1 − A)(1 − B)`: a grid of spots, 11 round by
+      11 down, turning at 5/11 radians a second; lit full at the axis.
   - **The light's table** (`SetupLight`): the illumination i, 0 to 254,
     becomes i × its colour and brightness in 65536ths, rounded down, at
     most 127.
