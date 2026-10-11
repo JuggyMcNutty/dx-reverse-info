@@ -276,6 +276,13 @@ it walks every property instead and calls `Modify` before each change.
   section of that name (the bindings are in `[Engine.Input]`), so nothing is
   copied: the input objects only read their bindings from `User.ini` again,
   and the player's bindings stay.
+- **`GetPropertyText(PropName)` and `SetPropertyText(PropName, Value)`**
+  (`0x1013e0b0`, `0x1013e320`): a property of the object's class by its
+  name, read only when it is public (a script's `private` one is not), its
+  first element as `GET` writes it, and set only when it is public and not
+  const; any other name reads empty and sets nothing. The server's query
+  answerer (`IpServer`'s `UdpServerQuery`) reads the level's, the game's
+  and the players' properties a remote names through it.
 - **The console's `GET` and `SET`** (`UObject::StaticExec`, `0x10153110`),
   with which the game's menus read and write their settings:
   - The class is found by its name in any package loaded (the menus name
