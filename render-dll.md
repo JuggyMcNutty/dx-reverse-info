@@ -252,7 +252,12 @@ brightness from 0 to 1.
   viewer's leaf or out of it.
 - **Seen** (`CoronaTest`, `0x10b1bc00`) when the line from the eye to the
   light meets no level geometry or mover, and no pawn or other actor but the
-  viewer's own pawn.
+  viewer's own pawn: two line checks. The first, of the level and the movers
+  (`TRACE_Level | TRACE_Movers`), passes no node flags, so a surface that a
+  sight test passes (`NF_NotVisBlocking`) stops it: an invisible one, such
+  as the collision hull round a glass mover's pane. The second is of pawns
+  and other actors (`TRACE_Pawns | TRACE_Others`), the viewer's own pawn
+  allowed as the first one met.
 - **Fading**, in real time: each frame every corona loses `3 × dt` (dt the
   seconds elapsed), and each one seen gains `6 × dt`. So a corona comes up,
   or goes, in about a third of a second. At 0 it is dropped.
