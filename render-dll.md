@@ -74,7 +74,11 @@ warp zones and the sky.
   sprites kept (translucent ones last), then the coronas. A surface's decals
   are drawn only while the client's `Decals` is on and the render device is
   not span-based (`SpanBased`, the software renderer's); off, they are not
-  stamped either.
+  stamped either. A surface goes to the device with a detail texture only
+  when its texture's current frame (`AnimCurrent`) has one, it is no
+  portal, and the client's `TextureDetail` is High, the client read through
+  the static `UBitmap::__Client`, which a `UClient`'s constructor sets and
+  its `Destroy` clears (`Engine.dll`).
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
   viewer is and by the inverse of the sky zone's rotation (observed, not
   read). Liberty Island's sky zone is turned 5,080 (28°).

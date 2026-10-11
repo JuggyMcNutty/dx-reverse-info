@@ -136,21 +136,31 @@ Two kinds, as the engine hands them over:
 
 ## Detail textures
 
-The close-up grain on world surfaces, drawn only when `DetailTexture` is on
-and the surface has one:
+The close-up grain on world surfaces, drawn by `DrawComplexSurface`
+(`0x10003900`) when the surface comes with one
+([what hands it one](render-dll.md#a-frame)): the device's `DetailTextures`
+off, or a fog map on the surface, clears it first.
 
 - **Up to three passes**, each a band by view depth. The first covers
   `Z < 380` units at the detail texture's own scale. Each further band
-  divides the bound by ~4.22 (380, 90, 21.3) and multiplies the texture
+  divides the bound by 4.223 (380, 90, 21.3) and multiplies the texture
   repeat by 4.223: finer grain the closer the wall.
-- **The fade.** Per vertex the detail fades by depth:
-  `alpha = (bound/Z - 1) x 100`, clamped to 255, on a mid-grey vertex
-  colour. The pass blends the detail texture toward mid-grey by that alpha
-  (the driver requires `BLENDDIFFUSEALPHA`) and draws it modulated. So grey
-  (zero alpha, the band's far edge) changes nothing, and there is no seam.
-  Polygons crossing a bound are clipped at it, with zero alpha on the cut.
+- **Which polygons.** A facet's polygon with no corner nearer than the bound
+  is passed over, whatever of it lies nearer; one with a corner nearer is
+  cut where an edge crosses the bound, each cut a vertex of its own at the
+  bound's depth.
+- **The fade.** Each corner nearer than the bound takes the grey `0x808080`
+  with an alpha of `(bound/Z − 1) × 100`, truncated, at most 255; a cut
+  vertex takes alpha 0. The stage blends the detail texture toward that grey
+  by the alpha (`BLENDDIFFUSEALPHA`) and the pass draws it modulated (the
+  blend of `PF_Modulated`, twice source by destination). So grey, the band's
+  far edge, changes nothing, and there is no seam.
 - **Z bias.** The pass runs with a Z bias of 15 (reset to 0 after), so the
   detail never fights its own surface's depth.
+
+Run here, under Wine, neither this nor `OpenGLDrv` draws a detail texture:
+a frame is the same with the setting on and off, Liberty Island's pier
+seen close up among them, though its texture has one (`DWoodFine_A`).
 
 ## The rest of a frame
 
