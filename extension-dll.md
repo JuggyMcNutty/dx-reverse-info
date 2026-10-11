@@ -262,14 +262,25 @@ are `exec` exports.
 
 ### Window sounds
 
-`PlaySound(sound, volume, pitch, posX, posY)` (`0x10050050`) plays one unit
-from the player.
+`PlaySound(sound, volume, pitch, posX, posY)` (`0x10050050`; the script's
+`execPlaySound`, `0x10053820`, gives the defaults) plays the sound in the
+world, one unit from the player's place -- not its eyes -- along the view's
+yaw, its pitch left out.
 
-- With the root window's positional sound on, the sound is turned left or
-  right by the point's place across the screen, a quarter turn at either
-  edge. Otherwise it is straight ahead.
-- The point defaults to the window's centre, and the volume to the window's
-  own.
+- With the root window's positional sound on -- the root's `Init`
+  (`0x100390b9`) turns it on, and no script turns it off -- and the window
+  and every window it is in shown, the yaw turns by the point's place across
+  the root: its x × 2 ÷ the root's width − 1, held to −1..1, times a quarter
+  turn. Otherwise the sound is straight ahead.
+- The point defaults to the window's centre, the pitch to 1, and the volume
+  to −1, which stands for the window's own (`soundVolume`). Only
+  `SetSoundVolume` sets that, never a window's `Init`, so a window that does
+  not set it plays at its class's 0, unheard.
+- It goes to the audio device with no actor and slot 0 -- a channel of its
+  own each time --, a radius of 100 and the volume × 100 ÷ 99, whole one unit
+  off. The listener is the view, some 40 units up at the player's eyes, so
+  Galaxy's fall-off ([each frame](galaxy-dll.md#each-frame)) plays it at 0.6
+  of that, and a turned sound pans only as far as the view is level.
 
 ## Layout
 
