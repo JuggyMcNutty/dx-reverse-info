@@ -1330,10 +1330,25 @@ Who hears a sound an actor plays. What the audio subsystem then does with it:
 - **`GetMeshTexture(texnum)`** (`0x103e17c0`): the actor's skin of that number
   (`GetSkin`); else, for a number above 0, the mesh's texture of that number;
   else the actor's `Skin`; else the mesh's texture.
-- **`FindStairRotation(DeltaTime)`** (`0x103bb880`): UE1's own. With a frame of
-  0.33 s or less, it probes the floor ahead at eye height and eases the view
-  pitch toward looking down (−5,000) or up (5,400) a flight of stairs, or back
-  to level.
+- **`FindStairRotation(DeltaTime)`** (`0x103bb880`): UE1's own, eased twice as
+  fast. With a frame of 0.33 s or less (else the pitch as it is), a pitch over
+  0x8000 made negative in place, and h the pawn's `CollisionHeight` plus its
+  `BaseEyeHeight`:
+  - a box of its radius by 1 (the level and movers, flags 6) from the eye,
+    2h along the view's yaw; with more room than 0.8h, another down 3h from
+    halfway along that. A floor nearer than 0.7h − 6 is stairs up (5,400)
+    when the one down from the far end is 10 nearer still; one farther than
+    0.7h + 6 is stairs down (−5,000) when a line from the feet meets nothing
+    0.9 of the way along and the far end's floor is 10 farther still. Up or
+    down without the stairs keeps the pitch's own up or down part; anything
+    else is level.
+  - the pitch eases toward that at 8, or 8,000 over the difference (in whole
+    numbers) when that is under 1,000, times the frame, at most the whole
+    way, the result truncated. The sums come out in single precision: 3,000
+    eased 0.4 of the way to level is 1,800, not 1,799.
+
+  Its line meets a mover filed in the BSP, its boxes a mover as an actor
+  ([traces](#traces)).
 - **`ResetKeyboard()`** (`0x103b96d0`): `UObject::ResetConfig` of the class of
   the viewport's input; `DeusExPlayer.TravelPostAccept` calls it on every level.
   What that does in Deus Ex: [configuration](core-dll.md#configuration).
