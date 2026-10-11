@@ -70,11 +70,21 @@ warp zones and the sky.
   - **What occludes**: a surface neither masked, translucent, modulated nor
     invisible, and besides an invisible zone portal (`PF_Portal` and
     `PF_Invisible`) and a mirror (`PF_Mirrored`).
-- **`DrawFrame`** draws the world's surfaces with their decals, then the
-  sprites kept (translucent ones last), then the coronas. A surface's decals
-  are drawn only while the client's `Decals` is on and the render device is
-  not span-based (`SpanBased`, the software renderer's); off, they are not
-  stamped either. A surface goes to the device with a detail texture only
+- **`DrawFrame`** draws the frame's three lists of surfaces, each surface
+  with its decals, in turn, then the coronas. `OccludeBsp` puts each
+  surface it keeps at the head of one: a mirror's or a portal's in the
+  first; one that is none of invisible, masked, translucent or modulated in
+  the second; the rest in the third. The first is drawn in reverse, the
+  second sorted by its key (zone, then texture), the third as it stands:
+  back to front. `FDynamicSprite`'s leaf test puts each sprite at the head
+  of the frame's list as its first part shows, so the sprites too go back
+  to front. On a render device that is not span-based (`SpanBased` off,
+  every hardware one) the sprites whose actor is not `STY_Translucent`
+  follow the second list, and the translucent ones the third: glass blends
+  over a mesh behind it. A span-based one (the software renderer) draws
+  them all after the third. A surface's decals are drawn only while the
+  client's `Decals` is on and the render device is not span-based; off,
+  they are not stamped either. A surface goes to the device with a detail texture only
   when its texture's current frame (`AnimCurrent`) has one, it is no
   portal, and the client's `TextureDetail` is High, the client read through
   the static `UBitmap::__Client`, which a `UClient`'s constructor sets and
