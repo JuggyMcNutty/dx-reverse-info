@@ -590,3 +590,9 @@ least 1), from `LightPhase`'s 256ths of a turn.
     `bMeshEnviroMap`'s (`0x10b26230`): none makes a face two-sided.
   - `D3DDrv` draws with culling off, so only this keeps a translucent mesh's
     back faces unseen.
+  - **In face order** on a render device that is not span-based: opaque,
+    masked and translucent faces as they come, each with its own flags. A
+    span-based one (the software renderer) first sorts the faces kept by
+    their depth key, the largest first (`appQsort`, comparator
+    `0x10b0ea60`). So on `D3DDrv` a translucent face drawn before an opaque
+    face behind it is covered where that face is drawn.
