@@ -964,6 +964,10 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   when hidden only with `bIgnoreHidden`, with `FastLineCheck` clear from `Loc`
   to it, asked as the iteration comes to it. `HurtRadius` uses it; Deus Ex's own
   `bIgnoreLOS` takes `RadiusActors` instead.
+- **`RadiusActors(BaseClass, Actor, Radius, Loc)`** (`0x103e4fa0`; `Loc` by
+  default the actor's own place): each actor in the level's list, of the
+  class, whose location lies strictly within `Radius` plus its own
+  `CollisionRadius` of `Loc`, hidden or not, colliding or not.
 - **Which surface a level hit gives**: the node the check meets the level at,
   the first of its plane's coplanar nodes, whichever of their polygons the line
   crossed.
