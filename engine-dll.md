@@ -281,16 +281,55 @@ fields, after their properties (none):
     a texture whose `Friction` is under 1 moves by the zone's gravity × the
     tick² / (2 × that friction, at least 0.025), less its part along the
     floor's normal.
-- **Walking over the floor** (`APawn::physWalking`, `0x103ca540`): a walking
-  pawn floats. Standing still on the same base, a line 20 units down from its
-  cylinder's bottom centre that finds the floor 4.1 to 4.6 away leaves it be.
-  Otherwise a box trace of its cylinder, down `MaxStepHeight` + 2, measures the
-  floor: with none in reach, or the same base ≤ 2.4 away, one nearer than 1.9
-  lifts the pawn to 2.1; with a farther or another base, the pawn moves down
-  onto it and takes what it stands on as base (the `LevelInfo` for the world).
-  These are the traces' distances, short of the floor by their backoff
-  ([traces](#traces)), the box trace's a tenth of its length: a pawn with
-  `MaxStepHeight` 25 stands 4.8 over the floor.
+- **Walking** (`APawn::physWalking`, `0x103ca540`), the whole tick at once,
+  after the ladder check; in no zone, `FellOutOfWorld`:
+  - The speed (`calcVelocity`, below), the velocity and acceleration made level
+    first. The move is the velocity, plus the zone's velocity × 25 × the tick
+    for a player and for another pawn in a zone moving over 300, made level.
+  - Steps, up to 8: a player's, and another pawn's whose move over the time
+    left is over 20 units, of at most 0.05 s (half the time left, over 0.05
+    s); any other the whole time left.
+  - A step that does not move (each axis under 0.0001) is the last. A pawn
+    standing still on the same base, a line 20 units down from its cylinder's
+    bottom centre finding the floor 4.1 to 4.6 away, is left as it is.
+  - A step that moves, after one that met a wall too steep to walk up
+    (`bHitSlopedWall`: a hit whose normal's Z is over 0.01 and under 0.7): a
+    box of its cylinder along the move (its length + 4, at least 30; flags 6)
+    meeting such a wall again takes the move's part into the wall's level
+    normal off it; a player meeting none looks for one with three lines from 4
+    over a step's height above its feet, 100 long, along the move and 45
+    degrees to each side. Otherwise the flag is the move's own hit's. The move
+    is a `MoveActor`; what blocks it is stepped up with the rest of the move
+    (`stepUp`, below).
+  - The floor: a box trace of its cylinder, down `MaxStepHeight` + 2 (flags
+    23). With none in reach, or the same base ≤ 2.4 away, one nearer than 1.9
+    lifts the pawn to 2.1; with a farther or another base, the pawn moves down
+    onto it and takes what it stands on as base (the `LevelInfo` for the
+    world). These are the traces' distances, short of the floor by their
+    backoff ([traces](#traces)), the box trace's a tenth of its length: with
+    `MaxStepHeight` 25 a pawn stands 4.6 to 5.1 over the floor, 4.8 once
+    lifted.
+  - A floor sloped where the zone's `ZoneGroundFriction` × its normal's Z is
+    under 3.3 slides the pawn down: the zone's gravity × the tick² / (2 × that
+    friction, at least 0.5), less its part along the normal, if not turned
+    back -- the whole tick's time, each step.
+  - No floor, or one steeper than 0.7: a pawn without `bCanJump` stops where
+    the tick began (`FarMoveActor`), its velocity and acceleration 0, its
+    `MoveTimer` −1. With it, `MayFall` is asked, once a tick, if the state
+    probes it, and `bCanJump` cleared there stops it too. Otherwise the part of
+    the step the pawn did not move across goes back to the time left, its Z
+    velocity is 0, and it gets `Falling`; still walking after that, it falls
+    (`setPhysics`). Falling, its velocity becomes the move's own over the time
+    taken, its Z kept, and `physFalling` takes the time left (over 0.01 s).
+    Any other physics its script gave it (a bird's flight) moves on along the
+    move for the time left.
+  - A step up that leaves it falling (a script, from an event of the step's
+    moves) gives the time back as well and sends `Falling`: still falling, it falls the time left;
+    made to fly, it rises at `AirSpeed`, accelerating at `AccelRate`, and
+    flies the time left.
+  - A step that takes it into water hands it to `startSwimming` (below).
+  - The velocity after is the tick's move over the tick, unless
+    `bJustTeleported`, made level.
 - **Moving toward a spot** (`APawn::moveToward`, `0x103be250`), a tick of
   `MoveTo` or `MoveToward`:
   - reached: within 16 units across (walking, height ignored; else within the
@@ -317,6 +356,24 @@ fields, after their properties (none):
     in water is given up by a pawn that cannot swim.
   - `APawn::performPhysics` counts the move's time down and keeps
     `AvgPhysicsTime` = 0.8 × itself + 0.2 × the tick (`0x103c9c37`).
+  - `WaitForLanding` (`0x103bb6f0`, poll `0x103bb730`) waits only while the
+    pawn falls: `LatentFloat`, 2.5 at the call, counts the fall down, and once
+    it is under 0 each tick sends `LongFall`.
+- **`EAdjustJump`** (`0x103bc110`): the pawn's velocity made a jump to its
+  `Destination` by `SuggestJumpVelocity` ([reaching](#reaching)), its Z
+  velocity kept. Deus Ex's `ScriptedPawn` aims with it the jump its
+  `FallingState` gives a pawn that walked off a ledge (`AdjustJump`).
+- **Turning** (`APawn::physicsRotation`, `0x103c9f30`), after the physics each
+  tick (`APawn::performPhysics`, `0x103c9a70`). A pawn that is not a player is
+  set to rotate to `DesiredRotation` (`bRotateToDesired` on,
+  `bFixedRotationDir` off) and turned the shortest way (`fixedTurn`,
+  `0x103c9dc0`): its yaw by at most `RotationRate`'s yaw × the tick; its
+  pitch, when it is not the desired pitch, by at most 32,768 × the tick,
+  toward 0 when walking or falling and toward the desired pitch otherwise,
+  then held within `RotationRate`'s pitch of level, up and down. Its roll
+  becomes 0. Of a player's rotation only the roll is set to 0, when the
+  rotation is not the desired one or its `RotationRate` has a roll. No
+  `EndedRotation`.
 - **The speed**
   (`APawn::calcVelocity(AccelDir, deltaTime, maxSpeed, friction, bFluid, bBrake, bBuoyant)`,
   `0x103cd7a0`), once a tick: walking asks it at `GroundSpeed` with the zone's
@@ -497,8 +554,8 @@ fields, after their properties (none):
   - From `physFalling`: the step's old velocity and time, the time left with
     the part of the step the move did not take.
   - From `physWalking`: its velocity as the old, the step's time and the time
-    left; after a move that met nothing, after a step up, and after the step
-    down to the floor.
+    left; after a step's move and step up, after the step down to the floor,
+    and after a slide down a slope.
 - **Swimming** (`APawn::physSwimming`, `0x103d3cd0`), the whole tick at once,
   after the ladder check:
   - With its head out of water, a Z velocity over 100 is × (1 − the tick).
