@@ -443,6 +443,15 @@ least 1), from `LightPhase`'s 256ths of a turn.
   the light map and the zone. It is built again only when it is not there, when
   one of its lights has `bLightChanged`, or, for a mover's surface, after the
   mover moves, turns or changes leaf.
+- **The fog map** ([`D3DDrv`'s fog](d3ddrv-dll.md#fog)), only when the render
+  device takes fog maps and does volumetric lighting (`SupportsFogMaps`,
+  `VolumetricLighting`) and the viewport's actor is in a fog zone
+  (`bFogZone`): then `OccludeBsp` gathers the volumetric lights listed for
+  each leaf it walks (`LeafVolumetricLighting`, `0x10b170e0`), and each draw
+  keeps those whose sphere, (`VolumeRadius` + 1) × 25 units, reaches the view
+  through its polygon. `SetupForSurf` (`0x10b06c90`) then makes a fog map for
+  a draw with any, not translucent, whose zone (the one the surface is seen
+  from, above) is a fog zone too.
 - **The dynamic map**, only when an animated or moving light reaches the
   surface: the static map copied and those lights added, every frame. It is
   cached with the frame's time, so a surface drawn twice in a frame is lit
