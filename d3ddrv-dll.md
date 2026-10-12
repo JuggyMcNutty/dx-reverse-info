@@ -64,6 +64,10 @@ What decides how bright a lit wall is:
 - **A macro texture** sends a surface down the two-pass path and is a pass
   of its own, between the base and the light map, in the modulated blend
   too (`0x1000420b`): twice its colour, so grey leaves the base as it is.
+  It lies as the base does, `(u − its pan) ÷ (UScale × USize)` along U,
+  with its own pan and scale, which `Render.dll` leaves as the texture's
+  lock gives them: none, and its `DrawScale`
+  ([a frame](render-dll.md#a-frame)).
   No texture of the game has one: no package names `MacroTexture` but
   `Engine.u`, which declares the property.
 - **A 3dfx Voodoo3** (known by its device ID in `SetRes`): stage 0 takes the

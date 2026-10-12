@@ -88,7 +88,12 @@ warp zones and the sky.
   when its texture's current frame (`AnimCurrent`) has one, it is no
   portal, and the client's `TextureDetail` is High, the client read through
   the static `UBitmap::__Client`, which a `UClient`'s constructor sets and
-  its `Destroy` clears (`Engine.dll`).
+  its `Destroy` clears (`Engine.dll`). The texture goes with the surface's
+  pan: `PanU` and `PanV`, the zone's auto-pan for `PF_AutoUPan` and
+  `PF_AutoVPan`, a wave of 8 and 4 units on the level's time for
+  `PF_SmallWavy`. Its detail and macro textures go as `UTexture::Lock`
+  leaves them: not panned, at their own scale (`DrawScale`, times the mip's
+  shrink).
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
   viewer is and by the inverse of the sky zone's rotation (observed, not
   read). Liberty Island's sky zone is turned 5,080 (28°).
