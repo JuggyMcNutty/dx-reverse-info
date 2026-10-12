@@ -429,12 +429,15 @@ least 1), from `LightPhase`'s 256ths of a turn.
 
   With the client's `NoDynamicLights` on (an ini setting, off by default),
   animated lights count as static and moving ones are left out.
-- **The static map:** the zone's ambient light, and each static light
-  through its shadow bits (smoothed as they are unpacked, `0x10b02650`). It
-  is kept in the global cache (`GCache`) under the model, the light map and
-  the zone. It is built again only when it is not there, when one of its
-  lights has `bLightChanged`, or, for a mover's surface, after the mover
-  moves, turns or changes leaf.
+- **The static map:** the zone's ambient light, and each static light through
+  its shadow bits (smoothed as they are unpacked, `0x10b02650`). The zone is the
+  one the surface is seen from: `OccludeBsp` (`0x10b173d0`) gives each draw its
+  node's zone on the side of the plane the view's origin lies, `iZone[1]` in
+  front and `iZone[0]` behind, the `LevelInfo` for zone 0, and a portal the
+  other side's. The map is kept in the global cache (`GCache`) under the model,
+  the light map and the zone. It is built again only when it is not there, when
+  one of its lights has `bLightChanged`, or, for a mover's surface, after the
+  mover moves, turns or changes leaf.
 - **The dynamic map**, only when an animated or moving light reaches the
   surface: the static map copied and those lights added, every frame. It is
   cached with the frame's time, so a surface drawn twice in a frame is lit
