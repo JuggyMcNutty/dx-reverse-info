@@ -7,8 +7,8 @@ stopping a sound by its ID), over Carlo Vogelsang's Galaxy sound library
 (revision 5.00, compiled February 2000), linked in: its mixer, its player for
 tracker music, its reverb, DirectSound or WinMM output, and A3D and EAX
 hardware. The library's own structures and function prototypes are in the
-SDK's `GALAXY.H` (whose licence keeps them out of this repository). How it
-was read: [working on the binaries](README.md#working-on-the-binaries).
+SDK's `GALAXY.H` (whose licence keeps them out of this repository). Read with:
+[working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 

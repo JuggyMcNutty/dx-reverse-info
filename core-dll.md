@@ -2,8 +2,8 @@
 
 The native half of package Core: objects and names, packages and linkers,
 the property and class system, configuration, and the script interpreter
-with its natives (operators, conversions, string and math functions). How it
-was read: [working on the binaries](README.md#working-on-the-binaries).
+with its natives (operators, conversions, string and math functions). Read with:
+[working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 

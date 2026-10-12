@@ -1,8 +1,8 @@
 # dx-reverse-info
 
 Deus Ex's original binaries, reverse-engineered: what `DeusEx.exe` and the game's DLLs do,
-as behaviour in our own words with the addresses, offsets and names it was read from. It is
-the record [Port Ex Machina](https://github.com/JuggyMcNutty/port-ex-machina) works from.
+as behaviour in our own words with the addresses, offsets and names behind it. It is the
+record [Port Ex Machina](https://github.com/JuggyMcNutty/port-ex-machina) works from.
 None of the game's files are here, and no decompiled code
 ([what goes in](#working-on-the-binaries)). Two efforts:
 
@@ -35,6 +35,7 @@ what each function does, with addresses.
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
 | `Render.dll` | package Render: UE1's scene renderer: the frame's occlusion (span buffers, the rasterizer's pixels) and draw order, which actors are drawn, render iterators, render time, coronas, what a pawn holds, which mesh faces are drawn, mesh detail, mesh textures, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; the occlusion, mesh detail and lighting |
 | `D3DDrv.dll` | the Direct3D 7 display driver: gamma, the textures' depth, the light maps' brightness on screen, fog, detail textures, and each pass's blending; the look's reference | [`d3ddrv-dll.md`](d3ddrv-dll.md) | read |
+| `OpenGLDrv.dll` | the OpenGL display driver, the renderer the harness runs the original through | beside `D3DDrv`'s: [the light maps' brightness](d3ddrv-dll.md#the-light-maps-brightness), [detail textures](d3ddrv-dll.md#detail-textures) | its light maps in one pass, no detail texture drawn; its gamma ramp is `D3DDrv`'s ([the harness's shots](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/DEVELOPMENT.md#shots)) |
 | `IpDrv.dll` | package IpDrv: the sockets: the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library: channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 | `Fire.dll` | package Fire: the fractal textures (fire, water lit or bending another texture, ice) that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
@@ -54,9 +55,11 @@ Beside them in `gamefiles/System/`, not the game's:
 
 ## Working on the binaries
 
-This repository is cloned as `dx-reverse-info/` in the folder that holds Port Ex Machina's
-repositories, beside the game install (`gamefiles/`) and the reference material
-(`reference/`). Paths below that are not this repository's are that folder's.
+A path below that is not this repository's is the parent folder's, where this repository is
+cloned beside the game install (`gamefiles/`) and the reference material (`reference/`)
+([the layout](https://github.com/JuggyMcNutty/port-ex-machina/blob/main/README.md#layout)).
+
+### The tools
 
 - **IDA runs headless, through Hex-Rays' own IDA MCP server.** IDA Pro 9.4 for Linux is in
   `~/ida-pro-9.4`, its `idalib` named in the user's `~/.idapro/ida-config.json`. Claude Code
@@ -72,9 +75,9 @@ repositories, beside the game install (`gamefiles/`) and the reference material
   has open. Without IDA for Linux, [`tools/ida/idalib-mcp.sh`](tools/ida/idalib-mcp.sh)
   serves databases from Windows IDA under Proton's wine (ida-pro-mcp's idalib supervisor,
   over stdio, in the distrobox; it needs the plugin `ida-pro-mcp@mrexodia` installed).
-- **One database per binary**, beside it ([the databases](#the-databases)). Closing a
-  database (`close_database`) rewrites its `.i64` even without `save_database`, and leaves
-  no working files beside it: back it up first.
+- **Back a database up before closing it**: `close_database` rewrites its `.i64` even
+  without `save_database`, and leaves no working files beside it ([the
+  databases](#the-databases)).
 - **Types.** [`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) gives a database the layout
   of every native class, struct and enum from the script source in the game's packages, and
   checks each class against the size the DLL registers for it. Run it in IDA (File > Script
@@ -131,6 +134,8 @@ repositories, beside the game install (`gamefiles/`) and the reference material
   default `Proton-CachyOS Latest`) and a prefix with Windows Python (`WIZ_PREFIX`, default
   `umu-default`; `WIZ_PYTHON`), as `idalib-mcp.sh` does. The captures (default
   `reference/original-wizard/`) are the game's pictures: they stay out of the repositories.
+### Reading a binary
+
 - **A native's `exec` function holds the defaults of its optional parameters**: each is set
   before its argument is read. Upstream's natives take them as `std::optional`, and a
   default is not always false (`IsValidEnemy` checks the alliance unless told not to).
@@ -143,9 +148,10 @@ repositories, beside the game install (`gamefiles/`) and the reference material
   produces wrong documentation here.
 - **The game's UnrealScript source is embedded in `System/DeusEx.u`** (and the other `.u`
   files). Search it, a regex over the file, before guessing what the game's script does.
-- **What goes in this repository** is behaviour in our own words, with addresses, offsets
-  and names: never a decompiled listing or a disassembly. The repository is public, and the
-  code is not ours.
+### What goes in this repository
+
+Behaviour in our own words, with addresses, offsets and names: never a decompiled listing or a
+disassembly. The repository is public, and the code is not ours.
 
 ## The databases
 

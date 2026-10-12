@@ -3,7 +3,7 @@
 The native half of package DeusEx: the player, the NPCs' native tick and
 alliances, saving and the save directory, the particle and laser iterators
 behind `ParticleGenerator` and `LaserEmitter`, and a QA tool that records bug
-locations. How it was read: [working on the binaries](README.md#working-on-the-binaries).
+locations. Read with: [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 

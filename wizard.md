@@ -6,11 +6,11 @@ widget class are in `Window.dll`, loaded from its `hInstanceWindow` (`WDialog::D
 
 The pages' source is in the SDK (`reference/ReleaseSDK1112f/Headers/DxHeaders.zip`), as C++
 in headers: `Engine/Inc/UnEngineWin.h` holds the six pages and `InitEngine`,
-`Window/Inc/Window.h` the wizard frame and its buttons. What has an address below was read
-in the binary. The rest is the header's: the tie-break of the Renderer page's default, its
-flush before detecting, the frame's buttons. The header matches the binary at every point
-the two were compared: the entry tree, the order around the wizard, each page's strings and
-flags, SafeOptions' defaults, the Detail thresholds.
+`Window/Inc/Window.h` the wizard frame and its buttons. What has an address below is the
+binary's. The rest is the header's: the tie-break of the Renderer page's default, its flush
+before detecting, the frame's buttons. The header matches the binary at every point
+compared: the entry tree, the order around the wizard, each page's strings and flags,
+SafeOptions' defaults, the Detail thresholds.
 
 ## Entry decision tree (`InitEngine`, `0x1090AAB6`–`0x1090B7F6`)
 
@@ -313,11 +313,10 @@ The original, run under wine and captured by
 [`tools/wine/wizard-capture.sh`](tools/wine/wizard-capture.sh): every page of the wizard,
 the splash, the CD prompt and `-make`'s error box, each with its controls' rectangles
 ([the tool](README.md#working-on-the-binaries)). The captures are the game's pictures and
-stay out of the repositories. They match the reading above: the entry tree
-(`FirstRun (0) < 400` opens the first-time wizard); the order around the wizard
-(`Running.ini` absent while it is open, deleted when it is cancelled); SafeMode's one
-prompt, for `-safe` too; SafeOptions opening with every box ticked but Reset; the frame's
-buttons; the CD prompt (title, text, OK and Cancel, no icon; Cancel leaves `Running.ini`).
+stay out of the repositories. They match the reading above at every point compared: the
+entry tree, the order around the wizard (`Running.ini` absent while it is open, deleted when
+it is cancelled), SafeMode's one prompt (for `-safe` too), SafeOptions' defaults, the frame's
+buttons, the CD prompt (title, text, OK and Cancel, no icon; Cancel leaves `Running.ini`).
 Beyond that:
 
 - **The log window needs a virtual desktop.** Outside one, `WLog::OpenWindow` fails at its
@@ -348,7 +347,7 @@ Beyond that:
   height each rounded on its own: the window 530×436, its client area 524×411; Next at 183,
   384, 75 × 23.
 - **The shipped bug**: with "Disable 3D sound hardware" (#2) cleared and #3–#5 ticked, the
-  relaunch ran as `DeusEx.exe -nosound -nommx -nokni -nok6 -nojoy`: no `-nohard`,
+  relaunch runs as `DeusEx.exe -nosound -nommx -nokni -nok6 -nojoy`: no `-nohard`,
   `-noddraw` or `-defaultres`, and nothing else of the first command line.
 - **The splash**: `..\Help\Logo.bmp` (this install has no `DeusExLogo.bmp`; its
   `Help/Logo.bmp` is the SDK's, `reference/ReleaseSDK1112f/Help/Logo.bmp`) in a 512×410
@@ -357,8 +356,8 @@ Beyond that:
   many pixels a step of 8 off the file's. With neither bitmap, a `-firstrun` launch
   asserts in `InitSplash`: `Assertion failed: Bitmap.LoadFile(Filename)`,
   `[File:..\..\Engine\Inc\UnEngineWin.h] [Line: 55]`.
-- **`-make`**: a "Critical Error" box with the error icon, the message, a blank line and
-  "History: " with nothing after, OK alone; the process ends with 1.
+- **`-make`**: the fatal box as [`launch-flow.md`](launch-flow.md#2-engine-bootstrap-0x10908cdb0x10908e92)
+  has it, with the error icon and OK alone; the process ends with 1.
 
 Not verified: the forwarding receiver (a second launch handing a running game its command
 line); `MainLoop` (`0x10914630`) in depth; the splash staying up through a real start of

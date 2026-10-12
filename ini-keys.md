@@ -1,7 +1,7 @@
 # Configuration surface
 
 Every ini read and write of `DeusEx.exe`, resolved from `GConfig` vtable call sites against
-the `FConfigCache` interface in `Core/Inc/Core.h:195`. Each entry was confirmed by argument
+the `FConfigCache` interface in `Core/Inc/Core.h:195`. Each entry is resolved by argument
 arity and types at the call site, not by index arithmetic: MSVC reverses overload groups in
 the vtable ([the rule](README.md#working-on-the-binaries)).
 

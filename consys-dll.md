@@ -2,8 +2,8 @@
 
 The native half of package ConSys: conversations. Their events (speech,
 choices, flags, animations, trades, camera moves), the camera, the history
-the player's log keeps, and the lists that bind them to actors. How it was
-read: [working on the binaries](README.md#working-on-the-binaries).
+the player's log keeps, and the lists that bind them to actors. Read with:
+[working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 

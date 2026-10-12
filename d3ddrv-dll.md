@@ -3,7 +3,7 @@
 The game's display driver: `UD3DRenderDevice`, the Direct3D 7 render device
 it shipped with and its look was tuned on. Here: gamma, the light maps'
 brightness on screen, fog, detail textures, and the blending every pass
-uses, the reference a reimplemented look is judged against. How it was read:
+uses, the reference a reimplemented look is judged against. Read with:
 [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
@@ -125,9 +125,9 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
 | Flags | Blend | Meaning |
 |---|---|---|
 | solid | none, Z written | opaque |
-| `PF_Translucent` | `ONE` / `INVSRCCOLOR` | dest = src + dest x (1 - src): black adds nothing, white replaces; no Z write |
-| `PF_Modulated` | `DESTCOLOR` / `SRCCOLOR` | dest = 2 x src x dest: mid-grey 0x80 is identity; no Z write |
-| `PF_Highlighted` | `ONE` / `INVSRCALPHA` | premultiplied add: dest = src + dest x (1 - src alpha) |
+| `PF_Translucent` | `ONE` / `INVSRCCOLOR` | dest = src + dest × (1 − src): black adds nothing, white replaces; no Z write |
+| `PF_Modulated` | `DESTCOLOR` / `SRCCOLOR` | dest = 2 × src × dest: mid-grey 0x80 is identity; no Z write |
+| `PF_Highlighted` | `ONE` / `INVSRCALPHA` | premultiplied add: dest = src + dest × (1 − src alpha) |
 | `PF_Masked` | alpha test | texel shows when alpha > 127/255; Z written |
 | `PF_Invisible` | `ZERO` / `ONE` | draws nothing but still fills the Z buffer |
 | `PF_NoSmooth` | point sampling | the filter drops to nearest for the draw |

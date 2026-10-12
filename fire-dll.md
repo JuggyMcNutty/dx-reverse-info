@@ -4,9 +4,9 @@ The native half of package Fire: the fractal textures, drawn by the CPU a
 step at a time. Fire (`FireTexture`), water lit as a surface (`WaveTexture`)
 or bending another texture (`WetTexture`), and ice (`IceTexture`). Deus Ex's
 energy weapons, lasers, fires, smoke, gas, water and screen effects are made
-of them ([what uses them](#what-deus-ex-uses)). How it was read:
-[working on the binaries](README.md#working-on-the-binaries), and
-[checked](#how-it-was-checked) against the DLL's own routines.
+of them ([what uses them](#what-deus-ex-uses)). Read with:
+[working on the binaries](README.md#working-on-the-binaries); its routines,
+run in a CPU emulator on test inputs, give these results byte for byte.
 
 ## The binary
 
@@ -234,9 +234,3 @@ No Deus Ex texture is ice.
   Stars and Sprinkler. The Dragon's Tooth, for one, carries a Gametes fire
   and a Cone fire with SphereLightning bolts on its blade, beside the wet
   texture.
-
-## How it was checked
-
-The description was verified by running the DLL's own routines in a CPU
-emulator (Python `unicorn`) on test inputs, byte for byte. The emulator
-script lives in the session's scratch space and is never committed.

@@ -8,7 +8,7 @@ The native half of package Extension, Ion Storm's own:
 - the flag base behind every mission and conversation flag;
 - the game engine and input classes that put the UI in front of the game.
 
-How it was read: [working on the binaries](README.md#working-on-the-binaries).
+Read with: [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 

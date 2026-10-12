@@ -2,7 +2,7 @@
 
 The native half of package Render: `URender`, UE1's scene renderer. It
 occludes through the BSP, picks which actors are drawn and how, and draws
-dynamic lighting, meshes, sprites, decals and coronas. How it was read:
+dynamic lighting, meshes, sprites, decals and coronas. Read with:
 [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary

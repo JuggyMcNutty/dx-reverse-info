@@ -1,6 +1,6 @@
 # Launch flow — `DeusEx.exe`
 
-Every claim cites the address it was read from. Imagebase `0x10900000`.
+Every claim cites its address. Imagebase `0x10900000`.
 
 ## Entry
 
@@ -127,8 +127,8 @@ set it to `"Saved game"` if it is empty.
 | `TakeFocus` | bring the window forward |
 | `EditActor Class=<name>` / `EditActor new` | open a `WObjectProperties` inspector; errors *"Actor not found"* / *"Missing class"* |
 | `Preferences` | open `WConfigProperties`, caption `LocalizeGeneral("AdvancedOptionsTitle","Window")` |
-| `MPLAYER` | `LaunchMPlayer` (`0x109142C0`), which holds the binary's only registry read, `HKLM\software\mpath\mplayer\main` ([`ini-keys.md`](ini-keys.md#registry)) — **dead service** |
-| `HEAT` | launch `GotoHEAT.exe` on port `5193` — **dead service**; `GotoHEAT.exe` is not shipped |
+| `MPLAYER` | `LaunchMPlayer` (`0x109142C0`), which holds the binary's only registry read, `HKLM\software\mpath\mplayer\main` ([`ini-keys.md`](ini-keys.md#registry)) -- **dead service** |
+| `HEAT` | launch `GotoHEAT.exe` on port `5193` -- **dead service**; `GotoHEAT.exe` is not shipped |
 
 ## 8. CD check (`0x1090B9CE`–`0x1090BAFD`)
 

@@ -2,8 +2,8 @@
 
 The native half of package DeusExText: `DeusExTextParser`, which breaks the
 tagged text of books, datacubes, newspapers, emails, bulletins and the credits
-into tokens for the script, and the editor's importer of those texts. How it
-was read: [working on the binaries](README.md#working-on-the-binaries).
+into tokens for the script, and the editor's importer of those texts. Read with:
+[working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 
