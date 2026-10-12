@@ -176,10 +176,23 @@ off, or a fog map on the surface, clears it first.
   far edge, changes nothing, and there is no seam.
 - **Z bias.** The pass runs with a Z bias of 15 (reset to 0 after), so the
   detail never fights its own surface's depth.
+- **Where it lies.** As the base does, `(u − its pan) ÷ (UScale × USize)`
+  along U, times the band's repeat, with its own pan and scale, which
+  `Render.dll` leaves as the texture's lock gives them: none, and its
+  `DrawScale` ([a frame](render-dll.md#a-frame)). The surface's pan moves
+  the base texture, not its detail.
+- **Only with `BLENDDIFFUSEALPHA`.** `SetRes` (`0x1000c515`) turns the
+  device's `DetailTextures` off unless the driver's texture operations
+  include it, the fade's blend; the log then lacks "D3D Driver: Supports
+  BLENDDIFFUSEALPHA".
 
 Run here, under Wine, neither this nor `OpenGLDrv` draws a detail texture:
 a frame is the same with the setting on and off, Liberty Island's pier
 seen close up among them, though its texture has one (`DWoodFine_A`).
+Wine's Direct3D 7 does not offer `BLENDDIFFUSEALPHA`, so `SetRes` turns
+them off; set on in the running game, the pass changes nothing either.
+`Render.dll` hands them over: the client's `TextureDetail` is High and
+the static pointer it is read through is set.
 
 ## The rest of a frame
 
