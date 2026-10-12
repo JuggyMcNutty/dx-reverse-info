@@ -146,7 +146,9 @@ and calls the function named here.
 - **`DeleteSaveGameFiles(optional dir)`** (`0x100149f0`): the engine's; the
   directory defaults to `""`, which means `Save\Current`.
 - **`SetBoolFlagFromString(name, value)`** (`0x100144e0`): sets that bool
-  flag, adding it with no expiry, and returns the name. No script calls it.
+  flag in the player's flag base, adding it, with the flag base's default
+  expiration (-1: [flags](extension-dll.md#flags)), and returns the name. No
+  script calls it.
 - **New objects.** `CreateHistoryObject`, `CreateHistoryEvent`,
   `CreateLogObject`, `CreateDataVaultImageNoteObject` and
   `CreateDumpLocationObject` make a new object each call, in the player's own
