@@ -910,7 +910,9 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   clear of the level's BSP, the segment itself and nothing past it
   (`UModel::FastLineCheck`, `0x103f3280`; its walk `0x103f33a0` lets a line
   through only a node flagged `NF_NotCsg`, not one flagged as not blocking
-  visibility); other actors are not asked. The BSP holds the movers' polygons
+  visibility, and takes a node's side from the sign of the distance, so the
+  line is blocked by any solid leaf it touches, its start's included); other
+  actors are not asked. The BSP holds the movers' polygons
   too (below), so a closed door stops it. The same check answers
   `LineOfSightTo`, `CanHear`, `pointReachable`, the path searches, network
   relevance and the mixer's sounds behind walls
@@ -929,7 +931,13 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
     polygon's node blocks a line but for a `PF_NotSolid` polygon
     (`NF_NotCsg`); `PF_Invisible` or `PF_Portal` makes it a node that does
     not block visibility, `PF_Masked` a shoot-through one. It has no
-    collision hull.
+    collision hull. A polygon in a node's plane is filtered down that
+    node's front and filed as a node of its own there, so a line meets it
+    as the node whose plane it lies in: the first of them, where two share
+    the plane. A new node carries `NF_IsNew` until the mover's filing is
+    done (`Update`, `0x1037a400`, clears it); a node taken out
+    (`0x1037c4f0`) is flagged `NF_IsNew` for good, and the line walks pass
+    it as no boundary.
   - A filing is recorded in the mover's `SavedPos` and `SavedRot`, its
     `Location` and `Rotation` as filed: it has moved or turned since when
     either differs.
@@ -968,23 +976,47 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   default the actor's own place): each actor in the level's list, of the
   class, whose location lies strictly within `Radius` plus its own
   `CollisionRadius` of `Loc`, hidden or not, colliding or not.
-- **Which surface a level hit gives**: the node the check meets the level at,
-  the first of its plane's coplanar nodes, whichever of their polygons the line
-  crossed.
+- **The line walk** (`UModel::LineCheck` with no extent, `0x103f3560`) follows
+  the BSP's solid space, not its polygons. The segment is classified plane by
+  plane, both ends within a thousandth of a unit of the plane counting as in
+  front of it, its near part walked first. A node is a boundary when it has a
+  polygon and none of `NF_NotCsg`, `NF_IsNew` and the flags the caller passes
+  (`FBspNode::IsCsg`, `0x103f68b0`): the front of a boundary is empty space
+  and its back solid, a node that is no boundary leaves the space as it was.
+  A leaf in solid stops the line where its part began -- at the line's start
+  when that lies in solid, a hit at time 0 --, its item the node whose plane
+  that part crossed to get there (the root, with none crossed), the first of
+  its plane's coplanar nodes whichever of their polygons the line crossed, and
+  its normal that node's plane. A polygon with empty space on both sides stops
+  nothing. Bit 0x10 of the flags passed lets a start in solid pass until the
+  line has been in empty space; the natives pass none. The level's hit has its
+  normal turned to face the start; an actor's brush hit keeps the node's plane
+  turned by the actor's `ToWorld` (`0x103f3c20`).
 - **What an actor collides as** (`AActor::GetPrimitive`, `0x1034c9a0`): its
   brush, else its mesh, else the engine's cylinder of its collision size; so a
   mover with no brush (`09_NYC_ShipBelow` has one) collides as a cylinder. A
   model with no BSP nodes answers every line and point check at once with no hit
   (`UModel::LineCheck`, `0x103f3c20`; `PointCheck`, `0x103f1570`).
-- **The multi-hit line check** under the two iterators and `TraceActors`
-  (`ULevel::MultiLineCheck`, `0x1039b220`): the level's BSP first, a hit there
-  (its actor the `LevelInfo`) cutting the line to 5 units past it; then the
-  actors along the cut line, each hit given short by a thousandth of the cut
-  line, up to 64 hits in all, nearest first. Nothing beyond the first wall is
-  listed.
+- **The multi-hit line check** under `Trace`, the two iterators and
+  `TraceActors` (`ULevel::MultiLineCheck`, `0x1039b220`): the level's BSP
+  first, a hit there (its actor the `LevelInfo`) cutting the line to 5 units
+  past it; then the actors along the cut line, their times given on the whole
+  line again, up to 64 hits in all, sorted by time alone (`appQsort`; equal
+  times fall as it leaves them). With the level met within a hundredth of the
+  line and 30 units of its start, every actor's hit but a mover's is dropped.
+  A mover's hit whose normal is the level hit's to the bit, within 2 units of
+  it, is set 2 units before the level's along the line, its time redone from
+  there: a door flush with its wall is met before the wall, where its brush's
+  plane comes out the wall's exactly; a door turned a quarter turn, its
+  normal a bit off the wall's through the sine table, ties with the wall
+  instead. Nothing beyond the first wall is listed.
 - **`Trace(HitLocation, HitNormal, TraceEnd, TraceStart, bTraceActors, Extent)`**
-  (`0x103e3330`): the first hit (`SingleLineCheck`, flags 55 with
-  `bTraceActors`, else 6); with nothing hit the location and normal are zero.
+  (`0x103e3330`): the first hit of the multi-hit check (`SingleLineCheck`,
+  `0x1039aed0`, flags 55 with `bTraceActors`, else 6) whose kind the flags
+  take -- the level 4, pawns 1, movers 2, zone infos 8, other actors 16, which
+  32 narrows to projectile targets and what blocks actors and players alike --
+  and that is not the tracing actor or one it owns; with nothing hit the
+  location and normal are zero.
 - **`TraceActors(BaseClass, Actor, HitLoc, HitNorm, End, Start, Extent)`**
   (`0x103e4bc0`): every hit of the multi-hit check, in turn, the level's
   among them; `BaseClass` (by default `Actor`) is not tested.
