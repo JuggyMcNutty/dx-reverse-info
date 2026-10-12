@@ -360,6 +360,14 @@ How the original runs UnrealScript.
 
 - **Operands follow their token:** a variable's property, a constant's value,
   a jump's offset, a call's function or name.
+- **A runaway loop.** Each `Jump` (`0x1012faf0`) and `JumpIfNot`
+  (`0x1012fbc0`) run, taken or not, adds one to a count. Past 10,000,000 the
+  frame logs "Runaway loop detected (over 10000000 iterations)" as a
+  critical error, which stops the game, unless the command line has
+  `-norunaway`; either way the count starts again. `GInitRunaway`
+  (`0x1012e7d0`) zeroes it and the call depth below: `Engine.dll` calls it at
+  the start of each level's tick (`ULevel::Tick`) and early in a map's load
+  (`UGameEngine::LoadMap`), before the level is loaded.
 - **The table.** Every slot starts at `execUndefined`, which stops the game
   ("Unknown code token"). Each native's registration at load fills its own;
   a number registered twice is noted (`GNativeDuplicate`). `Core.dll`'s own
@@ -388,8 +396,11 @@ How the original runs UnrealScript.
   `0x10150b50`). A final call carries the function itself.
 - **Running a function** (`ProcessInternal`, `0x1013f690`): tokens up to
   `Return`, then the return value evaluated into the caller's buffer. A
-  `singular` function does not run while it already is. A 251st nested call
-  stops the game ("Infinite script recursion").
+  `singular` function does not run while any singular function of its
+  object does: the object holds one flag, bit `0x20` of its `ObjectFlags`
+  (`FUNC_Singular`'s own value; the SDK's `RF_InSingularFunc`, `0x800`, goes
+  unused). A 251st nested script function stops the game ("Infinite script
+  recursion").
 - **`a.b` with `a` `None`** (`Context`, `0x101300d0`): a warning ("Accessed
   None"), `b` skipped by a size stored inline, and a zero result.
 
