@@ -399,8 +399,10 @@ How the original runs UnrealScript.
   `singular` function does not run while any singular function of its
   object does: the object holds one flag, bit `0x20` of its `ObjectFlags`
   (`FUNC_Singular`'s own value; the SDK's `RF_InSingularFunc`, `0x800`, goes
-  unused). A 251st nested script function stops the game ("Infinite script
-  recursion").
+  unused). A call held off writes nothing: a variable assigned from it keeps
+  its value. A 251st nested script function stops the game ("Infinite
+  script recursion (250 calls) detected"), the events called from C++
+  counted with the rest.
 - **`a.b` with `a` `None`** (`Context`, `0x101300d0`): a warning ("Accessed
   None"), `b` skipped by a size stored inline, and a zero result.
 
