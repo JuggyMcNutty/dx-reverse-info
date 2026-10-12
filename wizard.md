@@ -360,5 +360,4 @@ Beyond that:
   has it, with the error icon and OK alone; the process ends with 1.
 
 Not verified: the forwarding receiver (a second launch handing a running game its command
-line); `MainLoop` (`0x10914630`) in depth; the splash staying up through a real start of
-the engine.
+line); the splash staying up through a real start of the engine.

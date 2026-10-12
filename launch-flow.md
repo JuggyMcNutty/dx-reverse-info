@@ -150,7 +150,16 @@ With an engine from `InitEngine`:
 - Log `LocalizeGeneral("Run")`, close the splash (`0x10909443`).
 - `-EXEC=<file>` → run `exec <file>` on the client's first viewport, if it has one
   (`0x109097E1`).
-- `MainLoop(Engine)` (`0x10914630`), unless an exit is already requested.
+- `MainLoop(Engine)` (`0x10914630`), unless an exit is already requested. Each pass, until
+  an exit is asked for:
+  - the time since the last pass (the time-stamp counter's, else `appSecondsSlow`), whole,
+    to the engine's `Tick`, then the window manager's: a long frame, a map's load among
+    them, is handed on as it is ([a level's tick](engine-dll.md#a-levels-tick) holds what
+    its actors get);
+  - once a second, the frames a second since the last count, into the engine (+0x64);
+  - with the engine's `GetMaxTickRate` over 0, a sleep for what is left of that rate's
+    frame;
+  - the window messages, a `WM_QUIT` asking for the exit.
 
 Then, whatever `InitEngine` returned:
 
