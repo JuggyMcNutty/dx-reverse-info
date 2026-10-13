@@ -54,11 +54,13 @@ Built once, by the first fractal texture's constructor (`0x10501020`):
 - **A sine** of 256 steps as bytes: 127.5 + 127.5 × sin(i/256 × 2π), through
   a float, truncated: 0 to 255 about the middle. Beside it, the same raised
   by 32 (capped at 255) and by 128 (wrapped).
-- **The random bytes** every fractal texture draws from in turn: a table of
-  64 words from the C runtime's `rand`. A draw takes the word 32 places on
-  from the current one, steps to the next word and XORs the taken word into
-  it. Every kind below that is random draws its bytes from this, in a fixed
-  order.
+- **The random bytes** every fractal texture draws from in turn: 512 bytes,
+  each the low byte of a call to `appRand`, the C runtime's `rand`, so they
+  differ from run to run
+  ([seeded from the clock](core-dll.md#the-platforms-start)); the draws use
+  the first 256, as 64 words. A draw takes the word 32 places on from the
+  current one, steps to the next word and XORs the taken word into it. Every
+  kind below that is random draws its bytes from this, in a fixed order.
 
 ## Fire
 

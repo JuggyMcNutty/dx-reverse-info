@@ -339,6 +339,11 @@ Galaxy's mixer picks its routines by them
 ([Galaxy](galaxy-dll.md#hardware-and-the-console)). Whether another DLL
 reads them is not checked.
 
+It seeds the C library's `rand` from the clock (`srand(time(0))`), once, so
+every number drawn from it differs from run to run: the script's `Rand`,
+`FRand`, `VRand` and `RotRand` ([the natives](#the-natives)) and the fractal
+textures' random bytes ([`Fire.dll`](fire-dll.md#the-shared-tables)).
+
 ## The script interpreter
 
 How the original runs UnrealScript.
