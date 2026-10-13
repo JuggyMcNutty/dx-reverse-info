@@ -1179,8 +1179,8 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   sends them to the `Idle2` the carcass names). A level already begun (from a
   save, or returned to) keeps its own time and render times. Then, begun or
   not, every actor's `PostPostBeginPlay`; the actor list put in order; and each
-  viewport's player logs in with the load's URL (`Spawning new actor for
-  Viewport`).
+  viewport's player logs in with the load's URL
+  (`Spawning new actor for Viewport`).
 - **The actor list's order**, at every load, a save's included: its first two
   slots as they are (the `LevelInfo`, the default brush), then every `bStatic`
   actor, then the rest, each part in its old order, empty slots dropped. The
@@ -1316,8 +1316,8 @@ Who hears a sound an actor plays. What the audio subsystem then does with it:
   listener (`FastLineCheck`, [traces](#traces)), the volume is × 0.35, the
   range's square × 0.6 (the radius × 0.77) unless the hearer is the actor's
   `Instigator`, and a hearer on the range's edge hears it too. Then the
-  hearer's event `ClientHearSound(Actor, Id, Sound, the actor's location,
-  Parameters)`.
+  hearer's event
+  `ClientHearSound(Actor, Id, Sound, the actor's location, Parameters)`.
 - **`Pawn.ClientHearSound`**, a native event, is replicated unreliably while
   the server has authority (`Engine.u`): a remote player's goes to that
   player's client ([remote functions](network.md#replication)), a local

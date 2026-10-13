@@ -209,8 +209,9 @@ neither loads nor saves):
   never its exports: a loaded package's objects stay only while something
   reaches them.
 
-**The purge** (`PurgeGarbage`, `0x101581f0`), unless `-NOGC` (`Not purging
-garbage`); it logs `Purging garbage`, with `GObjInGarbageCollection` set:
+**The purge** (`PurgeGarbage`, `0x101581f0`), unless `-NOGC`
+(`Not purging garbage`); it logs `Purging garbage`, with
+`GObjInGarbageCollection` set:
 
 1. Every object still `RF_Unreachable` is destroyed (`ConditionalDestroy`,
    `0x1014fdb0`: once only, `RF_Destroyed`; `Destroy` frees its properties'

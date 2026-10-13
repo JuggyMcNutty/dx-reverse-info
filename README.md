@@ -76,8 +76,8 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   serves databases from Windows IDA under Proton's wine (ida-pro-mcp's idalib supervisor,
   over stdio, in the distrobox; it needs the plugin `ida-pro-mcp@mrexodia` installed).
 - **Back a database up before closing it**: `close_database` rewrites its `.i64` even
-  without `save_database`, and leaves no working files beside it ([the
-  databases](#the-databases)).
+  without `save_database`, and leaves no working files beside it
+  ([the databases](#the-databases)).
 - **Types.** [`tools/ida/ue1_types.py`](tools/ida/ue1_types.py) gives a database the layout
   of every native class, struct and enum from the script source in the game's packages, and
   checks each class against the size the DLL registers for it. Run it in IDA (File > Script
