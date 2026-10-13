@@ -123,11 +123,11 @@ Wizard-page vtable slots (`Window/Inc/Window.h:5043`):
 
 ## Page layouts
 
-From `Window.dll`'s dialog resources, read with [`tools/pe/dialogs.py`](tools/pe/dialogs.py).
-Every one uses MS Sans Serif, 8 pt. Rectangles are x, y, width, height in dialog units:
-across, a quarter of the font's average character width; down, an eighth of its height.
-For MS Sans Serif 8 pt at 96 DPI that is 1.5 and 1.625 pixels, which makes the frame's
-client area 524×411.
+From `Window.dll`'s dialog resources, read with
+[`tools/pe/dialogs.py`](tools/pe/dialogs.py). Every one uses MS Sans Serif, 8 pt. Rectangles
+are x, y, width, height in dialog units: across, a quarter of the font's average character
+width; down, an eighth of its height. For MS Sans Serif 8 pt at 96 DPI that is 1.5 and 1.625
+pixels, which makes the frame's client area 524×411.
 
 **The frame** (104): a 349×253 popup with a caption and a system menu, centred.
 
@@ -197,11 +197,12 @@ Controls: `IDC_RenderList` 1103 (`WListBox`), `IDC_Compatible` 1109 and `IDC_All
   for `Detected.ini` to appear, up to 30 s in steps of 100 ms. Only Direct3D is tested this
   way. Then the list is filled.
 - **The list** (`RefreshList`): every render device registered in the `.int` files, a
-  `[Public]` line `Object=(Name=<package>.<class>,Class=Class,MetaClass=Engine.RenderDevice,Autodetect=<file>)`,
-  labelled with its `ClassCaption` from `<package>.int`, `[<class>]`. A device is shown
-  with "Show all devices", or when it earns a priority: 3 if its `Autodetect` file is in
-  Windows' system or Windows directory, else 2 if its `[<package>.<class>] DescFlags` has
-  bit 1 (certified), else 1 for `SoftDrv.SoftwareRenderDevice`. The list box sorts, so the
+  `[Public]` line
+  `Object=(Name=<package>.<class>,Class=Class,MetaClass=Engine.RenderDevice,Autodetect=<file>)`,
+  labelled with its `ClassCaption` from `<package>.int`, `[<class>]`. A device is shown with
+  "Show all devices", or when it earns a priority: 3 if its `Autodetect` file is in Windows'
+  system or Windows directory, else 2 if its `[<package>.<class>] DescFlags` has bit 1
+  (certified), else 1 for `SoftDrv.SoftwareRenderDevice`. The list box sorts, so the
   captions come out in alphabetical order. The one selected is the last shown with the
   highest priority, in registration order.
 - **The note** is the selected device's line in Startup.int `[Descriptions]`, and follows
@@ -272,7 +273,8 @@ box's flags to a string, a space before each, as the table shows them. It option
 deletes `<appPackage()>.ini`, opens the game's own file again (`ShellExecute`, from the base
 directory, shown normally) with that string as its command line, and ends the wizard with 0
 (`EndDialog`). The new process gets these flags and nothing else of the command line. What
-each flag does in the engine: [`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode).
+each flag does in the engine:
+[`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode).
 
 **Safe mode does not apply settings in-process: it re-executes the binary with flags and
 exits.**
@@ -315,9 +317,9 @@ the splash, the CD prompt and `-make`'s error box, each with its controls' recta
 ([the tool](README.md#working-on-the-binaries)). The captures are the game's pictures and
 stay out of the repositories. They match the reading above at every point compared: the
 entry tree, the order around the wizard (`Running.ini` absent while it is open, deleted when
-it is cancelled), SafeMode's one prompt (for `-safe` too), SafeOptions' defaults, the frame's
-buttons, the CD prompt (title, text, OK and Cancel, no icon; Cancel leaves `Running.ini`).
-Beyond that:
+it is cancelled), SafeMode's one prompt (for `-safe` too), SafeOptions' defaults, the
+frame's buttons, the CD prompt (title, text, OK and Cancel, no icon; Cancel leaves
+`Running.ini`). Beyond that:
 
 - **The log window needs a virtual desktop.** Outside one, `WLog::OpenWindow` fails at its
   child `EDIT` control: `CreateWindowEx` returns NULL with `GetLastError() == 0`
@@ -356,8 +358,9 @@ Beyond that:
   many pixels a step of 8 off the file's. With neither bitmap, a `-firstrun` launch
   asserts in `InitSplash`: `Assertion failed: Bitmap.LoadFile(Filename)`,
   `[File:..\..\Engine\Inc\UnEngineWin.h] [Line: 55]`.
-- **`-make`**: the fatal box as [`launch-flow.md`](launch-flow.md#2-engine-bootstrap-0x10908cdb0x10908e92)
-  has it, with the error icon and OK alone; the process ends with 1.
+- **`-make`**: the fatal box as
+  [`launch-flow.md`](launch-flow.md#2-engine-bootstrap-0x10908cdb0x10908e92) has it, with
+  the error icon and OK alone; the process ends with 1.
 
 Not verified: the forwarding receiver (a second launch handing a running game its command
 line); the splash staying up through a real start of the engine.

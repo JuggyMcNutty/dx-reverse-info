@@ -52,7 +52,8 @@ arrives before then, during the wizard, does nothing.
 
 Bitmap: `..\Help\<Package>Logo.bmp` (`..\Help\DeusExLogo.bmp`), built as `..\Help` + the
 package name + `Logo.bmp` (`0x10908F4F`–`0x10908F7D`); if that file does not exist,
-`FileSize(<Package>Logo.bmp) < 0` (`GFileManager->FileSize`, `0x1090907F`), `..\Help\Logo.bmp`.
+`FileSize(<Package>Logo.bmp) < 0` (`GFileManager->FileSize`, `0x1090907F`),
+`..\Help\Logo.bmp`.
 
 Shown by `InitSplash` (`0x10901AA0`) **unless** the command line holds `-log`, `-server` or
 `TestRenDev` (`0x1090917B`–`0x109091FD`). Like forwarding, these checks read the whole
@@ -113,8 +114,8 @@ rewrites `.ICD` to `.EXE`: a SafeDisc artifact. The GOG build is not SafeDisc-wr
 ## 6. Savegame migration (`FirstRun < 220`, `0x1090A2BA`–`0x1090A605`)
 
 Enumerate `..\Save\*.usa`. For each, parse the slot index from the file name (offset 4,
-after `Save`); in the **`User`** ini, read `[UnrealShare.UnrealSlotMenu] SlotNames[<i>]`, and
-set it to `"Saved game"` if it is empty.
+after `Save`); in the **`User`** ini, read `[UnrealShare.UnrealSlotMenu] SlotNames[<i>]`,
+and set it to `"Saved game"` if it is empty.
 
 ## 7. Console commands — `LaunchExec__Exec` (`0x10913650`)
 
@@ -132,13 +133,13 @@ set it to `"Saved game"` if it is empty.
 
 ## 8. CD check (`0x1090B9CE`–`0x1090BAFD`)
 
-Read `[Engine.Engine] CdPath`. If it is non-empty, loop until `<CdPath>Textures\Palettes.utx`
-(joined with a backslash where `CdPath` lacks one) is **larger than 0 bytes**
-(`0x1090BA82`). Each failed pass shows a `MessageBoxW`
+Read `[Engine.Engine] CdPath`. If it is non-empty, loop until
+`<CdPath>Textures\Palettes.utx` (joined with a backslash where `CdPath` lacks one) is
+**larger than 0 bytes** (`0x1090BA82`). Each failed pass shows a `MessageBoxW`
 (`MB_OKCANCEL|MB_TASKMODAL|MB_SETFOREGROUND|MB_TOPMOST`, `0x52001`, no icon) with
-`InsertCdText` / `InsertCdTitle` from the **`Window`** localization package.
-Cancel → `GIsCriticalError = 1; ExitProcess(0)` (`0x1090BAE8`). That is after step 9 of §5,
-so `Running.ini` stays and the next launch opens in RecoveryMode.
+`InsertCdText` / `InsertCdTitle` from the **`Window`** localization package. Cancel →
+`GIsCriticalError = 1; ExitProcess(0)` (`0x1090BAE8`). That is after step 9 of §5, so
+`Running.ini` stays and the next launch opens in RecoveryMode.
 
 The shipped `DeusEx.ini` sets `CdPath=..\`, so on a GOG or Steam install the check passes
 against the game's own `Textures\` and never prompts.
@@ -164,9 +165,9 @@ With an engine from `InitEngine`:
 Then, whatever `InitEngine` returned:
 
 - Delete `Running.ini` (`0x109098CC`), **the clean-shutdown marker**. It is the only
-  deletion: a cancelled wizard, `-consolecommand=`, `-testrendev=` and the safe-mode relaunch
-  end here too; a crash (through the error handler) and the CD prompt's `ExitProcess` never
-  reach it.
+  deletion: a cancelled wizard, `-consolecommand=`, `-testrendev=` and the safe-mode
+  relaunch end here too; a crash (through the error handler) and the CD prompt's
+  `ExitProcess` never reach it.
 - Remove the `IsBrowser` property, log `LocalizeGeneral("Exit")`, close the log window,
   `appPreExit()`, `appExit()`.
 
@@ -203,7 +204,8 @@ The original's seven Win32 dependencies, and how it meets each:
    ([§1](#1-single-instance-forwarding-0x10908a300x10908cd1)).
 3. **Instance detection.** `CreateMutex("DeusExIsRunning")` + `ERROR_ALREADY_EXISTS`, used
    only to tell a crash from a concurrent instance when `Running.ini` survives
-   ([§5](#5-initengine-0x1090a050), [the entry tree](wizard.md#entry-decision-tree-initengine-0x1090aab60x1090b7f6)).
+   ([§5](#5-initengine-0x1090a050),
+   [the entry tree](wizard.md#entry-decision-tree-initengine-0x1090aab60x1090b7f6)).
 4. **Relaunch.** `ShellExecute("open", GModuleFilename, flags, appBaseDir(), SW_SHOWNORMAL)`
    ([SafeOptions](wizard.md#safeoptions-2021--eight-checkboxes)).
 5. **The splash.** Window.dll's `LoadFileToBitmap` of `..\Help\<Package>Logo.bmp` or
@@ -212,5 +214,6 @@ The original's seven Win32 dependencies, and how it meets each:
    `GUnicodeOS`, for Windows 9x. This is why decompiled functions look twice as long as
    they are.
 7. **Path separators.** Backslashes are hard-coded in ini values and lookups: `..\Save\`,
-   `Textures\Palettes.utx`, `CdPath=..\` ([§6](#6-savegame-migration-firstrun--220-0x1090a2ba0x1090a605),
+   `Textures\Palettes.utx`, `CdPath=..\`
+   ([§6](#6-savegame-migration-firstrun--220-0x1090a2ba0x1090a605),
    [§8](#8-cd-check-0x1090b9ce0x1090bafd)).

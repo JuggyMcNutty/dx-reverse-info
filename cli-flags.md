@@ -1,7 +1,7 @@
 # Command-line surface
 
-Every flag the **`Launch` module** itself reads. Engine and driver packages parse more of the
-same command line; this list is only what `DeusEx.exe` acts on.
+Every flag the **`Launch` module** itself reads. Engine and driver packages parse more of
+the same command line; this list is only what `DeusEx.exe` acts on.
 
 Three parsers, **not** equivalent:
 
@@ -11,9 +11,9 @@ Three parsers, **not** equivalent:
 | `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found anywhere (`appStrfind`, `0x10146bee`), no `-` needed; a value in quotes keeps its spaces |
 | `appStrfind(cmdline, "X")` | anywhere | **raw substring, no `-` required** |
 
-The `appStrfind` cases are the surprising ones: `readini` and the four single-instance bypass
-tokens match *anywhere in the command line*, including inside a map name or URL. Matching
-the line's `argv` words one by one does not reproduce them.
+The `appStrfind` cases are the surprising ones: `readini` and the four single-instance
+bypass tokens match *anywhere in the command line*, including inside a map name or URL.
+Matching the line's `argv` words one by one does not reproduce them.
 
 Most checks read the command line `appInit` keeps, without the program's path. Two read the
 one Windows gives, path and all: the single-instance bypass, with its four tokens, and the

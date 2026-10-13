@@ -170,9 +170,10 @@ Its only users are `DeusExPlayer`'s debug console commands.
 
 An object stays while it is reachable from the root set; everything else is
 destroyed, then deleted. Nothing is reference-counted. The game engine
-collects at each map load but Entry's ([`Engine.dll`](engine-dll.md#the-map-loads-collection));
-the console's `OBJ GARBAGE` collects at once, keeping what is native (and, in
-the editor, what is standalone), even under `-NOGC`.
+collects at each map load but Entry's
+([`Engine.dll`](engine-dll.md#the-map-loads-collection)); the console's
+`OBJ GARBAGE` collects at once, keeping what is native (and, in the editor, what
+is standalone), even under `-NOGC`.
 
 **`CollectGarbage(KeepFlags)`** (`0x10158500`) logs `Collecting garbage`, makes
 the tag archive, marks from the root set (`SerializeRootSet`) and purges

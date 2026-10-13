@@ -35,7 +35,7 @@ what each function does, with addresses.
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
 | `Render.dll` | package Render: UE1's scene renderer: the frame's occlusion (span buffers, the rasterizer's pixels) and draw order, which actors are drawn, render iterators, render time, coronas, what a pawn holds, which mesh faces are drawn, mesh detail, mesh textures, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; the occlusion, mesh detail and lighting |
 | `D3DDrv.dll` | the Direct3D 7 display driver: gamma, the textures' depth, the light maps' brightness on screen, fog, detail textures, and each pass's blending; the look's reference | [`d3ddrv-dll.md`](d3ddrv-dll.md) | read |
-| `OpenGLDrv.dll` | the OpenGL display driver, the renderer the harness runs the original through | beside `D3DDrv`'s: [the light maps' brightness](d3ddrv-dll.md#the-light-maps-brightness), [detail textures](d3ddrv-dll.md#detail-textures) | its light maps in one pass, no detail texture drawn; its gamma ramp is `D3DDrv`'s ([the harness's shots](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/DEVELOPMENT.md#shots)) |
+| `OpenGLDrv.dll` | the OpenGL display driver | beside `D3DDrv`'s: [the light maps' brightness](d3ddrv-dll.md#the-light-maps-brightness), [detail textures](d3ddrv-dll.md#detail-textures) | its light maps in one pass, no detail texture drawn; its gamma ramp is `D3DDrv`'s ([the harness's shots](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/DEVELOPMENT.md#shots)) |
 | `IpDrv.dll` | package IpDrv: the sockets: the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library: channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 | `Fire.dll` | package Fire: the fractal textures (fire, water lit or bending another texture, ice) that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
@@ -96,8 +96,8 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   [`tools/ida/utf16_strings.py`](tools/ida/utf16_strings.py), run after the types, redefines
   them; a function decompiled before then needs decompiling again. A preview that reads a
   string's bytes as 8-bit text still shows a UTF-16 one as nonsense: the database is right.
-- **Names.** [`tools/ida/ue1_names.py`](tools/ida/ue1_names.py) names the functions a UE1 DLL
-  registers its classes and natives from, which IDA leaves as `sub_...`, and the class
+- **Names.** [`tools/ida/ue1_names.py`](tools/ida/ue1_names.py) names the functions a UE1
+  DLL registers its classes and natives from, which IDA leaves as `sub_...`, and the class
   object of each class the DLL does not export (`Engine.dll`'s AI events, pending levels and
   `UServerCommandlet`, `IpDrv.dll`'s two commandlets), with the name its export would have.
   A new database gets the three scripts in turn: types, strings, names. The types again
@@ -115,7 +115,8 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   ([`ConSys.dll`](consys-dll.md#the-binary)).
 - **Without IDA**, `objdump` reads the DLLs. `objdump -p` lists the exports under their C++
   names (`?AICanSee@APawn@@QAEMPAVAActor@@MHHHH@Z`, and `?execAICanSee@...` for its script
-  entry); an `Engine.dll`, `Core.dll` or `Render.dll` export is a jump to the code, from incremental linking, to follow.
+  entry); an `Engine.dll`, `Core.dll` or `Render.dll` export is a jump to the code, from
+  incremental linking, to follow.
   `objdump -d -M intel --start-address=... --stop-address=...` gives a function, and its
   calls into `Core.dll` resolve through the import table (`appAtan`, `FVector::Rotation`).
 - **Dialog templates** are resources, data rather than code:
@@ -137,8 +138,8 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
 ### Reading a binary
 
 - **A native's `exec` function holds the defaults of its optional parameters**: each is set
-  before its argument is read. Upstream's natives take them as `std::optional`, and a
-  default is not always false (`IsValidEnemy` checks the alliance unless told not to).
+  before its argument is read, and a default is not always false (`IsValidEnemy` checks the
+  alliance unless told not to).
 - **A subsystem's `Exec` runs on its `FExec` part.** It is called through the `FExec`
   vtable, with `this` 0x28 past the object, so the decompiler's field names in it are 0x28
   short (`Galaxy.dll`'s `Exec` "toggles" `UseReverb` where it toggles its stats flag).
@@ -150,8 +151,8 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   files). Search it, a regex over the file, before guessing what the game's script does.
 ### What goes in this repository
 
-Behaviour in our own words, with addresses, offsets and names: never a decompiled listing or a
-disassembly. The repository is public, and the code is not ours.
+Behaviour in our own words, with addresses, offsets and names: never a decompiled listing or
+a disassembly. The repository is public, and the code is not ours.
 
 ## The databases
 

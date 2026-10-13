@@ -49,14 +49,14 @@ warp zones and the sky.
     zone's span buffer that the node's zone mask names) sets the flag when
     the box is off the frame or hidden, and clears it when some part shows;
     a flagged node's subtree is passed over.
-  - **A surface** (`ClipBspSurf`, `0x10b14cb0`; with 3DNow!, `AMD3DClipBspSurf`, `0x10b1f7e0`) takes
-    its points from a cache of the frame's transformed points
-    (`URender::PointCache`, each stamped with the frame's `URender::Stamp`):
-    each point is transformed and given its outcode against the view's
-    four sides once a frame, however many surfaces share it. A surface whose
-    points are all outside one side goes without a clip; one that crosses a
-    side is clipped against that side only. Its edges are rasterized into a
-    span a row (`0x10b19cc0`), which `FSpanBuffer::CopyFromRaster` (or
+  - **A surface** (`ClipBspSurf`, `0x10b14cb0`; with 3DNow!, `AMD3DClipBspSurf`,
+    `0x10b1f7e0`) takes its points from a cache of the frame's transformed
+    points (`URender::PointCache`, each stamped with the frame's
+    `URender::Stamp`): each point is transformed and given its outcode against
+    the view's four sides once a frame, however many surfaces share it. A
+    surface whose points are all outside one side goes without a clip; one that
+    crosses a side is clipped against that side only. Its edges are rasterized
+    into a span a row (`0x10b19cc0`), which `FSpanBuffer::CopyFromRaster` (or
     `CopyFromRasterUpdate`, for a surface that also occludes) lays into the
     zone's span buffer; one with nothing left showing is flagged
     `NF_PolyOccluded` (0x08).
@@ -84,16 +84,15 @@ warp zones and the sky.
   over a mesh behind it. A span-based one (the software renderer) draws
   them all after the third. A surface's decals are drawn only while the
   client's `Decals` is on and the render device is not span-based; off,
-  they are not stamped either. A surface goes to the device with a detail texture only
-  when its texture's current frame (`AnimCurrent`) has one, it is no
-  portal, and the client's `TextureDetail` is High, the client read through
-  the static `UBitmap::__Client`, which a `UClient`'s constructor sets and
-  its `Destroy` clears (`Engine.dll`). The texture goes with the surface's
-  pan: `PanU` and `PanV`, the zone's auto-pan for `PF_AutoUPan` and
-  `PF_AutoVPan`, a wave of 8 and 4 units on the level's time for
-  `PF_SmallWavy`. Its detail and macro textures go as `UTexture::Lock`
-  leaves them: not panned, at their own scale (`DrawScale`, times the mip's
-  shrink).
+  they are not stamped either. A surface goes to the device with a detail
+  texture only when its texture's current frame (`AnimCurrent`) has one, it is
+  no portal, and the client's `TextureDetail` is High, the client read through
+  the static `UBitmap::__Client`, which a `UClient`'s constructor sets and its
+  `Destroy` clears (`Engine.dll`). The texture goes with the surface's pan:
+  `PanU` and `PanV`, the zone's auto-pan for `PF_AutoUPan` and `PF_AutoVPan`, a
+  wave of 8 and 4 units on the level's time for `PF_SmallWavy`. Its detail and
+  macro textures go as `UTexture::Lock` leaves them: not panned, at their own
+  scale (`DrawScale`, times the mip's shrink).
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
   viewer is and by the inverse of the sky zone's rotation (observed, not
   read). Liberty Island's sky zone is turned 5,080 (28°).

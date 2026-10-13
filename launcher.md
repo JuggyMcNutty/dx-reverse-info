@@ -31,8 +31,7 @@ and `Window.dll`.
 | **SHA1** | **`2a933e26aa9cfb33b37f78afe21434caa031f14a`** |
 | Build | Nov 2021 GOG repack of the 1112f-era binary |
 
-The SHA1 identifies the build, and it is Surreal Engine's `DEUS_EX_1112fm` database entry:
-the engine recognises this install by it.
+The SHA1 identifies the build.
 
 Sources beside the binary: `reference/ReleaseSDK1112f/Headers/DxHeaders.zip` ships this
 build's own headers (327, including `LaunchPrivate.h`, `Window/Inc/Window.h` and

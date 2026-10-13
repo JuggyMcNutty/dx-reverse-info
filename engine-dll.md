@@ -67,9 +67,9 @@ calls the listeners' script.
 - **Ticked by the level.** `ULevel::Tick` calls `UEventManager::Tick`
   (`0x103828f0`) after the actors, on a full tick, unpaused (`LevelInfo.Pauser`
   empty): `AIProcess`, then `CleanupEvents`.
-- **Told of destroyed actors.** [`ULevel::CleanupDestroyed`](#destroyed-actors) passes each to
-  `DestroyActor` (`0x10382760`): its events are marked for deletion, and it
-  stops being any listener's best sender.
+- **Told of destroyed actors.** [`ULevel::CleanupDestroyed`](#destroyed-actors)
+  passes each to `DestroyActor` (`0x10382760`): its events are marked for
+  deletion, and it stops being any listener's best sender.
 - **What it holds.** 256 hash buckets of event types (`XAIEventType`, a name):
   the bucket is the low byte of UE1's `appStrihash`
   ([names](core-dll.md#names-hashed-and-compared)), name order within it by
@@ -324,9 +324,9 @@ fields, after their properties (none):
     Any other physics its script gave it (a bird's flight) moves on along the
     move for the time left.
   - A step up that leaves it falling (a script, from an event of the step's
-    moves) gives the time back as well and sends `Falling`: still falling, it falls the time left;
-    made to fly, it rises at `AirSpeed`, accelerating at `AccelRate`, and
-    flies the time left.
+    moves) gives the time back as well and sends `Falling`: still falling, it
+    falls the time left; made to fly, it rises at `AirSpeed`, accelerating at
+    `AccelRate`, and flies the time left.
   - A step that takes it into water hands it to `startSwimming` (below).
   - The velocity after is the tick's move over the tick, unless
     `bJustTeleported`, made level.
@@ -912,8 +912,9 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   through only a node flagged `NF_NotCsg`, not one flagged as not blocking
   visibility, and takes a node's side from the sign of the distance, so the
   line is blocked by any solid leaf it touches, its start's included); other
-  actors are not asked. The BSP holds the movers' polygons
-  too (below), so a closed door stops it. The same check answers
+  actors are not asked. With a client the BSP holds the movers' polygons
+  too (below), so a closed door stops it; a dedicated server's holds none
+  until it saves. The same check answers
   `LineOfSightTo`, `CanHear`, `pointReachable`, the path searches, network
   relevance and the mixer's sounds behind walls
   ([`Galaxy.dll`](galaxy-dll.md#sounds-behind-walls)); `actorReachable` uses a
@@ -923,18 +924,20 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   - `LoadMap` makes the level one for every map but `Entry` while the engine has
     a client (`UEngine::Client`, tested at `0x1038df54`), and `SaveGame` one
     again after it saves, the old one's nodes cut from the BSP. A dedicated
-    server (`-SERVER`) has no client, so its BSP holds no mover and every line
-    passes them. The tracker files every moving brush -- an `ABrush` with a
-    brush that is not `bStatic`, which must be a mover (any other is a fatal
-    error), whatever its collision, hidden or not -- into the level's BSP: each
-    polygon, at the mover's place, split down the tree, each fragment that lands
-    in empty space a node of its own and one that lands in solid dropped
-    (`FilterPoly`, `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`). A polygon's
-    node blocks a line but for a `PF_NotSolid` polygon (`NF_NotCsg`);
-    `PF_Invisible` or `PF_Portal` makes it a node that does not block
-    visibility, `PF_Masked` a shoot-through one. It has no collision hull. A
-    polygon in a node's plane is filtered down that node's front and filed as a
-    node of its own there, so a line meets it as the node whose plane it lies
+    server (`-SERVER`) has no client, so its load makes none: until a save
+    makes one, client or not, its BSP holds no mover, and `FastTrace` and the
+    checks it answers pass them, the multi-hit check meeting a colliding one
+    only as an actor (below). The tracker files every moving brush -- an
+    `ABrush` with a brush that is not `bStatic`, which must be a mover (any
+    other is a fatal error), whatever its collision, hidden or not -- into the
+    level's BSP: each polygon, at the mover's place, split down the tree, each
+    fragment that lands in empty space a node of its own and one that lands in
+    solid dropped (`FilterPoly`, `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`).
+    A polygon's node blocks a line but for a `PF_NotSolid` polygon
+    (`NF_NotCsg`); `PF_Invisible` or `PF_Portal` makes it a node that does not
+    block visibility, `PF_Masked` a shoot-through one. It has no collision hull.
+    A polygon in a node's plane is filtered down that node's front and filed as
+    a node of its own there, so a line meets it as the node whose plane it lies
     in: the first of them, where two share the plane. A new node carries
     `NF_IsNew` until the mover's filing is done (`Update`, `0x1037a400`, clears
     it); a node taken out (`0x1037c4f0`) is flagged `NF_IsNew` for good, and the
@@ -945,9 +948,9 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   - Each frame drawn, `Render.dll`'s `SetupDynamics` updates it for every
     moving brush not hidden, in view or not: one that has moved or turned
     since it was filed is taken out and filed again where it is, and so is
-    every mover filed under the nodes taken out (`0x1037c4f0`). So for a
-    hidden mover, and with nothing drawn, the BSP keeps the mover where the
-    map's load or the last save filed it.
+    every mover filed under the nodes taken out (`0x1037c4f0`). So a hidden
+    mover, and any mover while nothing is drawn, stays where the tracker last
+    filed it: at the map's load, with a client, or the last save.
   - **A destroyed mover stays filed.** `ULevel::DestroyActor` does not tell
     the tracker (only the editor's `AMover::SetWorldRaytraceKey` takes a mover
     out without filing it again), so its polygons stay in the BSP until the
@@ -1266,7 +1269,8 @@ So below 128 a destroyed actor stays in memory, and every reference to it stays
 set: the script tests `bDeleteMe`, or the reference's object, to tell. It is
 forced before a level is saved: `SaveCurrentLevel`
 ([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)), and the
-level a map load leaves ([the map load's collection](#the-map-loads-collection)).
+level a map load leaves
+([the map load's collection](#the-map-loads-collection)).
 
 **A decal** leaves the surfaces it is on only through `DetachDecal`
 (`execDetachDecal`, `0x103e9a30`), which the script's `Decal.Destroyed` calls.

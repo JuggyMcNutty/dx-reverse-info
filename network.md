@@ -184,13 +184,13 @@ failed download's temporary file is left for the cache's next cleaning.
 
 **Going** (`UGameEngine::LoadMap`, `0x1038c1f0`): a package stays loaded while
 anything uses it, and a map load collects the garbage once the new map is in
-([the map load's collection](engine-dll.md#the-map-loads-collection)). So a server's downloads go at the
-next map that does not use them (the menu's map after a `DISCONNECT`), and
-another server's package of that name loads in their place. Its version is
-checked as the map loads, before that collection (`GetPackageLinker`'s GUID), so
-joining that other server straight from the first one's level, or from the Entry
-level a lost server left, finds the old version still loaded:
-`Package '<name>' version mismatch`.
+([the map load's collection](engine-dll.md#the-map-loads-collection)). So a
+server's downloads go at the next map that does not use them (the menu's map
+after a `DISCONNECT`), and another server's package of that name loads in their
+place. Its version is checked as the map loads, before that collection
+(`GetPackageLinker`'s GUID), so joining that other server straight from the
+first one's level, or from the Entry level a lost server left, finds the old
+version still loaded: `Package '<name>' version mismatch`.
 
 ## What the player sees of a join
 
@@ -220,13 +220,14 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   - No net driver for the URL (`UGameEngine::Browse`, `0x1038ad30`):
     `Networking Failed` and the error for 6 s.
 - **Lost.** A client level whose server connection closes
-  (`ULevel::TickNetClient`, `0x103a2f10`; the browse at `0x103a3030`), or which the server sends `FAILURE`
-  after the join (`ULevel::NotifyReceivedText`), browses `?failed` (`?entry`
-  alike, less the message). `Browse` logs `Failed; returning to Entry`, drops
-  the level's net driver, makes the Entry level the one played with no level
-  action, and spawns a player there for each viewport; with no join pending,
-  `Connection failed` shows for 6 s. The next map's load destroys that player,
-  as it does each viewport's actor where it stands.
+  (`ULevel::TickNetClient`, `0x103a2f10`; the browse at `0x103a3030`), or which
+  the server sends `FAILURE` after the join (`ULevel::NotifyReceivedText`),
+  browses `?failed` (`?entry` alike, less the message). `Browse` logs
+  `Failed; returning to Entry`, drops the level's net driver, makes the Entry
+  level the one played with no level action, and spawns a player there for each
+  viewport; with no join pending, `Connection failed` shows for 6 s. The next
+  map's load destroys that player, as it does each viewport's actor where it
+  stands.
 - **The game engine's commands** (`UGameEngine::Exec`, `0x1038a030`):
   - `CANCEL`: with a join pending, `Cancelled Connect Attempt` for 2 s, else the
     progress cleared; then the pending level deleted (`CancelPending`,

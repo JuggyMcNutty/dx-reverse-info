@@ -3,7 +3,8 @@
 The native half of package DeusEx: the player, the NPCs' native tick and
 alliances, saving and the save directory, the particle and laser iterators
 behind `ParticleGenerator` and `LaserEmitter`, and a QA tool that records bug
-locations. Read with: [working on the binaries](README.md#working-on-the-binaries).
+locations. Read with:
+[working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
 
@@ -54,7 +55,8 @@ In single player that is every tick. In order:
 
 1. **Disappearing.** With `bDisappear`, a pawn in stasis, or not rendered for
    more than 5 s (`Level.TimeSeconds` less `LastRenderTime`), is destroyed,
-   and the tick ends there ([stasis and render time](engine-dll.md#stasis-and-render-time)).
+   and the tick ends there
+   ([stasis and render time](engine-dll.md#stasis-and-render-time)).
 2. **Pivot.** While `PrePivotTime` is above 0, `PrePivot` moves in a straight
    line toward `DesiredPrePivot`, reaching it as `PrePivotTime` runs out.
 3. **Agitation and fear.** `UpdateAgitation` and `UpdateFear` with the
@@ -70,7 +72,8 @@ In single player that is every tick. In order:
    - Counted up: `WeaponTimer` while the pawn has a weapon (else 0);
      `DistressTimer` while not negative, until it passes `FearSustainTime`,
      when it becomes -1.
-5. **Cloak.** With `bHasCloak`, the script's `EnableCloak(Health <= CloakThreshold)`, every tick.
+5. **Cloak.** With `bHasCloak`, the script's
+   `EnableCloak(Health <= CloakThreshold)`, every tick.
 6. **Avoidance.** With `bAdvancedTactics`, the manoeuvre ends once the pawn
    stops accelerating, leaves walking or has no `TurnDirection`:
    - `bAdvancedTactics` is cleared;
@@ -156,7 +159,8 @@ and calls the function named here.
   notes. `CreateGameDirectoryObject` makes a new `XGameDirectory` in the
   transient package each call.
 - **`UnloadTexture(tex)`** (`0x10014c90`): unloads each mip's data.
-- **`GetDeusExVersion()`** (`0x10014270`): `"Mon Mar 19 12:06:14 2001 v1.112fm"`, the build date and version.
+- **`GetDeusExVersion()`** (`0x10014270`):
+  `"Mon Mar 19 12:06:14 2001 v1.112fm"`, the build date and version.
 
 ## The game engine: travel and saving
 
@@ -192,12 +196,13 @@ turn:
 
 1. The directory: `Current` for -2, `QuickSave` for -1, else `Save%04d`.
 2. It marks the level as saving (`LevelInfo.LevelAction` 2), shows "Saving"
-   (not for the quick save), deletes the brush tracker and frees the destroyed
-   actors (`CleanupDestroyed(1)`,
+   (not for the quick save), deletes the level's brush tracker, if it has one,
+   and frees the destroyed actors (`CleanupDestroyed(1)`,
    [destroyed actors](engine-dll.md#destroyed-actors)).
 3. It saves the level package as `<MapName>.<ext>`.
-4. It sets every mover's `SavedPos` to (-1,-1,-1), then restores the tracker
-   and the level action and flushes the cache.
+4. It sets every mover's `SavedPos` to (-1,-1,-1), then makes the level a new
+   brush tracker (`0x1000ff21`), client or not, restores the level action and
+   flushes the cache.
 
 **`PruneTravelActors`** (`0x1000f9b0`), before the level is saved, destroys
 what travels with the first viewport's player, so it is not saved twice, and
