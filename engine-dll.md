@@ -920,33 +920,34 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   line check of the level and movers instead.
 - **The movers in the BSP** (UE1's moving-brush tracker: `GNewBrushTracker`,
   `0x1037c860`; its update `0x1037a400`):
-  - `LoadMap` makes the level one for every map but `Entry`, and `SaveGame`
-    one again after it saves, the old one's nodes cut from the BSP. It files
-    every moving brush -- an `ABrush` with a brush that is not `bStatic`,
-    which must be a mover (any other is a fatal error), whatever its
-    collision, hidden or not -- into the level's BSP: each polygon, at the
-    mover's place, split down the tree, each fragment that lands in empty
-    space a node of its own and one that lands in solid dropped
-    (`FilterPoly`, `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`). A
-    polygon's node blocks a line but for a `PF_NotSolid` polygon
-    (`NF_NotCsg`); `PF_Invisible` or `PF_Portal` makes it a node that does
-    not block visibility, `PF_Masked` a shoot-through one. It has no
-    collision hull. A polygon in a node's plane is filtered down that
-    node's front and filed as a node of its own there, so a line meets it
-    as the node whose plane it lies in: the first of them, where two share
-    the plane. A new node carries `NF_IsNew` until the mover's filing is
-    done (`Update`, `0x1037a400`, clears it); a node taken out
-    (`0x1037c4f0`) is flagged `NF_IsNew` for good, and the line walks pass
-    it as no boundary.
+  - `LoadMap` makes the level one for every map but `Entry` while the engine has
+    a client (`UEngine::Client`, tested at `0x1038df54`), and `SaveGame` one
+    again after it saves, the old one's nodes cut from the BSP. A dedicated
+    server (`-SERVER`) has no client, so its BSP holds no mover and every line
+    passes them. The tracker files every moving brush -- an `ABrush` with a
+    brush that is not `bStatic`, which must be a mover (any other is a fatal
+    error), whatever its collision, hidden or not -- into the level's BSP: each
+    polygon, at the mover's place, split down the tree, each fragment that lands
+    in empty space a node of its own and one that lands in solid dropped
+    (`FilterPoly`, `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`). A polygon's
+    node blocks a line but for a `PF_NotSolid` polygon (`NF_NotCsg`);
+    `PF_Invisible` or `PF_Portal` makes it a node that does not block
+    visibility, `PF_Masked` a shoot-through one. It has no collision hull. A
+    polygon in a node's plane is filtered down that node's front and filed as a
+    node of its own there, so a line meets it as the node whose plane it lies
+    in: the first of them, where two share the plane. A new node carries
+    `NF_IsNew` until the mover's filing is done (`Update`, `0x1037a400`, clears
+    it); a node taken out (`0x1037c4f0`) is flagged `NF_IsNew` for good, and the
+    line walks pass it as no boundary.
   - A filing is recorded in the mover's `SavedPos` and `SavedRot`, its
     `Location` and `Rotation` as filed: it has moved or turned since when
     either differs.
   - Each frame drawn, `Render.dll`'s `SetupDynamics` updates it for every
     moving brush not hidden, in view or not: one that has moved or turned
     since it was filed is taken out and filed again where it is, and so is
-    every mover filed under the nodes taken out (`0x1037c4f0`). So with
-    nothing drawn (a dedicated server), and for a hidden mover, the BSP keeps
-    the mover where the map's load or the last save filed it.
+    every mover filed under the nodes taken out (`0x1037c4f0`). So for a
+    hidden mover, and with nothing drawn, the BSP keeps the mover where the
+    map's load or the last save filed it.
   - **A destroyed mover stays filed.** `ULevel::DestroyActor` does not tell
     the tracker (only the editor's `AMover::SetWorldRaytraceKey` takes a mover
     out without filing it again), so its polygons stay in the BSP until the

@@ -458,7 +458,8 @@ what to send (`ULevel::ServerTickClient`, `0x103a3500`):
   - not if hidden (`bHidden` or `bOnlyOwnerSee`) and neither blocking players
     nor sounding;
   - otherwise if seen: a line through the BSP from the viewer to it, or to a
-    pawn's eyes.
+    pawn's eyes. A dedicated server's BSP holds no mover, so a closed door
+    hides nothing from it ([traces](engine-dll.md#traces)).
 - **Deus Ex's `AdditionalViews`:** a player's other viewpoints count as viewers
   too, but the loop tries the first of the three, three times.
 - **Channels:** a relevant actor whose class the client knows gets an actor
