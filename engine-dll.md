@@ -1297,6 +1297,69 @@ cleanup deletes it they point at the deleted decal.
   package left out of its list (an orphan) goes too, every reference to it made
   None.
 
+## The loading screen
+
+A map's load and a level's save each paint one frame before the work begins,
+and it stays on the screen until the next frame is drawn.
+
+- **The map load** (`UGameEngine::LoadMap`, `0x1038c1f0`), after
+  `GInitRunaway` and before anything of the new map is read, given a client, a
+  viewport and a level, with no other test: the level's `LevelAction` 1
+  (Loading), or 3 (Connecting) when the pending level's driver has a server
+  connection (a join's map); its `Pauser` emptied; the first viewport's
+  player's `bShowMenu` cleared; `PaintProgress`; the audio subsystem's
+  `SetViewport` with its own viewport (`GetViewport`), which stops the sounds
+  and leaves the music playing
+  ([`Galaxy.dll`](galaxy-dll.md#playing-a-sound)); then `LevelAction` 0,
+  whatever it was. Then the new map's package is checked (`LOAD_Verify`), the
+  game engine's `NotifyLevelChange` sends the first viewport's console its
+  event of that name, each viewport's player is destroyed, the old level goes
+  ([the map load's collection](#the-map-loads-collection)) and the new one is
+  loaded.
+- **Once the new level's players are in** (each viewport's: in the new level,
+  or for a net client's in the Entry level) and its brush tracker is made
+  (none for Entry): the same `SetViewport` again (`0x1038dfc6`), then each
+  viewport's input reset and its render device flushed, a precache allowed.
+- **`PaintProgress`** (`0x10388740`): the first viewport's player's
+  `FlashScale` set to 0.1 and `FlashFog` to black, the viewport drawn
+  (`Draw(viewport, 1)`), both put back. The map load calls it, and Deus Ex's
+  `SaveCurrentLevel` at every save
+  ([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)).
+- **`Draw(viewport)`** (`0x1038f110`), every frame drawn, in order:
+  `UpdateConnectingMessage`
+  ([a join](network.md#what-the-player-sees-of-a-join)); the player's
+  `PlayerCalcView`; the flash, the player's own only with the client's
+  `ScreenFlashes` on or in a net game
+  ([`D3DDrv.dll`](d3ddrv-dll.md#the-rest-of-a-frame)); the viewport locked;
+  the audio's update from the view; the renderer's `PreRender`; the console's
+  `PreRender` (`UConsole::PreRender`, `0x10379d10`), which calls the
+  console's script `Tick` with the time since the viewport's last update; the
+  player's `PreRender`; the world, unless the console says not to; the
+  player's `PostRenderFlash`, where Deus Ex's `PlayerPawnExt` draws the
+  windows (the HUD, the menus); the render device's `EndFlash`; the player's
+  `PostRender`; the console's `PostRender`; the viewport unlocked and shown.
+- **So the frame `PaintProgress` paints** has the view and the windows at a
+  tenth of their brightness, and what the player's and the console's
+  `PostRender` draw at full: the word.
+- **The word** is the stock console's (`Console=Engine.Console`; Deus Ex has
+  no console of its own): its `PostRender` calls `DrawLevelAction`, which
+  draws nothing while the player's `bShowMenu` is set (an in-game menu: the
+  root window's `UIPauseGame` calls `ShowMenu` on any map but an intro), and
+  otherwise centres `LOADING`, `SAVING`, `CONNECTING` or `PRECACHING`
+  (`Engine.int`, `[Console]`) for the level action, translucent (style 3),
+  blue, in `LargeFont`; `PAUSED`, in white, only with a `Pauser` and no level
+  action. The word's place is the frame's middle less half its size
+  (`PrintActionMessage`), a half pixel for an odd size: `LOADING` is 150 by
+  39 in a 1024 by 768 frame, at 437, 364.5. `UCanvas::WrappedPrint`
+  (`0x10376790`) draws a line from its X and the canvas's `CurY` each
+  truncated to a whole pixel, so the word's top is at 364.
+- **`PRECACHING` never shows** with the game's ini. `Draw` gives a frame that
+  level action while the render device's `PrecacheOnFlip` is set (and the
+  viewport's `bSuspendPrecaching` is not), puts the old one back after it,
+  clears the flag and, unless the level's `bNeverPrecache`, precaches the
+  level. `D3DDrv`'s `Flush`, a precache allowed, sets the flag from its
+  `UsePrecache` (`0x10002ec9`), which the ini has off.
+
 ## Sounds
 
 Who hears a sound an actor plays. What the audio subsystem then does with it:

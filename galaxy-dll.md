@@ -106,8 +106,12 @@ it, the music's: channel n starts its sound on voice n + 1.
   (`Actor.StopSound`, [`Engine.dll`](engine-dll.md#sounds)).
 - **`NoteDestroy(Actor)`** (`0x106083a0`), when an actor goes: its ambient
   sound stops, and its other sounds play on where they are, without it.
-- **`SetViewport`** (`0x10605c40`) stops every sound. For a new viewport it
-  restarts the output with the settings and registers every sound loaded.
+- **`SetViewport`** (`0x10605c40`) stops every channel's sound. Given the
+  viewport it already has, it does nothing more: the music plays on, mixed by
+  the output's timer ([the mixer](#the-mixer)), so it plays through a map's
+  load, which calls it so before and after
+  ([the loading screen](engine-dll.md#the-loading-screen)). For a new viewport
+  it restarts the output with the settings and registers every sound loaded.
 - **`RegisterSound`** (`0x10606af0`) hands a sound's data to Galaxy and
   unloads it; data Galaxy cannot read is a fatal error.
 

@@ -187,22 +187,29 @@ turn:
 - **Any other map:** it compares the mission numbers.
   - Within one mission, unless `?loadonly`: `PruneTravelActors`, then
     `SaveCurrentLevel` into `Current`; the destination loads from `Current`
-    if it was saved there, else from `Maps`.
+    if it was saved there, else from `Maps`. The screen shows `SAVING`, then
+    `LOADING` ([the loading screen](engine-dll.md#the-loading-screen)).
   - A new mission, a map outside any, or a player with `bStartingNewGame` set
     (which it then clears): `Current` is emptied first, and the destination
-    loads from `Maps`.
+    loads from `Maps`. The screen shows `LOADING` alone, as for a
+    `?loadgame`.
 
 **`SaveCurrentLevel(slot)`** (`0x1000fac0`):
 
 1. The directory: `Current` for -2, `QuickSave` for -1, else `Save%04d`.
-2. It marks the level as saving (`LevelInfo.LevelAction` 2), shows "Saving"
-   (not for the quick save), deletes the level's brush tracker, if it has one,
-   and frees the destroyed actors (`CleanupDestroyed(1)`,
-   [destroyed actors](engine-dll.md#destroyed-actors)).
-3. It saves the level package as `<MapName>.<ext>`.
+2. It marks the level as saving (`LevelInfo.LevelAction` 2) and paints the
+   screen (`PaintProgress`: `SAVING`,
+   [the loading screen](engine-dll.md#the-loading-screen)), at every save,
+   the quick save's too. Except for the quick save it also begins a slow
+   task, "Saving" (`GWarn`), which shows nothing in the game. It deletes the
+   level's brush tracker, if it has one, and frees the destroyed actors
+   (`CleanupDestroyed(1)`, [destroyed actors](engine-dll.md#destroyed-actors)).
+3. It saves the level package as `<MapName>.<ext>`. A level with no
+   `DeusExLevelInfo` is not saved: it logs
+   `WARNING!  DeusExLevelInfo MISSING!`, and step 4 is skipped.
 4. It sets every mover's `SavedPos` to (-1,-1,-1), then makes the level a new
-   brush tracker (`0x1000ff21`), client or not, restores the level action and
-   flushes the cache.
+   brush tracker (`0x1000ff21`), client or not, ends the slow task, sets the
+   level action to 0 (none), whatever it was, and flushes the cache.
 
 **`PruneTravelActors`** (`0x1000f9b0`), before the level is saved, destroys
 what travels with the first viewport's player, so it is not saved twice, and
