@@ -196,10 +196,13 @@ the static pointer it is read through is set.
 
 ## The rest of a frame
 
-- **Screen flash** (`EndFlash`), the pain and pickup flashes:
+- **Screen flash** (`EndFlash`, `0x10007c90`), the pain and pickup flashes
+  and the loading screen's dimming:
   - with `FlashScale` at 0.5 and `FlashFog` black, nothing is drawn;
-  - otherwise one full-screen translucent quad in the fog's colour, its
-    alpha `min(2 x FlashScale, 1)`.
+  - otherwise one full-screen quad in the fog's colour, blended `ONE` /
+    `SRCALPHA` (`0x10007fa4`): the frame kept at `min(2 x FlashScale, 1)` of
+    itself, the colour added. `PaintProgress`'s 0.1, halved, keeps a tenth
+    ([the loading screen](engine-dll.md#the-loading-screen)).
 
   The two values are the game engine's (`Engine.dll`'s `UGameEngine::Draw`,
   `0x1038f110`): the viewport's player's `FlashScale` halved and its
@@ -207,6 +210,10 @@ the static pointer it is read through is set.
   and black when the client's `ScreenFlashes` is off, unless the level is a
   net game (`NetMode` not standalone). A player's `FlashScale` of 1, its
   resting value, draws nothing.
+- **A precache**: `Flush`, a precache allowed, sets `PrecacheOnFlip` from
+  `UsePrecache` (`0x10002ec9`), and the game engine's next frame shows
+  `PRECACHING` and precaches the level
+  ([the loading screen](engine-dll.md#the-loading-screen)).
 - **Meshes and sprites** (`DrawGouraudPolygon`): the vertex's light colour
   becomes the diffuse (times the modulation compensation); a modulated draw
   is untinted white. Tiles (`DrawTile`) carry one colour the same way.

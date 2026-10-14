@@ -913,21 +913,24 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   visibility, and takes a node's side from the sign of the distance, so the
   line is blocked by any solid leaf it touches, its start's included); other
   actors are not asked. With a client the BSP holds the movers' polygons
-  too (below), so a closed door stops it; a dedicated server's holds none
-  until it saves. The same check answers
+  too (below), so a closed door stops it; a dedicated server's holds none.
+  The same check answers
   `LineOfSightTo`, `CanHear`, `pointReachable`, the path searches, network
   relevance and the mixer's sounds behind walls
   ([`Galaxy.dll`](galaxy-dll.md#sounds-behind-walls)); `actorReachable` uses a
   line check of the level and movers instead.
 - **The movers in the BSP** (UE1's moving-brush tracker: `GNewBrushTracker`,
   `0x1037c860`; its update `0x1037a400`):
-  - `LoadMap` makes the level one for every map but `Entry` while the engine has
-    a client (`UEngine::Client`, tested at `0x1038df54`), and `SaveGame` one
-    again after it saves, the old one's nodes cut from the BSP. A dedicated
-    server (`-SERVER`) has no client, so its load makes none: until a save
-    makes one, client or not, its BSP holds no mover, and `FastTrace` and the
-    checks it answers pass them, the multi-hit check meeting a colliding one
-    only as an actor (below). The tracker files every moving brush -- an
+  - `LoadMap` makes the level one for every map but `Entry` while the engine
+    has a client (`UEngine::Client`, tested at `0x1038df54`), and Deus Ex's
+    `SaveCurrentLevel` one again after it saves
+    ([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)), the old
+    one's nodes cut from the BSP. A dedicated server (`-SERVER`) has no client,
+    so its BSP never holds a mover: its load makes no tracker, and a save there
+    faults first, in `PaintProgress`, which reads the client's first viewport
+    unchecked ([the loading screen](#the-loading-screen)). `FastTrace` and the
+    checks it answers pass its movers, the multi-hit check meeting a colliding
+    one only as an actor (below). The tracker files every moving brush -- an
     `ABrush` with a brush that is not `bStatic`, which must be a mover (any
     other is a fatal error), whatever its collision, hidden or not -- into the
     level's BSP: each polygon, at the mover's place, split down the tree, each
@@ -1338,9 +1341,11 @@ and it stays on the screen until the next frame is drawn.
   player's `PostRenderFlash`, where Deus Ex's `PlayerPawnExt` draws the
   windows (the HUD, the menus); the render device's `EndFlash`; the player's
   `PostRender`; the console's `PostRender`; the viewport unlocked and shown.
-- **So the frame `PaintProgress` paints** has the view and the windows at a
-  tenth of their brightness, and what the player's and the console's
-  `PostRender` draw at full: the word.
+- **So the frame `PaintProgress` paints**, with the client's `ScreenFlashes`
+  on (the game's ini has it on) or in a net game, has the view and the
+  windows at a tenth of their brightness, and what the player's and the
+  console's `PostRender` draw at full: the word. With it off, the frame is
+  drawn as any other, the word over it.
 - **The word** is the stock console's (`Console=Engine.Console`; Deus Ex has
   no console of its own): its `PostRender` calls `DrawLevelAction`, which
   draws nothing while the player's `bShowMenu` is set (an in-game menu: the
@@ -1357,8 +1362,8 @@ and it stays on the screen until the next frame is drawn.
   level action while the render device's `PrecacheOnFlip` is set (and the
   viewport's `bSuspendPrecaching` is not), puts the old one back after it,
   clears the flag and, unless the level's `bNeverPrecache`, precaches the
-  level. `D3DDrv`'s `Flush`, a precache allowed, sets the flag from its
-  `UsePrecache` (`0x10002ec9`), which the ini has off.
+  level. `D3DDrv` sets the flag only with its `UsePrecache` on
+  ([`D3DDrv.dll`](d3ddrv-dll.md#the-rest-of-a-frame)), which the ini has off.
 
 ## Sounds
 

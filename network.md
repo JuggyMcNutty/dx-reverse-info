@@ -118,8 +118,10 @@ Deus Ex's `ReplicateMove` paces the player's moves by.
   (`NetMode` 3). Of the map's actors it keeps the static and no-delete ones,
   each with `Role` and `RemoteRole` exchanged, and destroys the rest (the server
   sends them). No `GameInfo`, no `InitGame`; the begin-play events as a
-  standalone level's. Until its player arrives, the level and the Entry level
-  show `LevelAction` Connecting (`UGameEngine::Tick`).
+  standalone level's. Before it loads, the level being left paints one
+  `CONNECTING` frame ([the loading screen](engine-dll.md#the-loading-screen)).
+  Until its player arrives, the level and the Entry level show `LevelAction`
+  Connecting (`UGameEngine::Tick`).
 - **The player** (`HandleClientPlayer`, `0x10405290`): the first bunch of a
   `PlayerPawn` the client owns (below), while the connection is still pending,
   makes it the client's: the viewport takes the connection's speed and the two

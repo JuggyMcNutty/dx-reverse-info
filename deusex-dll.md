@@ -204,12 +204,13 @@ turn:
    task, "Saving" (`GWarn`), which shows nothing in the game. It deletes the
    level's brush tracker, if it has one, and frees the destroyed actors
    (`CleanupDestroyed(1)`, [destroyed actors](engine-dll.md#destroyed-actors)).
-3. It saves the level package as `<MapName>.<ext>`. A level with no
-   `DeusExLevelInfo` is not saved: it logs
-   `WARNING!  DeusExLevelInfo MISSING!`, and step 4 is skipped.
+3. It saves the level package as `<MapName>.<ext>`. With no
+   `DeusExLevelInfo` loaded at all (`GetDeusExLevelInfo`, below), nothing is
+   saved: it logs `WARNING!  DeusExLevelInfo MISSING!`, and step 4 is
+   skipped.
 4. It sets every mover's `SavedPos` to (-1,-1,-1), then makes the level a new
-   brush tracker (`0x1000ff21`), client or not, ends the slow task, sets the
-   level action to 0 (none), whatever it was, and flushes the cache.
+   brush tracker (`0x1000ff21`), ends the slow task, sets the level action to
+   0 (none), whatever it was, and flushes the cache.
 
 **`PruneTravelActors`** (`0x1000f9b0`), before the level is saved, destroys
 what travels with the first viewport's player, so it is not saved twice, and
