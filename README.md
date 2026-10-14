@@ -9,9 +9,9 @@ None of the game's files are here, and no decompiled code
 - **The launcher.** `System/DeusEx.exe`, read in full: [`launcher.md`](launcher.md).
   [deusex-launcher](https://github.com/JuggyMcNutty/deusex-launcher)'s `main` recreates it
   almost 1:1.
-- **The game's DLLs.** The C++ behind Deus Ex's natives, read to find what Surreal Engine
-  lacks or has wrong and to port it into
-  [VibeEngine](https://github.com/JuggyMcNutty/VibeEngine)
+- **The game's DLLs.** The C++ behind Deus Ex's natives, its rendering and its sound, read
+  to find what [VibeEngine](https://github.com/JuggyMcNutty/VibeEngine) lacks or has wrong
+  and to put it right there
   ([what the fork changes](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/ENGINE.md#what-the-fork-changes)).
   Each is read as far as the work needs ([the binaries](#the-binaries)). Where the fork
   still differs from the original, feature by feature: VibeEngine's
@@ -20,7 +20,7 @@ None of the game's files are here, and no decompiled code
 ## The binaries
 
 All in the game's `System/`, from the GOG build of 1.112fm; the DLLs' build date is March
-2001. The engine recognises the install by `DeusEx.exe`'s SHA1
+2001. VibeEngine recognises the install by `DeusEx.exe`'s SHA1
 ([`launcher.md`](launcher.md#the-binary)). Each DLL's doc gives the binary, its classes and
 what each function does, with addresses.
 

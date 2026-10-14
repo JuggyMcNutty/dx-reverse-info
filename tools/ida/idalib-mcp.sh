@@ -4,8 +4,8 @@
 # Python live in a Wine prefix (IDA_PREFIX), driven by a Proton build's wine,
 # so a GUI IDA open at the same time shares its wineserver. Needs the Claude
 # Code plugin ida-pro-mcp@mrexodia installed, whose copy of ida-pro-mcp it runs.
-# Register, in the folder Claude Code starts in:
-# claude mcp add --scope local ida -- "$PWD/dx-reverse-info/tools/ida/idalib-mcp.sh"
+# Register, in port-ex-machina/, where Claude Code starts, by its absolute path:
+# claude mcp add --scope local ida -- "$(realpath ../dx-reverse-info/tools/ida/idalib-mcp.sh)"
 # (README.md#working-on-the-binaries).
 set -eu
 

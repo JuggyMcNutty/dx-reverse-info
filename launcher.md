@@ -2,8 +2,9 @@
 
 `System/DeusEx.exe`, read in full: what the original does, with its addresses.
 [deusex-launcher](https://github.com/JuggyMcNutty/deusex-launcher)'s `main` recreates
-it almost 1:1; its port branches depart from it
-([what it changes from the original](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-x86_64/docs/LAUNCHER.md#what-it-changes-from-the-original)).
+it almost 1:1; each port branch is a launcher of its own, departing from it as its
+`docs/LAUNCHER.md` records
+([linux-x86_64's](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-x86_64/docs/LAUNCHER.md#what-it-changes-from-the-original)).
 Method: [working on the binaries](README.md#working-on-the-binaries).
 
 | File | Contents |
