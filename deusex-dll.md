@@ -213,11 +213,12 @@ turn:
    0 (none), whatever it was, and flushes the cache.
 
 **`PruneTravelActors`** (`0x1000f9b0`), before the level is saved, destroys
-what travels with the first viewport's player, so it is not saved twice, and
-sets the player's reference to each to None: the augmentations down the
-manager's chain, then the manager (`AugmentationSystem`); the skills and
-theirs (`SkillSystem`); the flag base, after `DeleteAllFlags`; the
-`CarriedDecoration`.
+four of the things that travel with the first viewport's player, so they are
+not saved twice, and sets the player's reference to each to None: the
+augmentations down the manager's chain, then the manager (`AugmentationSystem`);
+the skills and theirs (`SkillSystem`); the flag base, after `DeleteAllFlags`;
+the `CarriedDecoration`. The player's goals, notes, conversation history and
+keys travel too, and it leaves them: the level is saved with them.
 
 **`SaveGame(slot, desc)`** (`0x1000ef10`), for the `SaveGame` native and the
 `SAVEGAME` console command, fills a `DeusExSaveInfo`:
