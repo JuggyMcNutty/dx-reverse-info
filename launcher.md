@@ -4,8 +4,8 @@
 [deusex-launcher](https://github.com/JuggyMcNutty/deusex-launcher)'s `main` recreates
 it almost 1:1; each port branch is a launcher of its own, departing from it as its
 `docs/LAUNCHER.md` records
-([linux-aarch64's](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-aarch64/docs/LAUNCHER.md#what-it-changes-from-the-original)),
-but linux-x86_64, which builds `main`'s for now.
+([trimui-smartpro's](https://github.com/JuggyMcNutty/deusex-launcher/blob/trimui-smartpro/docs/LAUNCHER.md#what-it-changes-from-the-original)),
+but linux-x86_64 and linux-aarch64, which build `main`'s for now.
 Method: [working on the binaries](README.md#working-on-the-binaries).
 
 | File | Contents |
