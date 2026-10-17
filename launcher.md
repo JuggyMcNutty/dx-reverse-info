@@ -3,10 +3,10 @@
 `System/DeusEx.exe`, read in full: what the original does, with its addresses.
 [deusex-launcher](https://github.com/JuggyMcNutty/deusex-launcher)'s `main` recreates
 it almost 1:1; each port branch is a launcher of its own, departing from it as its
-`docs/LAUNCHER.md` records
-([linux-x86_64's](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-x86_64/docs/LAUNCHER.md#what-it-changes-from-the-original),
-[trimui-smartpro's](https://github.com/JuggyMcNutty/deusex-launcher/blob/trimui-smartpro/docs/LAUNCHER.md#what-it-changes-from-the-original)),
-but linux-aarch64, which builds `main`'s for now.
+`docs/LAUNCHER.md` records: DXLauncher's, linux-x86_64's and linux-aarch64's
+([the same file on both](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-x86_64/docs/LAUNCHER.md#what-it-changes-from-the-original)),
+and the tabbed launcher's
+([trimui-smartpro's](https://github.com/JuggyMcNutty/deusex-launcher/blob/trimui-smartpro/docs/LAUNCHER.md#what-it-changes-from-the-original)).
 Method: [working on the binaries](README.md#working-on-the-binaries).
 
 | File | Contents |
