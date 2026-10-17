@@ -1173,6 +1173,29 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   line forwarded to the running game runs
   ([the receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
 
+## A key's binding
+
+A key's binding is a line of commands with `|` between them (`[Engine.Input]`
+in `User.ini`). Where each goes depends on what the key did:
+
+- **`UInput::ExecInputCommands`** (`0x10393bf0`), while the engine runs: on a
+  press, and on a release when the command starts with `OnRelease` (then the
+  rest of it), the command goes to the viewport's `Exec`; on anything else (a
+  key held, an axis, a release without `OnRelease`) to the input's own `Exec`
+  (`0x10393e10`: `BUTTON`, `PULSE`, `TOGGLE`, `AXIS`, `KEYNAME`,
+  `KEYBINDING`).
+- **`UViewport::Exec`** (`0x10373a60`), the first taker wins: the input's
+  `Exec`, the render device's, the viewport's own words (`GETPING`, `INJECT`,
+  `NETSPEED`, `LANSPEED`, `SHOWALL`, `REPORT`, `SHOT`, `SHOWACTORS`,
+  `HIDEACTORS`, `RMODE`, `EXEC`), the console's exec functions, then
+  `UPlayer::Exec`.
+- **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`,
+  the exec functions of the game, the HUD, the player pawn and each item of its
+  inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest).
+
+So a key bound to `Shot` (`DefUser.ini`'s `GreyStar`) takes a screenshot, and a
+viewport word is taken before an exec function of its name.
+
 ## A level's tick
 
 - **A level's start** (`UGameEngine::LoadMap`, `0x1038c1f0`), for a level not
