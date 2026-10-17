@@ -39,7 +39,7 @@ what each function does, with addresses.
 | `IpDrv.dll` | package IpDrv: the sockets: the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library: channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 | `Fire.dll` | package Fire: the fractal textures (fire, water lit or bending another texture, ice) that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
-| `WinDrv.dll` | the Windows client and viewport: the game's window, DirectDraw, DirectInput, the joystick, which render device a viewport opens with | [`windrv-dll.md`](windrv-dll.md) | its command-line flags |
+| `WinDrv.dll` | the Windows client and viewport: the game's window, DirectDraw, DirectInput, the joystick, which render device a viewport opens with | [`windrv-dll.md`](windrv-dll.md) | its command-line flags and keys |
 | `Window.dll` | the Win32 widgets and dialog templates of the launcher and the editor | [`wizard.md`](wizard.md#page-layouts) | the launcher's dialog templates, as data |
 
 Beside them in `gamefiles/System/`, not the game's:
