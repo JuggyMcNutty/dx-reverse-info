@@ -30,7 +30,7 @@ dynamic lighting, meshes, sprites, decals and coronas. Read with:
 
 `DrawWorld` (`0x10b1cb90`) runs `OccludeFrame` (`0x10b19fc0`), then
 `DrawFrame` (`0x10b1a2d0`). Both recurse into the frame's children: mirrors,
-warp zones and the sky.
+warp zones and the sky. [The overlays](#the-overlays) come last.
 
 - **`OccludeFrame`** calls `SetupDynamics` (`0x10b22d90`), then `OccludeBsp`
   (`0x10b173d0`).
@@ -93,9 +93,54 @@ warp zones and the sky.
   wave of 8 and 4 units on the level's time for `PF_SmallWavy`. Its detail and
   macro textures go as `UTexture::Lock` leaves them: not panned, at their own
   scale (`DrawScale`, times the mip's shrink).
+- **The depth buffer** is cleared (the render device's `ClearZ`) twice in
+  `DrawFrame`: after the frame's children, when its first list holds a
+  surface (a mirror or a portal), so what was drawn beyond hides none of
+  the frame's own surfaces; and last, after the coronas, in the sky's frame
+  (one whose zone, `ZoneNumber`, is a `SkyZoneInfo`'s), so the sky hides
+  nothing in front of it.
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
   viewer is and by the inverse of the sky zone's rotation (observed, not
   read). Liberty Island's sky zone is turned 5,080 (28°).
+
+## The overlays
+
+What the view's `RenderOverlays` draws (the first-person weapon, or the item
+in the player's hand) comes after the world, on a depth buffer cleared of
+the world: no wall hides any part of it.
+
+- **Sent** by `DrawWorld` (`0x10b1cb90`) after `DrawFrame`, outside the
+  editor: to the viewport's player's `ViewTarget`, or to the player when it
+  has none; to no one while it is `bBehindView`, or without `SHOW_Actors`
+  (8) in its `ShowFlags`. A player logged in for play has it:
+  `ULevel::SpawnPlayActor` (`Engine.dll` `0x10396bd0`) sets its `ShowFlags`
+  to 0x480C (backdrop, actors, player controls, real time). The console's
+  `HIDEACTORS` clears it and `SHOWACTORS` sets it (`UViewport::Exec`).
+- **The order** (`0x10b1ce7f`): bit 0 of Core's `GUglyHackFlags` set; the
+  render device's `ClearZ` on the frame; the event, with the viewport's
+  canvas; the bit cleared.
+- **The canvas's frame** is the one `DrawWorld` draws, given it before the
+  player's `PreRender`
+  ([the loading screen](engine-dll.md#the-loading-screen)).
+  `Canvas.DrawActor` (`UCanvas::execDrawActor`, `Engine.dll` `0x10377ed0`)
+  draws its actor through `DrawActor` on that frame: the world's view and
+  field of view, no span buffer, and the polygon flags any mesh has
+  ([meshes](#meshes)), none for depth. Its `ClearZ`, when true, clears the
+  depth buffer first; its `WireFrame` draws with the player's `RendMap` at 1
+  (`REN_Wire`) for the call. The game sets neither: `Weapon`'s and
+  `Inventory`'s `RenderOverlays` (`Engine.u`) call
+  `Canvas.DrawActor(self, false)`.
+- **No depth of the world is left** after the clear, for the overlays or
+  for the windows the player's `PostRenderFlash` draws after them: an actor
+  that `GC.DrawActor` draws there without `bClearZ` shows through walls, as
+  the vision augmentation's heat sources do
+  ([actors in a window](extension-dll.md#actors-in-a-window)).
+- **The drivers.** `D3DDrv`'s `ClearZ` (`0x10007550`) clears the depth
+  buffer alone, to 1.0; `OpenGLDrv`'s (`0x1000bca0`) turns depth writes on
+  and clears it (`glClear` of the depth bit). Only `D3DDrv` reads the flag
+  (`DrawGouraudPolygon`, `0x100057ea`), and only in a 16-bit display mode:
+  it quarters each vertex's 1/z, the overlays' depth taken as if four times
+  as far. `OpenGLDrv`'s frustum runs from half a unit to 32,768.
 
 ## Which actors are drawn
 

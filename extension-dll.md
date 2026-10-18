@@ -925,8 +925,10 @@ drawn:
 
 - From level 1, each heat source within range is drawn in a grid skin at
   twice its glow, unlit, with or without a line of sight.
-- It does not clear the depth buffer; what a wall in front does to it is the
-  renderer's.
+- It does not clear the depth buffer, which holds none of the world by then:
+  the renderer clears it before the overlays
+  ([the overlays](render-dll.md#the-overlays)), so a heat source shows
+  through a wall.
 - The augmentation's description promises sight through walls from its third
   level.
 

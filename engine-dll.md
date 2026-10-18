@@ -1360,9 +1360,13 @@ and it stays on the screen until the next frame is drawn.
   the audio's update from the view; the renderer's `PreRender`; the console's
   `PreRender` (`UConsole::PreRender`, `0x10379d10`), which calls the
   console's script `Tick` with the time since the viewport's last update; the
-  player's `PreRender`; the world, unless the console says not to; the
-  player's `PostRenderFlash`, where Deus Ex's `PlayerPawnExt` draws the
-  windows (the HUD, the menus); the render device's `EndFlash`; the player's
+  canvas given the renderer's frame (`UCanvas::Update`, `0x10377560`: the
+  canvas's script `Reset`, its size the frame's); the player's `PreRender`;
+  the world (`URender::DrawWorld`), when the frame has a size and the
+  console does not say otherwise, and with it the view's `RenderOverlays`
+  ([the overlays](render-dll.md#the-overlays)); the player's
+  `PostRenderFlash`, where Deus Ex's `PlayerPawnExt` draws the windows (the
+  HUD, the menus); the render device's `EndFlash`; the player's
   `PostRender`; the console's `PostRender`; the viewport unlocked and shown.
 - **So the frame `PaintProgress` paints**, with the client's `ScreenFlashes`
   on (the game's ini has it on) or in a net game, has the view and the
