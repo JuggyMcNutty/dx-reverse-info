@@ -10,17 +10,17 @@ None of the game's files are here, and no decompiled code
   [deusex-launcher](https://github.com/JuggyMcNutty/deusex-launcher)'s `main` recreates it
   almost 1:1.
 - **The game's DLLs.** The C++ behind Deus Ex's natives, its rendering and its sound, read
-  to find what [VibeEngine](https://github.com/JuggyMcNutty/VibeEngine) lacks or has wrong
+  to find what [DXEngine](https://github.com/JuggyMcNutty/DXEngine) lacks or has wrong
   and to put it right there
-  ([what the fork changes](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/ENGINE.md#what-the-fork-changes)).
-  Each is read as far as the work needs ([the binaries](#the-binaries)). Where the fork
-  still differs from the original, feature by feature: VibeEngine's
-  [`NATIVES.md`](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/NATIVES.md).
+  ([what it changes from Surreal Engine](https://github.com/JuggyMcNutty/DXEngine/blob/main/docs/ENGINE.md#what-it-changes-from-surreal-engine)).
+  Each is read as far as the work needs ([the binaries](#the-binaries)). Where the engine
+  still differs from the original, feature by feature: DXEngine's
+  [`NATIVES.md`](https://github.com/JuggyMcNutty/DXEngine/blob/main/docs/NATIVES.md).
 
 ## The binaries
 
 All in the game's `System/`, from the GOG build of 1.112fm; the DLLs' build date is March
-2001. VibeEngine recognises the install by `DeusEx.exe`'s SHA1
+2001. DXEngine recognises the install by `DeusEx.exe`'s SHA1
 ([`launcher.md`](launcher.md#the-binary)). Each DLL's doc gives the binary, its classes and
 what each function does, with addresses.
 
@@ -35,7 +35,7 @@ what each function does, with addresses.
 | `DeusExText.dll` | package DeusExText: the parser of the texts the player reads (books, datacubes, newspapers, emails, bulletins, the credits) | [`deusextext-dll.md`](deusextext-dll.md) | read |
 | `Render.dll` | package Render: UE1's scene renderer: the frame's occlusion (span buffers, the rasterizer's pixels) and draw order, which actors are drawn, render iterators, render time, coronas, what a pawn holds, which mesh faces are drawn, mesh detail, mesh textures, lighting | [`render-dll.md`](render-dll.md) | where a feature's drawing lives there; the occlusion, mesh detail and lighting |
 | `D3DDrv.dll` | the Direct3D 7 display driver: gamma, the textures' depth, the light maps' brightness on screen, fog, detail textures, and each pass's blending; the look's reference | [`d3ddrv-dll.md`](d3ddrv-dll.md) | read |
-| `OpenGLDrv.dll` | the OpenGL display driver | beside `D3DDrv`'s: [the light maps' brightness](d3ddrv-dll.md#the-light-maps-brightness), [detail textures](d3ddrv-dll.md#detail-textures) | its light maps in one pass, no detail texture drawn; its gamma ramp is `D3DDrv`'s ([the harness's shots](https://github.com/JuggyMcNutty/VibeEngine/blob/deusex/vibe/docs/DEVELOPMENT.md#shots)) |
+| `OpenGLDrv.dll` | the OpenGL display driver | beside `D3DDrv`'s: [the light maps' brightness](d3ddrv-dll.md#the-light-maps-brightness), [detail textures](d3ddrv-dll.md#detail-textures) | its light maps in one pass, no detail texture drawn; its gamma ramp is `D3DDrv`'s ([the harness's shots](https://github.com/JuggyMcNutty/DXEngine/blob/main/docs/DEVELOPMENT.md#shots)) |
 | `IpDrv.dll` | package IpDrv: the sockets: the UDP net driver, the script's TCP and UDP links, GameSpy's validation, Epic's master server | [`ipdrv-dll.md`](ipdrv-dll.md) | read |
 | `Galaxy.dll` | package Galaxy: the audio subsystem over the Galaxy sound library: channels and which sound wins, sounds behind walls, ambient sounds, lip sync, music, zone reverb | [`galaxy-dll.md`](galaxy-dll.md) | read |
 | `Fire.dll` | package Fire: the fractal textures (fire, water lit or bending another texture, ice) that the energy weapons, lasers, fires, gas and water effects are made of | [`fire-dll.md`](fire-dll.md) | read, and checked against its own routines |
