@@ -9,9 +9,10 @@ Every claim cites its address. Imagebase `0x10900000`.
 ## 1. Single-instance forwarding (`0x10908A30`–`0x10908CD1`)
 
 Runs **before** any engine init. Skipped when the command line contains any of `Server`,
-`NewWindow`, `changevideo`, `TestRenDev` (`appStrfind`, a substring match,
-`0x10908A97`–`0x10908AE5`). This check reads the command line as Windows gives it, the
-program's path included: an install path holding one of the four words skips forwarding too.
+`NewWindow`, `changevideo`, `TestRenDev` (`appStrfind`: in any case, not straight after an
+ASCII letter or digit, [the parsers](cli-flags.md); `0x10908A97`–`0x10908AE5`). This check
+reads the command line as Windows gives it, the program's path included: an install path
+holding one of the four words so (`D:\Server\`, not `D:\GameServer\`) skips forwarding too.
 
 Otherwise:
 

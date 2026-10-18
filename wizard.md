@@ -19,7 +19,7 @@ wizard shows and the game launches.
 
 | # | Condition | Page shown | Caption key (`Startup.int`) |
 |---|---|---|---|
-| 1 | `-safe` **or** cmdline contains `readini` | SafeMode (2020) | `SafeMode` |
+| 1 | `-safe` **or** `readini` in the cmdline, not straight after a letter or digit | SafeMode (2020) | `SafeMode` |
 | 2 | `FirstRun < 400` | Renderer (2017) | `FirstTime` |
 | 3 | `-changevideo` | Renderer (2017) | `Video` |
 | 4 | no other instance running **and** `Running.ini` exists | SafeMode (2020) | `RecoveryMode` |
