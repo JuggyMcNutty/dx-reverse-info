@@ -3,7 +3,7 @@
 The native half of package Extension, Ion Storm's own:
 
 - the UI's window system: `Window` and its subclasses (text, lists, edit
-  fields, scrolling, tab groups, the computer terminal's window);
+  fields, scrolling, tab groups, the window that types the InfoLink's text);
 - the graphics context `GC` that draws them;
 - the flag base behind every mission and conversation flag;
 - the game engine and input classes that put the UI in front of the game.
@@ -71,7 +71,9 @@ are `exec` exports.
     window.
   - `Tick` (`0x100266a0`) ticks the windows, then the engine. The windows
     tick by the real time since they last ticked (`TickWindows`,
-    `0x1003a4a0`, by `GetWindowsTickOffset`, `0x1003a3b0`), not the level's.
+    `0x1003a4a0`, by `GetWindowsTickOffset`, `0x1003a3b0`), not the level's:
+    each window, shown or not, before its children (`TickTree`,
+    `0x1003bfc0`), its script's `Tick` only while `bTickEnabled`.
     `GetTickOffset` (`0x1004fda0`) is that time at any moment: a timer
     added, and a held button's or scale's first repeat, count what of the
     frame has gone.
@@ -103,7 +105,9 @@ are `exec` exports.
   `ConvertVectorToCoordinates` divide by them.
 - **What it takes** (`Process`, `0x1003b3e0`): every key while any window has
   grabbed the keyboard, and every mouse button while any window has grabbed
-  the mouse. Taking a button clears the player's `bFire` and `bAltFire`.
+  the mouse -- the mouse's axes and wheel count as its buttons
+  (`IsMouseButton`, `0x1003a2c0`), so the mouse turns no view then. Taking a
+  button clears the player's `bFire` and `bAltFire`.
   Every modal window grabs both while it is shown: the menus and the game's
   screens. The root marks every press and release of a key or button, taken
   or not; a release of one not down is taken, while the grab holds, and goes
@@ -130,9 +134,10 @@ are `exec` exports.
   window that shows, is sensitive and holds the point, passing over other
   modals. From there the button goes up the parents, each asked
   `RawMouseButtonPressed`, then `MouseButtonPressed` or
-  `MouseButtonReleased`, until one handles it.
-  - A press grabs the mouse for that window and, when the modal's
-    `focusMode` is set, gives focus to it or its nearest selectable parent.
+  `MouseButtonReleased`, until one handles it; a move on an axis
+  (`IST_Axis`) is asked only `RawMouseButtonPressed`.
+  - A press grabs the mouse for that window and gives it the focus as the
+    topmost modal's `focusMode` says ([keyboard focus](#keyboard-focus)).
     A release of any button lets that window's grab go before it is passed
     on.
   - Presses of one button on one window, each within `multiClickTimeout`
@@ -140,10 +145,34 @@ are `exec` exports.
     first, count up, wrapped at the window's `maxClicks`, so a list sees a
     double click as 2. The clock is real time
     (`GetWindowsTickOffset`, `0x1003a3b0`).
+- **Pointer movement** (`SetMouseDelta`, `0x1003b2e0`; `SetMousePosition`,
+  `0x1003b210`), from the engine, is the root's when it takes the mouse's
+  buttons, else the game's. A delta adds to the pointer in the root's
+  units, not divided by the multipliers, both axes doubled when either
+  moves more than 2; a position is divided by them and truncated. Taken
+  (`HandleMouse`, `0x1003b670`), the pointer is held within the root, up to
+  its width and height less 1, and the move is handled at once
+  (`ProcessMouseMove`, `0x1003af50`):
+  1. the window the mouse acts on is found again, as for a button;
+  2. when that is not the last one, the last gets `MouseLeftWindow`, then
+     the new one `MouseEnteredWindow`, each followed by what the topmost
+     modal's `focusMode` does with the focus
+     ([keyboard focus](#keyboard-focus));
+  3. when the pointer is not where it was at the last `MouseMoved`, the
+     window gets `MouseMoved`, the pointer in its own coordinates.
+
+  Each event goes to that window alone, not up its parents. While a window
+  has grabbed the mouse -- a button held on it -- it stays the window the
+  mouse acts on: no other is entered or left, and it gets every
+  `MouseMoved`; the first move after the release enters the window under
+  the pointer. Nothing is entered without a move: a window that appears
+  under a still pointer waits for one. A script's `SetCursorPos(x, y)`
+  (`0x1004cca0`), in its window's coordinates, moves the pointer as a move
+  does.
 - **`LockMouse(bLockMove, bLockButton)`** (`0x1003a290`): with movement
-  locked the pointer stays where it is; with buttons locked the UI takes and
-  ignores them. The Customize Keys screen locks movement while it waits for
-  a key.
+  locked the root takes moves and the pointer stays where it is, but for a
+  script's `SetCursorPos`; with buttons locked the UI takes and ignores
+  them. The Customize Keys screen locks movement while it waits for a key.
 
 ### Showing and hiding
 
@@ -245,16 +274,30 @@ are `exec` exports.
   and its unfocus sound, and it and each ancestor `FocusLeftDescendant`; the
   new one is shown (`AskParentToShowArea` of all of it, so a clip window
   scrolls to it), plays its focus sound and gets `FocusEnteredWindow`, and
-  it and each ancestor `FocusEnteredDescendant`. None asked for clears the
-  focus. A window not yet shown -- one a screen's `InitWindow` makes before
-  it shows itself -- does not take it.
+  it and each ancestor `FocusEnteredDescendant`. When the window it finds
+  has the focus already, nothing happens: no event, no sound. None asked for
+  clears the focus. A window not yet shown -- one a screen's `InitWindow`
+  makes before it shows itself -- does not take it.
+- **The mouse and the focus.** A modal's `focusMode` -- `MFOCUS_Enter` from
+  `XModalWindow::Init` (`0x10036c00`), the root's too -- says what the mouse
+  does with the focus; the topmost modal's counts. A press on a window
+  gives it the focus, as `SetFocusWindow` does, in every mode but
+  `MFOCUS_None` (0); a window the pointer enters takes it the same way in
+  `MFOCUS_Enter` (2) and `MFOCUS_EnterLeave` (3); the pointer leaving one
+  clears the focus, before the next is entered, in `MFOCUS_EnterLeave`
+  alone. `MFOCUS_Click` (1) moves it on a press alone. So in a conversation
+  each choice the pointer passes over takes the focus and keeps it until
+  another takes it; on the keypad the focus leaves a button with the
+  pointer. The game's screens set `MFOCUS_Enter` (`DeusExBaseWindow`), its
+  New Game, Save Game and Color Selection menus, persona screens, tools and
+  computers `MFOCUS_Click`, and the keypad (`HUDKeypadWindow`)
+  `MFOCUS_EnterLeave`.
 - **The root's tick** (`XRootWindow::Tick`, `0x1003a540`), while nothing has
   the focus: the topmost modal (or the root, with none up) gives the focus to
   its `preferredFocus` when that is traversable with the modal check, else as
   `MoveTabGroup` forward does from the table's first group. It does not when
   its `focusMode` is `MFOCUS_EnterLeave` (3). So a conversation's first
-  choice takes the focus as the choices appear. The keypad
-  (`HUDKeypadWindow`) sets `MFOCUS_EnterLeave`.
+  choice takes the focus as the choices appear.
 - **What takes no focus.** A scroll area makes its scales, its four buttons
   and itself unselectable (`XScrollAreaWindow::Init`, `0x10042d80`): the
   focus goes to what it holds, a list or a text. A list, an edit field, a
@@ -698,6 +741,101 @@ every column to its margins.
   case-blind.
 - **`ShowFocusRow`** (`0x10033040`) asks the parent to scroll the focus row
   into view.
+
+## The computer window
+
+`XComputerWindow` types text out a character at a time behind a cursor, on a
+grid of cells. The game's one is the InfoLink's text: `HUDInfoLinkDisplay`
+makes it 42 columns by 6 rows of 7 by 10 cells in its fixed-width font, a
+character every 0.03 s, each fading in over 0.75 s, word wrap on, the text in
+the HUD theme's text colour and the cursor in its header text colour, both
+as the window is made.
+
+- **Defaults** (its script's): 80 columns by 24 rows of 8 by 20 cells, no
+  font, white text, no time between characters (a print appears whole) and
+  no fade, word wrap on; the cursor the white `Solid` texture, 8 wide and 2
+  high, white, blinking each 0.5 s, shown; no sounds. `Init` (`0x1000d530`)
+  gives it a child that fills it and a hidden edit field for input, and
+  makes it selectable. The first tick after it is made does nothing.
+- **Its size.** `SetTextSize(cols, rows)` (`0x10010cf0`) and `SetTextFont`
+  (`0x10010e70`), which sets the font and the cell's width and height at
+  once and queues its colour, size the window to the columns by the cell
+  width and the rows by the cell height, once it has a font: the InfoLink's
+  is 294 by 60.
+- **The queue.** What a script prints is not drawn at once: each character,
+  line break and change goes into a queue, with a time.
+  - A character (`Print`, `0x10011810`) or a line break takes the window's
+    next time, then moves it on by the text timing (`SetTextTiming`,
+    `0x10011190`: seconds a character). A line break is a `^` in the text,
+    a `PrintLn` (`0x10011a20`), or the end of a `Print` whose `bNewLine` is
+    not false (true when not given).
+  - A colour -- `SetTextFont`'s or `SetFontColor`'s (`0x10010fe0`) -- the
+    text sound (`SetTextSound`, `0x100113c0`) and `ClearScreen`
+    (`0x10011610`) take the next time without moving it on.
+
+  So a colour is the text's from there on, not the window's: a character
+  takes the colour of the last change typed before it and keeps it.
+  `ClearScreen` empties the screen and goes back to the top left when the
+  queue reaches it, with the next character printed: the InfoLink's last
+  speech stays until the next starts to type.
+- **The clock** (`Tick`, `0x1000f7b0`) runs on the windows' real time
+  ([the engine and the input](#the-engine-and-the-input)) times the
+  throttle (1). Each tick, after the cursor's blink, the clock moves on; when
+  it is more than one interval past the last time anything was queued, the
+  next time becomes the clock plus an interval; the queue then types in
+  order (`ProcessQueuedBuffer`, `0x1000fe20`), each item whose time is
+  before the clock, up to the first that is not; then the fades count down.
+  So a text printed into an idle window types its first character an
+  interval later, then one each interval, as many in a tick as are due: at
+  0.03 s, about one every second frame at 60 frames a second. The clock, the
+  blink and the fades stop while the game is paused, unless the window was
+  made during a pause.
+- **Placing a character** (`CalculateCharDisplayPosition`, `0x10010710`): in
+  the current cell, which then moves on a column. One that would go in the
+  last column starts the next row instead and goes first in it, but for a
+  space, which is dropped: a row holds a character fewer than the columns,
+  41 in the InfoLink's. With word wrap (`EnableWordWrap`, `0x100124c0`, true
+  when not given), besides:
+  - a space at the start of a row is dropped;
+  - a character starts the next row when it and the characters straight
+    after it in the queue -- up to a space, anything that is not a
+    character or the queue's end -- would reach the last column: a word
+    that does not fit moves down whole before it types, and one longer than
+    a row starts a row at each of its characters until the rest fits.
+
+  A line break (`ProcessNewLineEvent`, `0x1000ec10`) starts the next row
+  too. A row past the last keeps to the last and scrolls (`Scroll`,
+  `0x1000eaf0`): every character drawn moves up a row, the top row's
+  dropped.
+- **Fading** (`SetFadeSpeed`, `0x10011200`: seconds): a character fades in
+  from black as it types, drawn in its colour times the time it has shown
+  over the fade time, each channel truncated, then whole; that time is the
+  frames' real time, not throttled. With a fade of 0 it is whole at once.
+  `FadeOutText` (`0x10012540`, 2 s when not given), queued as a colour is,
+  fades all the text to black the same way, then sends
+  `ComputerFadeOutCompleted` to the window and each parent, the text drawn
+  whole again after; no game script calls it.
+- **The cursor**, drawn after the text, sits in the cell the next character
+  types into: from its left edge, its foot on the row's, `cursorWidth` by
+  `cursorHeight` of the cursor texture in the cursor colour, masked -- by
+  default a white bar 8 by 2. `SetCursorTexture` (`0x10011270`) takes the
+  cell's width and 2 for a size not given; `SetCursorColor` (`0x100110b0`)
+  sets the colour at once. It shows while `ShowTextCursor` (`0x10011340`,
+  true when not given) has it on, no input field shows and its blink is
+  lit. The blink flips each `cursorBlinkSpeed` (0.5 s), and each character
+  typed lights it and starts the count again: it holds while text types and
+  blinks once it stops. The InfoLink hides it through the transmission's
+  opening and shows it as the first speech starts (`DataLinkPlay`).
+- **Drawing** (`Draw`, `0x1000ed60`): the script's `DrawWindow`, the six
+  background textures when set (translucent, 256 apart), then each character
+  (`DrawDisplayBuffer`, `0x1000fae0`) by `DrawText` in its cell's box -- at
+  its column by the cell width and its row by the cell height, the cell's
+  size -- in the window's font, at the box's top left (the GC's alignment),
+  with the GC's text flags ([styles](#styles)): masked, as the InfoLink
+  leaves the window's translucent text off.
+- **Sounds.** A text sound plays from each character's cell as it types, a
+  typing sound in the input field. Neither is set by default or by the
+  InfoLink, which types in silence.
 
 ## Flags
 
