@@ -459,9 +459,9 @@ How the original runs UnrealScript.
   a 64-bit mask, `ProbeMask`, with a bit for each. An event of a probe, or a
   script call of a function named after one, runs only with its bit set.
   Nothing else is checked: any other call runs.
-- **The mask is set at every `GotoState`** (`0x1012e8f0`), even into the
-  state the object is in: the probes that the state or the class has a
-  function for, less those the state `ignores`.
+- **The mask is set at every `UObject::GotoState`** (`0x1012e8f0`), even
+  into the state the object is in: the probes that the state or the class
+  has a function for, less those the state `ignores`.
 - **A script's `GotoState`** (`execGotoState`, `0x1013dd00`) calls it only
   for another state than the object's (one left out is the object's own),
   then goes to the label if the change was not preempted by a `GotoState` in
