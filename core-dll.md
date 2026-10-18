@@ -462,8 +462,18 @@ How the original runs UnrealScript.
 - **The mask is set at every `GotoState`** (`0x1012e8f0`), even into the
   state the object is in: the probes that the state or the class has a
   function for, less those the state `ignores`.
-- **`Disable(name)`** (`0x1013dfb0`) clears the probe's bit until the next
-  `GotoState`. **`Enable(name)`** (`0x1013de80`) sets it, if the state or the
+- **A script's `GotoState`** (`execGotoState`, `0x1013dd00`) calls it only
+  for another state than the object's (one left out is the object's own),
+  then goes to the label if the change was not preempted by a `GotoState` in
+  `EndState` or `BeginState`. Into the state the object is in (None for no
+  state) it only goes to the label: no `EndState` or `BeginState`, and the
+  probes as they are, so a `Disable` in `BeginState` holds. The label is
+  `Begin` when none is given; `GotoLabel` (`0x1012eb10`) clears the latent
+  action, looks for the label in the state and the states above it, and
+  stops the state code when none has it, logged for a named label
+  (`Label not found`).
+- **`Disable(name)`** (`0x1013dfb0`) clears the probe's bit until the mask
+  is next set. **`Enable(name)`** (`0x1013de80`) sets it, if the state or the
   class has a function for the probe and the state does not ignore it. For
   a name that is not a probe, both only log a warning.
 - **State code** is run by `Engine.dll`; `UObject::ProcessState` is empty.
