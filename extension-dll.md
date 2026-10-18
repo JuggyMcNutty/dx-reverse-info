@@ -1011,4 +1011,4 @@ What the game shows under a menu, by the player's UI background option
   0, its argument left as it was. `GetTextPart(start, count)` gives at most
   240 characters, none from a negative start. No script calls them.
 - **No script calls** `GC`'s `PushGC`, `PopGC`, `CopyGC` and `Intersect`,
-  `ClipWindow`'s unit sizes, or 22 of `ComputerWindow`'s 33 natives.
+  `ClipWindow`'s unit sizes, or 24 of `ComputerWindow`'s 33 natives.
