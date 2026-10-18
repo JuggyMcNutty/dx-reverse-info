@@ -102,6 +102,35 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
 - **The sky's frame** looks out from the zone's `SkyZone`, turned as the
   viewer is and by the inverse of the sky zone's rotation (observed, not
   read). Liberty Island's sky zone is turned 5,080 (28°).
+- **A mirror's frame**: `OccludeBsp` opens one for a surface flagged
+  `PF_Mirrored` (its own flags with the viewport's `ExtraPolyFlags`) while
+  the frame's `Recursion` is under 3 and the viewer's `ShowFlags` has
+  `SHOW_PlayerCtrl` (0x800). A one-sided surface more than a unit behind
+  the eye is passed over first, a mirror among them. A translucent mirror is
+  a shiny surface: with the render device's `ShinySurfaces` (+0x5C) off it
+  opens none and goes into the second list solid, its `PF_Translucent`
+  cleared and `PF_Occlude` set.
+  - **The view** is the parent's reflected in the surface's plane, its axes
+    and its eye (`FVector::MirrorByPlane`), and its `Mirror` the parent's
+    negated, which turns each surface's points round. The frame's walk runs
+    from its own eye (`Frame->Coords.Origin`), the reflected one behind the
+    mirror: front to back, and passing over faces seen from behind, as the
+    reflection shows them.
+  - **Where it starts**: the zone on the viewer's side of the mirror (the
+    node's `iZone` on that side), whose span buffer is what of the mirror
+    shows, and whose render time it stamps. Its `NearClip` is the mirror's
+    plane in the parent's view space, turned round; nothing in `Render.dll`
+    clips by it. What lies behind the mirror stays out through the zones'
+    span buffers, as in any frame.
+  - **One frame a plane**: `CreateChildFrame` (`0x10b15a40`) returns the
+    parent's child of the same level, surface number, `NearClip` and zone,
+    the spans merged, when it has one. Every mirror's surface number is 0,
+    so the mirrors of one plane seen from one zone share a frame.
+  - **The mirror itself** goes into the first list with `PF_Occlude`: an
+    opaque one `PF_Invisible`, its depth alone (on a span-based device not
+    drawn), a translucent one with its own flags, over the reflection.
+  - **Actors**: the viewer's pawn shows in it
+    ([which actors are drawn](#which-actors-are-drawn)).
 
 ## The overlays
 
@@ -149,9 +178,12 @@ over one that is:
 
 - hidden (`bHidden`; `bHiddenEd` in the editor);
 - the actor the view is from, in first person in the main frame: the
-  viewer's pawn, or its view target when it has one;
+  viewer's pawn, or its view target when it has one. `OccludeFrame`
+  (`0x10b19fc0`) names it to `SetupDynamics` only for a frame with no
+  parent, so a mirror's, a warp zone's and the sky's frames show it;
 - `bOnlyOwnerSee`, unless it is the viewer's (anywhere up its `Owner` chain)
-  in first person; or `bOwnerNoSee` and the viewer's, in first person;
+  in first person; or `bOwnerNoSee` and the viewer's, in first person: by
+  the viewer's `bBehindView` alone, in every frame;
 - `bHighDetail` while the render device's `HighDetailActors` is off. Of the
   game's classes only `Decal` sets it, and a decal is drawn with its
   surface, not here;
