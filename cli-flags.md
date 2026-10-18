@@ -8,12 +8,13 @@ Three parsers, **not** equivalent:
 | Helper | Form | Matching |
 |---|---|---|
 | `ParseParam(cmdline, "X")` | `-X` or `/X` | flag present: the name anywhere after the line's first character with `-` or `/` just before it (Core.dll `0x10146d4f`, `0x10146d55`); nothing after it is checked, so `-log` also matches `-LOG=<file>` |
-| `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found anywhere (`appStrfind`, `0x10146bee`), no `-` needed; a value in quotes keeps its spaces |
-| `appStrfind(cmdline, "X")` | anywhere | **raw substring, no `-` required** |
+| `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found as `appStrfind` finds it (`0x10146bee`), no `-` needed, so `LOG=` is not found in `ABSLOG=`; a value in quotes keeps its spaces |
+| `appStrfind(cmdline, "X")` | anywhere | **a substring in any case, but not straight after a letter or digit (Core.dll `0x10145ca0`); no `-` required** |
 
 The `appStrfind` cases are the surprising ones: `readini` and the four single-instance
-bypass tokens match *anywhere in the command line*, including inside a map name or URL.
-Matching the line's `argv` words one by one does not reproduce them.
+bypass tokens match *anywhere in the command line* not straight after a letter or digit,
+inside a map name or URL too. Matching the line's `argv` words one by one does not
+reproduce them.
 
 Most checks read the command line `appInit` keeps, without the program's path. Two read the
 one Windows gives, path and all: the single-instance bypass, with its four tokens, and the
