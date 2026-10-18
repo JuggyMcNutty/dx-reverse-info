@@ -299,6 +299,37 @@ it walks every property instead and calls `Modify` before each change.
     subclass reads it, each then told of the change (`PostEditChange`); then
     the class's defaults; then the class's config is saved.
 
+### The .int files
+
+Both readers take them from `System` alone, whatever the paths say: a mod's
+must be put there.
+
+- **A package's text** (`Localize`, `0x10148430`). The key is read from
+  `<Package>.<language>`, then from `<Package>.int` (the game's language is
+  `int`). Each is read through the config cache by that name alone, so it
+  comes from the working directory, `System`, never along the paths. A key
+  there with no value gives empty text. For a key in neither file:
+  - the script's `Localize` (`execLocalize`, `0x1013ce00`) logs
+    `No localization: <Package>.<Section>.<Key> (int)` and gives
+    `<?int?<Package>.<Section>.<Key>?>`;
+  - a class's localized properties (`LoadLocalized`, `0x10151390`) take an
+    empty text, and a property given empty text keeps its default.
+- **The objects they register** (`UObject::CacheDrivers`, `0x10158900`),
+  which `GetRegistryObjects` (`0x101591c0`) calls before it reads them. It
+  reads the files once, and again when the language changes.
+  - Each path's folder is searched for `*.int`. The path is taken relative
+    to Core.dll's own folder (`appBaseDir`, `0x1016d0e0`, `System`), so an
+    absolute path finds nothing.
+  - Each file found is read by its name from `System`, not from the folder
+    it was found in: its `[Public]` section, from `<name>.<language>` else
+    `<name>.int`. `Object=` lines register objects, and `Preferences=` lines
+    the Advanced Options' pages.
+  - So only `System`'s files register anything. A file found in another
+    path's folder registers `System`'s file of that name, if there is one,
+    a second time.
+  - Each `Core.<ext>` in `System`, but for `dll`, `u` and `ilk`, then
+    registers a language.
+
 ## RELAUNCH
 
 `USystem::Exec` (`0x1016b790`), beside `EXIT` and `QUIT`, takes `RELAUNCH`
