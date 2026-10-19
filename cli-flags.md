@@ -25,7 +25,7 @@ splash's, with `-log`, `-server` and `TestRenDev`
 
 | Flag | Parser | Read at | Effect |
 |---|---|---|---|
-| `-SERVER` | `ParseParam` | `0x10908D97` | `GIsClient = 0`; also forces `GLazyLoad` |
+| `-SERVER` | `ParseParam` | `0x10908D97` | clears `GIsClient`; also forces `GLazyLoad` |
 | `-LAZY` | `ParseParam` | `0x10908DF4` | force lazy package loading |
 | `-LOG` | `ParseParam` | `0x10908E6D` | open the log window at startup; suppresses the splash |
 | `-MAKE` | `ParseParam` | `0x10908D44` | **fatal**: *"'DeusEx -make' is obsolete, use 'ucc make' now"* |

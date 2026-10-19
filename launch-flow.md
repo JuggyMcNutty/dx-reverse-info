@@ -20,9 +20,9 @@ Otherwise:
 2. For each, read the window property **`IsBrowser`** (`GetProp`, `0x10908BC9`).
 3. On the first match, skip past argv[0] and send the rest as **`WM_COPYDATA` (`0x4A`)**:
    `SendMessageTimeoutW` (`0x10908CBE`), `SMTO_ABORTIFHUNG|SMTO_BLOCK` (`3`), a
-   **30 000 ms** timeout. The `COPYDATASTRUCT` is
-   `{ dwData = WindowMessageOpen, cbData = 4*len+4, lpData = <rest of command line> }`.
-4. Clear `GIsStarted`, `return 0`: this process exits without starting the engine. The
+   **30 000 ms** timeout. Its `COPYDATASTRUCT` carries `WindowMessageOpen` as its data
+   word and the rest of the command line as its payload, 4 × its length + 4 bytes.
+4. Clear `GIsStarted` and return 0: this process exits without starting the engine. The
    running instance opens the requested URL or map.
 
 "Past argv[0]" is past the first space: a quoted program path holding spaces is cut inside
@@ -40,21 +40,20 @@ arrives before then, during the wizard, does nothing.
 
 | Step | Address | Detail |
 |---|---|---|
-| `GIsGuarded = 1`, `GIsClient = 1` | `0x10908CE8` | |
+| `GIsGuarded` and `GIsClient` set | `0x10908CE8` | |
 | `appInit(...)` | `0x10908D23` | package, cmdline, `GMalloc`, `GLog`, `GError`, `GWarn`, `GFileManager`, `FConfigCacheIni_Factory` (`0x10915080`), `RequireConfig=1` |
 | `-make` rejected | `0x10908D6A` | fatal: *"'DeusEx -make' is obsolete, use 'ucc make' now"* in the error handler's box, titled Window.int `[Errors] Critical`: the message, a blank line, "History: ". The process ends with 1. The GOG build has no `ucc` |
-| `GIsServer = 1` | `0x10908D79` | always |
-| `GIsClient = !ParseParam("SERVER")` | `0x10908D97` | |
-| `GIsEditor = 0`, `GIsScriptable = 1` | `0x10908DC0` | |
-| `GLazyLoad = !GIsClient \|\| ParseParam("LAZY")` | `0x10908E18` | |
-| low-memory override | `0x10908E3B` | `GPhysicalMemory <= 0x4000000` (64 MB) → `GLazyLoad = 1`, and log *"** Deus Ex - Low memory conditions detected - Forcing lazy loading"* |
+| `GIsServer` set | `0x10908D79` | always |
+| `GIsClient` cleared by `-server` | `0x10908D97` | |
+| `GIsEditor` cleared, `GIsScriptable` set | `0x10908DC0` | |
+| `GLazyLoad` set on a server or with `-lazy` | `0x10908E18` | |
+| low-memory override | `0x10908E3B` | 64 MB of memory or less (`GPhysicalMemory`) sets `GLazyLoad`, and logs *"** Deus Ex - Low memory conditions detected - Forcing lazy loading"* |
 
 ## 3. Splash screen (`0x10908E93`–`0x10909205`)
 
 Bitmap: `..\Help\<Package>Logo.bmp` (`..\Help\DeusExLogo.bmp`), built as `..\Help` + the
-package name + `Logo.bmp` (`0x10908F4F`–`0x10908F7D`); if that file does not exist,
-`FileSize(<Package>Logo.bmp) < 0` (`GFileManager->FileSize`, `0x1090907F`),
-`..\Help\Logo.bmp`.
+package name + `Logo.bmp` (`0x10908F4F`–`0x10908F7D`); if that file does not exist, its
+size read below 0 (the file manager's `FileSize`, `0x1090907F`), `..\Help\Logo.bmp`.
 
 Shown by `InitSplash` (`0x10901AA0`) **unless** the command line holds `-log`, `-server` or
 `TestRenDev` (`0x1090917B`–`0x109091FD`). Like forwarding, these checks read the whole
@@ -77,22 +76,22 @@ Then `InitWindowing()` (`0x10909205`, from `Window.dll`).
 
 ## 4. Log window (`0x10909226`–`0x109093E1`)
 
-- `new WLog(..., FName("GameLog"))`, 660 bytes, vtable `WGameLog__vftable` (`0x10926C88`),
-  stored in the exported global `GLogWindow`. Created on every launch.
-- `OpenWindow(ShowLog = ParseParam("LOG"), 0)` (`0x109092CE`).
+- A log window (`WLog`, named `GameLog`), 660 bytes, its vtable at `0x10926C88`, stored in
+  the exported global `GLogWindow`. Made on every launch.
+- Opened (`OpenWindow`, `0x109092CE`), shown only with `-log`.
 - Logs `LocalizeGeneral("Start", "<Package>")`.
 - If `GIsClient`: sets the window property **`IsBrowser`** on the log window
   (`0x1090934A`). This is what §1 finds.
 
 ## 5. `InitEngine` (`0x1090A050`)
 
-Returns a constructed `UGameEngine*`, or `0` to abort startup. The wizard's decision tree:
+Returns the engine it made, or none to end the startup. The wizard's decision tree:
 [`wizard.md`](wizard.md).
 
-1. Start timing (`__rdtsc` / `appSecondsSlow`).
+1. Start timing (the CPU's cycle counter, `appSecondsSlow`).
 2. Install `GLaunchExec` (`0x1092E7B0`) as `GExec` (§7).
-3. `CreateMutex("DeusExIsRunning")`; `GetLastError() == ERROR_ALREADY_EXISTS (183)` records
-   whether another instance is live (`0x1090A227`).
+3. Make the mutex `DeusExIsRunning`; finding it there already (error 183,
+   `ERROR_ALREADY_EXISTS`) records that another instance is live (`0x1090A227`).
 4. Read `[FirstRun] FirstRun` (int). `-firstrun` forces it to `0` (`0x1090A283`).
 5. `FirstRun < 220` → migrate savegames (§6).
 6. `-consolecommand=<cmd>` → run it through `GExec`, then **return 0** (never launches).
@@ -105,8 +104,8 @@ Returns a constructed `UGameEngine*`, or `0` to abort startup. The wizard's deci
 10. Clamp `FirstRun` up to **1100** and write it back (`0x1090B997`), every time, also when
     it is already 1100 or more.
 11. CD check (§8).
-12. `StaticLoadClass(UGameEngine, "ini:Engine.Engine.GameEngine")` (`0x1090BB2A`),
-    `ConstructObject_UEngine` (`0x10920920`), then `Engine->Init()` (vtable +100).
+12. Load the engine class the ini's `[Engine.Engine] GameEngine` names (`StaticLoadClass`,
+    `0x1090BB2A`), make one (`0x10920920`) and call its `Init` (the vtable's +100).
 13. Log *"Startup time: %f seconds"*.
 
 Before the wizard's entry tree, `InitPathnames` (`0x10901C40`, called at `0x1090AB7E`)
@@ -138,9 +137,9 @@ Read `[Engine.Engine] CdPath`. If it is non-empty, loop until
 `<CdPath>Textures\Palettes.utx` (joined with a backslash where `CdPath` lacks one) is
 **larger than 0 bytes** (`0x1090BA82`). Each failed pass shows a `MessageBoxW`
 (`MB_OKCANCEL|MB_TASKMODAL|MB_SETFOREGROUND|MB_TOPMOST`, `0x52001`, no icon) with
-`InsertCdText` / `InsertCdTitle` from the **`Window`** localization package. Cancel →
-`GIsCriticalError = 1; ExitProcess(0)` (`0x1090BAE8`). That is after step 9 of §5, so
-`Running.ini` stays and the next launch opens in RecoveryMode.
+`InsertCdText` / `InsertCdTitle` from the **`Window`** localization package. Cancel sets
+`GIsCriticalError` and ends the process with 0 (`0x1090BAE8`). That is after step 9 of §5,
+so `Running.ini` stays and the next launch opens in RecoveryMode.
 
 The shipped `DeusEx.ini` sets `CdPath=..\`, so on a GOG or Steam install the check passes
 against the game's own `Textures\` and never prompts.
@@ -203,17 +202,17 @@ The original's seven Win32 dependencies, and how it meets each:
    `WM_COPYDATA` carrying the command line's tail as one UTF-16 string; a 30 s timeout. The
    bypass tokens `Server`, `NewWindow`, `changevideo`, `TestRenDev` skip it
    ([§1](#1-single-instance-forwarding-0x10908a300x10908cd1)).
-3. **Instance detection.** `CreateMutex("DeusExIsRunning")` + `ERROR_ALREADY_EXISTS`, used
+3. **Instance detection.** The mutex `DeusExIsRunning`, found there already or not, used
    only to tell a crash from a concurrent instance when `Running.ini` survives
    ([§5](#5-initengine-0x1090a050),
    [the entry tree](wizard.md#entry-decision-tree-initengine-0x1090aab60x1090b7f6)).
-4. **Relaunch.** `ShellExecute("open", GModuleFilename, flags, appBaseDir(), SW_SHOWNORMAL)`
+4. **Relaunch.** `ShellExecute` opens the program's own file (`GModuleFilename`) with the
+   flags, in the base directory, shown normally
    ([SafeOptions](wizard.md#safeoptions-2021--eight-checkboxes)).
 5. **The splash.** Window.dll's `LoadFileToBitmap` of `..\Help\<Package>Logo.bmp` or
    `..\Help\Logo.bmp`, shown in dialog 119 ([§3](#3-splash-screen-0x10908e930x10909205)).
 6. **ANSI/Unicode dual paths.** Every Win32 call is written twice, branching on
-   `GUnicodeOS`, for Windows 9x. This is why decompiled functions look twice as long as
-   they are.
+   `GUnicodeOS`, for Windows 9x, so each function holds its logic twice.
 7. **Path separators.** Backslashes are hard-coded in ini values and lookups: `..\Save\`,
    `Textures\Palettes.utx`, `CdPath=..\`
    ([§6](#6-savegame-migration-firstrun--220-0x1090a2ba0x1090a605),

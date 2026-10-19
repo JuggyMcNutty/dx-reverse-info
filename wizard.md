@@ -14,8 +14,8 @@ SafeOptions' defaults, the Detail thresholds.
 
 ## Entry decision tree (`InitEngine`, `0x1090AAB6`–`0x1090B7F6`)
 
-Evaluated only when `!GIsEditor && GIsClient`. **First match wins**; with no match, no
-wizard shows and the game launches.
+Evaluated only on a client (`GIsClient`), outside the editor (`GIsEditor`).
+**First match wins**; with no match, no wizard shows and the game launches.
 
 | # | Condition | Page shown | Caption key (`Startup.int`) |
 |---|---|---|---|
@@ -24,13 +24,14 @@ wizard shows and the game launches.
 | 3 | `-changevideo` | Renderer (2017) | `Video` |
 | 4 | no other instance running **and** `Running.ini` exists | SafeMode (2020) | `RecoveryMode` |
 
-Addresses: `-safe`/`readini` `0x1090ABB2`/`0x1090ABD9`; `FirstRun<400` `0x1090AF35`;
-`-changevideo` `0x1090B247`; `Running.ini` probe `0x1090B569`.
+Addresses: `-safe`/`readini` `0x1090ABA9`/`0x1090ABD9`; `FirstRun<400` `0x1090AF35`;
+`-changevideo` `0x1090B23E`; `Running.ini` probe `0x1090B569`.
 
-Then the splash closes (`ExitSplash`, `0x1090B7FC`), `WWizardDialog::Advance(page)`
-(`0x1090B80E`) and `DoModal` (`0x1090B829`). `DoModal` returning **0 aborts startup**;
-non-zero reopens the splash with the same bitmap (`InitSplash(NULL)`, `0x1090B885`) and goes
-on to launch ([`launch-flow.md`](launch-flow.md#5-initengine-0x1090a050)).
+Then the splash closes (`ExitSplash`, `0x1090B7FC`), the wizard advances to the page
+(`WWizardDialog::Advance`, `0x1090B80E`) and `DoModal` (`0x1090B829`). `DoModal` returning
+**0 aborts startup**; non-zero reopens the splash with the same bitmap (`InitSplash` given
+no file, `0x1090B885`) and goes on to launch
+([`launch-flow.md`](launch-flow.md#5-initengine-0x1090a050)).
 
 ### The `FirstRun` version gates
 
@@ -239,7 +240,7 @@ text, "Unknown".
 
 ### FirstTime (2019)
 No bound controls (52 bytes = base + `Owner`); the prompt is static text in the template.
-Its Next reads "Run!" (`0x1090FB90`); `GetNext` is `EndDialog(Owner->hWnd, 1)`.
+Its Next reads "Run!" (`0x1090FB90`); `GetNext` ends the wizard with 1 (`EndDialog`).
 
 ### SafeMode (2020)
 Four "cool" buttons in a group box, top to bottom Run, Safe mode, Change video and Web, and
@@ -322,7 +323,7 @@ frame's buttons, the CD prompt (title, text, OK and Cancel, no icon; Cancel leav
 `Running.ini`). Beyond that:
 
 - **The log window needs a virtual desktop.** Outside one, `WLog::OpenWindow` fails at its
-  child `EDIT` control: `CreateWindowEx` returns NULL with `GetLastError() == 0`
+  child `EDIT` control: `CreateWindowEx` returns none and sets no error (`GetLastError` 0)
   (`PerformCreateWindowEx / WEdit::OpenWindow / WTerminal::OnCreate`). The log window is
   created on every launch, so the game cannot start. Inside one (`explorer /desktop=…`, as
   in `explorer /desktop=dxtest,1024x768 DeusEx.exe -firstrun`) it opens. A wine quirk, not

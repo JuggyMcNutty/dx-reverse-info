@@ -72,8 +72,8 @@ In single player that is every tick. In order:
    - Counted up: `WeaponTimer` while the pawn has a weapon (else 0);
      `DistressTimer` while not negative, until it passes `FearSustainTime`,
      when it becomes -1.
-5. **Cloak.** With `bHasCloak`, the script's
-   `EnableCloak(Health <= CloakThreshold)`, every tick.
+5. **Cloak.** With `bHasCloak`, the script's `EnableCloak`, every tick: on
+   while `Health` is at `CloakThreshold` or below.
 6. **Avoidance.** With `bAdvancedTactics`, the manoeuvre ends once the pawn
    stops accelerating, leaves walking or has no `TurnDirection`:
    - `bAdvancedTactics` is cleared;

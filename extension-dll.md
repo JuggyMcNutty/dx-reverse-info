@@ -1017,7 +1017,8 @@ The script's call always makes one. `bFilter` is not used. Three callers:
   ticks later takes one, but not under the OpenGL driver
   (`MenuScreenSaveGame.GenerateNewSnapShot`).
 - **The save itself:** `SaveGame` takes a 160 × 120 one into a texture made
-  beside the save info, so the save's `SaveInfo` file carries it
+  beside the save info, so the save's `SaveInfo` file carries it, but none
+  when the ini's `GameRenderDevice` is `OpenGLDrv.OpenGLRenderDevice`
   ([the game engine](deusex-dll.md#the-game-engine-travel-and-saving)). The
   screens show it for the selected save.
 - **The menus' background:** [the raw background](#the-raw-background).

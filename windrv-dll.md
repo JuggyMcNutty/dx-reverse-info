@@ -41,10 +41,13 @@ the code agrees:
 | `-safe` | `UWindowsClient::Init` | no DirectInput even with `UseDirectInput`: the mouse comes through window messages, as the keyboard always does ([the keys](#the-keys)) |
 | `HWND=` | `UWindowsViewport::OpenWindow` | the window to open the viewport inside, when the caller gives none |
 
-So the safe mode's "Run the game in a window" (`-nohard -noddraw`) works through the
-software renderer: without DirectDraw it has no fullscreen mode to take, and the viewport
-falls back to a window. A run with `-safe` on its command line (the SafeMode page's Run,
-when `-safe` opened the page) has no DirectInput either.
+So the flags the safe mode's "Run the game in a window" stands for, `-nohard -noddraw`, give
+a window through the software renderer: without DirectDraw it has no fullscreen mode to take,
+and the viewport falls back to a window. The box itself is never read: those flags follow
+"Disable 3D sound hardware"
+([the dead checkboxes](wizard.md#-shipped-bug-three-safe-mode-checkboxes-are-dead)). A run
+with `-safe` on its command line (the SafeMode page's Run, when `-safe` opened the page) has
+no DirectInput either.
 
 ## The keys
 

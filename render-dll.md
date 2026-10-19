@@ -113,7 +113,7 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   - **The view** is the parent's reflected in the surface's plane, its axes
     and its eye (`FVector::MirrorByPlane`), and its `Mirror` the parent's
     negated, which turns each surface's points round. The frame's walk runs
-    from its own eye (`Frame->Coords.Origin`), the reflected one behind the
+    from its own eye (its `Coords.Origin`), the reflected one behind the
     mirror: front to back, and passing over faces seen from behind, as the
     reflection shows them.
   - **Where it starts**: the zone on the viewer's side of the mirror (the

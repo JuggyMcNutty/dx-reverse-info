@@ -750,11 +750,11 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
     node is `EndNode`. A `bPlayerOnly` node is not expanded for a pawn that is
     not the player, the start excepted;
   - a spec is skipped where the pawn's collision radius or height is the larger,
-    or the pawn lacks a flag it needs
-    (`(MoveFlags & reachFlags) != reachFlags`). Reaching its node costs
-    **`distance + node.cost + expanded.visitedWeight + node.bestPathWeight`**
-    (the last for an end point only), taken only where less than the node's
-    `visitedWeight`, with `previousPath` the node expanded;
+    or the pawn lacks a flag the spec needs (its `reachFlags`, against the
+    pawn's `MoveFlags`). Reaching its node costs **the spec's `distance`, the
+    node's `cost`, the expanded node's `visitedWeight` and the node's
+    `bestPathWeight`** (the last for an end point only), taken only where less
+    than the node's `visitedWeight`, with `previousPath` the node expanded;
   - the node leaves the open list if in it and goes back where its cost belongs,
     found by walking the list from a **front** node when that costs less than
     the new cost, else from the node expanded: at most 500 steps, then "Breadth
@@ -1305,7 +1305,7 @@ So below 128 a destroyed actor stays in memory, and every reference to it stays
 set: the script tests `bDeleteMe`, or the reference's object, to tell. It is
 forced before a level is saved: `SaveCurrentLevel`
 ([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)), and the
-level a map load leaves
+level a map load leaves with `?push`
 ([the map load's collection](#the-map-loads-collection)).
 
 **A decal** leaves the surfaces it is on only through `DetachDecal`

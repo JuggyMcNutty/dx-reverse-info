@@ -48,13 +48,13 @@ templates ([`wizard.md`](wizard.md#page-layouts)).
 | Address | Meaning |
 |---|---|
 | `0x10908A30` | `WinMain` (real body; `0x10901366` is the CRT thunk) |
-| `0x1090A050` | `InitEngine` -- the launcher/wizard brain, 974 decompiled lines |
+| `0x1090A050` | `InitEngine` -- the launcher's and the wizard's decisions, its longest function |
 | `0x10914630` | `MainLoop(Engine)` |
 | `0x10901320` | `FConfigCacheIni` factory passed to `appInit` (a jump to `0x10915080`) |
-| `0x1092E7B0` | `GExec` local exec handler (vtables `off_109270A0`, `off_1092708C`) |
-| `off_10926D70` | `WConfigPageRenderer` vtable -- page size 464, dialog ID 2017 |
-| `off_10926E7C` | `WConfigPageSafeMode` vtable -- page size 564, dialog ID 2020 |
-| `off_10926F88` | Launch's `WWizardDialog` subclass vtable |
+| `0x1092E7B0` | `GExec` local exec handler (vtables at `0x109270A0`, `0x1092708C`) |
+| `0x10926D70` | `WConfigPageRenderer` vtable -- page size 464, dialog ID 2017 |
+| `0x10926E7C` | `WConfigPageSafeMode` vtable -- page size 564, dialog ID 2020 |
+| `0x10926F88` | Launch's `WWizardDialog` subclass vtable |
 
 ## Struct sizes
 
@@ -66,6 +66,5 @@ From `Window/Inc/Window.h` into [`types/launch.h`](types/launch.h), checked agai
 `WCoolButton` 128 · `WDialog` 44 · `WWizardPage` 48 · `WWizardDialog` 620
 
 `WWizardPage` is 48 bytes; +48 is each page's own typed `Owner`, so a page's members start
-at +52. Three totals close exactly: `WConfigPageRenderer` = 464 == `GMalloc(464)`;
-`WConfigPageSafeMode` = 564 == `GMalloc(564)`; `WConfigPageSafeOptions` = 1012 ==
-`GMalloc(1012)`.
+at +52. Three totals close exactly, each the size its page's allocation asks (`GMalloc`):
+`WConfigPageRenderer` 464, `WConfigPageSafeMode` 564, `WConfigPageSafeOptions` 1012.

@@ -55,8 +55,8 @@ the page shows ([`wizard.md`](wizard.md#detail-2018)).
 under about 280 MHz); the second, otherwise, when it is `D3DDrv.D3DRenderDevice`. The SDK's
 source notes both changed for Deus Ex, from 20 and 28. `Default.ini` ships `1.0`, the same
 value. Besides it, only the skins' and the world's lines depend on the renderer, through its
-`DescFlags`. `SoundLow` is chosen when `GIsMMX == 0 || GPhysicalMemory <= 0x4000000`
-(64 MB), at `0x1090EDA1`.
+`DescFlags`. `SoundLow` is chosen without MMX (`GIsMMX`) or with 64 MB of memory or less
+(`GPhysicalMemory`), at `0x1090EDA1`.
 
 The shipped `System/DeusEx.ini` has `[FirstRun] FirstRun=0`, `[Engine.Engine] CdPath=..\`
 and `GameRenderDevice=GlideDrv.GlideRenderDevice`, and the `[WinDrv.WindowsClient]` and
