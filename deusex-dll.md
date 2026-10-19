@@ -82,14 +82,16 @@ In single player that is every tick. In order:
    - `bClearedObstacle` is set and `ObstacleTimer` zeroed.
 7. **Burning.** While `bOnFire`, `burnTimer` grows; past `BurnPeriod`, the
    script's `ExtinguishFire`.
-8. **Bleeding.** With `bCanBleed` and `BleedRate` above 0 (and, with
-   `bTickVisibleOnly`, only within 1,200 units of the player):
-   - a `SpurtBlood` event each time `DropCounter` passes the period
-     `(1.1 - BleedRate) / f`, where `f` is the pawn's speed / 512, held to
-     0.05–1: the harder it bleeds and the faster it moves, the faster it
-     drips;
-   - `BleedRate` falls by the frame's time / `ClotPeriod`; at 0, it and
-     `DropCounter` are reset to 0.
+8. **Bleeding.** With `bTickVisibleOnly`, only within 1,200 units of the
+   player:
+   - with `bCanBleed` and `BleedRate` above 0, a `SpurtBlood` event each
+     time `DropCounter` passes the period `(1.1 - BleedRate) / f`, `BleedRate`
+     held to 0–1 in it, so at least 0.1 s, where `f` is the pawn's speed /
+     512, held to 0.05–1: the harder it bleeds and the faster it moves, the
+     faster it drips; then `BleedRate` falls by the frame's time /
+     `ClotPeriod`;
+   - with `BleedRate` at 0 or below, whether it bled this tick or not, it
+     and `DropCounter` are reset to 0.
 
 ## Alliances, fear and carcasses
 
