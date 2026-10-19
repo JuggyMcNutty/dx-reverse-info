@@ -844,6 +844,16 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
     failed because class %s has bStatic or bNoDelete").
   - A new actor's `bTicked` is the opposite of the level's mark: not yet
     ticked ([a level's tick](#a-levels-tick)).
+  - Last, after `PostPostBeginPlay`, its spawn notifications: each
+    `SpawnNotify` on the `LevelInfo`'s `SpawnNotify` list, in the list's order
+    (`Next`), whose `ActorClass` is set and is the actor's class or one it
+    derives from, is asked `SpawnNotification` about the actor, and its
+    answer stands for the actor from then on: the next notification is asked
+    about it, and the spawn returns it. No answer is checked: a None one is
+    the spawn's when no notification after it has a class set, and one that
+    has reads the class of None, which faults. An actor spawned while
+    the notifications run hears none (`GSpawnNotifying`, `0x10588b48`, set
+    over the walk).
 - Unless a test, whatever stands on it is unbased (`SetBase(None)`, with the
   event) and it is marked `bJustTeleported`, so physics does not take the jump
   for speed.
