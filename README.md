@@ -14,7 +14,7 @@ None of the game's files are here, and no decompiled code
   and to put it right there
   ([what it changes from Surreal Engine](https://github.com/JuggyMcNutty/DXEngine/blob/main/docs/ENGINE.md#what-it-changes-from-surreal-engine)).
   Each is read as far as the work needs ([the binaries](#the-binaries)). Where the engine
-  still differs from the original, feature by feature: DXEngine's
+  differs from the original, feature by feature: DXEngine's
   [`NATIVES.md`](https://github.com/JuggyMcNutty/DXEngine/blob/main/docs/NATIVES.md).
 
 ## The binaries

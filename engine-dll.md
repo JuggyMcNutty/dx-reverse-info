@@ -816,6 +816,11 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   that blocks it and whose `EncroachingOn` agrees stops the move (false); those
   it no longer overlaps are untouched, and those there that do not block it
   touched.
+- Unless a test, whatever stands on it is unbased (`SetBase(None)`, with the
+  event) and it is marked `bJustTeleported`, so physics does not take the jump
+  for speed.
+- `Location` and `OldLocation` both become the spot, and its zone is found again
+  ([below](#the-zone-an-actor-is-in)), silently for a test.
 - **`FindSpot(extent, spot, bCheckActors, bCheckFirst)`**, the extent the
   collision box's (radius, radius, height). With `bCheckFirst`, a spot where the
   box already fits is kept. Otherwise the spot is pushed out of the walls toward
@@ -844,21 +849,16 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
     failed because class %s has bStatic or bNoDelete").
   - A new actor's `bTicked` is the opposite of the level's mark: not yet
     ticked ([a level's tick](#a-levels-tick)).
-  - Last, after `PostPostBeginPlay`, its spawn notifications: each
-    `SpawnNotify` on the `LevelInfo`'s `SpawnNotify` list, in the list's order
-    (`Next`), whose `ActorClass` is set and is the actor's class or one it
-    derives from, is asked `SpawnNotification` about the actor, and its
-    answer stands for the actor from then on: the next notification is asked
-    about it, and the spawn returns it. No answer is checked: a None one is
-    the spawn's when no notification after it has a class set, and one that
-    has reads the class of None, which faults. An actor spawned while
-    the notifications run hears none (`GSpawnNotifying`, `0x10588b48`, set
-    over the walk).
-- Unless a test, whatever stands on it is unbased (`SetBase(None)`, with the
-  event) and it is marked `bJustTeleported`, so physics does not take the jump
-  for speed.
-- `Location` and `OldLocation` both become the spot, and its zone is found again
-  ([below](#the-zone-an-actor-is-in)), silently for a test.
+  - Last, after `PostPostBeginPlay`, its spawn notifications: each `SpawnNotify`
+    on the `LevelInfo`'s `SpawnNotify` list, in the list's order (`Next`), whose
+    `ActorClass` is set and is the actor's class or one it derives from, is
+    asked `SpawnNotification` about the actor, and its answer stands for the
+    actor from then on: the next `SpawnNotify` is asked about it, and the spawn
+    returns it. No answer is checked: a None answer is what the spawn returns
+    when no later `SpawnNotify` has a class set; the first later one that has
+    one reads the class of None, which faults. An actor spawned while the
+    notifications run hears none (a flag at `0x10588b48`, `GSpawnNotifying` in
+    the database, set over the walk).
 
 The engine's own moves: a trailer follows its owner with `noCheck`
 (`physTrailer`, `0x103d7850`); `AIDirectionReachable` puts the pawn back as a
