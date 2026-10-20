@@ -79,6 +79,12 @@ format, exclusive in the foreground): its buttons `LeftMouse`, `RightMouse` and
 `MouseWheelUp` or `MouseWheelDown`. The joystick (`joyGetPosEx`) gives `Joy1` up, its axes
 and its hat.
 
+**Typed characters** come apart from the keys: `WM_CHAR` and `WM_SYSCHAR` (`0x11109b30`) hand
+the engine's `Key` the character's code, one a message, as Windows sends it to the window --
+on a Unicode system its UTF-16, so an e acute is 0xE9 -- all but a carriage return, which
+Enter's own key carries. The console takes it first; in Deus Ex, the root window then
+([the engine and the input](extension-dll.md#the-engine-and-the-input)).
+
 ## Choosing the render device
 
 `OpenWindow` gives a viewport with no device the first of these that opens:
