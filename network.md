@@ -102,7 +102,12 @@ The control channel carries lines of text: the server's side is
    server's `GEN=` (the server counts only what the client's has), and `JOIN`,
    not in a single player's game (`LONE=1`). `NETSPEED` again whenever the
    player sets one (the server takes one of at least 500, held to
-   `MaxClientRate`).
+   `MaxClientRate`). The rate is the connection's `CurrentNetSpeed`, which the
+   game's script reads as `Player.CurrentNetSpeed`: the connection is the
+   player (`UNetConnection` is a `UPlayer`), so `PlayerPawn.ServerMove` checks a
+   client's place at most every 180 / that rate seconds. A new connection's
+   starts at `[Engine.Player]`'s `ConfiguredInternetSpeed`, or
+   `ConfiguredLanSpeed` with `?LAN` in its URL (`0x10401490`).
 6. **Server:** spawns the player (`SpawnPlayActor`, the game's `Login`, as an
    autonomous proxy), or answers `FAILURE` and the reason.
 
