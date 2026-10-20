@@ -207,11 +207,14 @@ are `exec` exports.
 
   The object is deleted unless its `lockCount` holds it.
 - **The pointer** (`XRootWindow::PaintWindows`, `0x1003ac18`) is drawn last,
-  while a window takes the mouse (every modal one does) and the root's
-  `bCursorVisible` holds. `Init` sets that as the root starts; `ShowCursor`
-  clears and sets it. The game hides the pointer while a conversation plays
-  (but for its choices), while a key waits to be bound, while the credits
-  roll, and while its multiplayer HUD and message window are up.
+  while a window takes the mouse and the root's `bCursorVisible` holds:
+  `Init` sets that as the root starts; `ShowCursor` clears and sets it. A
+  modal window with a parent takes the mouse as it is shown and lets it go
+  as it is hidden (`XModalWindow::VisibilityChanged`, `0x10037330`, counting
+  the root's `handleMouseRef`), so a hidden one draws no pointer. The game
+  hides the pointer while a conversation plays (but for its choices), while
+  a key waits to be bound, while the credits roll, and while its
+  multiplayer HUD and message window are up.
 
 ### Timers
 
