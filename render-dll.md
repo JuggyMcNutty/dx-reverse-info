@@ -438,7 +438,10 @@ Which texture each face of a mesh draws:
   `EnvironmentMap`; else the level's; else the texture of the last slot
   that has one. A face whose slot has no texture draws it, and so does an
   environment-mapped face (the actor's `bMeshEnviroMap`, or the face's own
-  flags).
+  flags). Such a face's texture coordinates are a reflection (`0x10b0bab0`):
+  at each corner, the line from the eye made a unit vector, mirrored by the
+  corner's normal and turned into the world's axes (the frame's `Uncoords`);
+  its X and Y + 1, × 128 × the texture's scale.
 - **Masked.** A masked texture is drawn masked (`PF_Masked`,
   [blending](d3ddrv-dll.md#blending)) whatever the face's own flags.
 - **The viewer's `Sprite`**, when set, stands in for every slot's texture and
