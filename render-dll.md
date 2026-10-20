@@ -517,7 +517,8 @@ least 1), from `LightPhase`'s 256ths of a turn.
   one the surface is seen from: `OccludeBsp` (`0x10b173d0`) gives each draw its
   node's zone on the side of the plane the view's origin lies, `iZone[1]` in
   front and `iZone[0]` behind, the `LevelInfo` for zone 0, and a portal the
-  other side's. The map is kept in the global cache (`GCache`) under the model,
+  other side's. Each of a plane's coplanar nodes (its `iPlane` list) is
+  judged by its own plane, which may face the other way. The map is kept in the global cache (`GCache`) under the model,
   the light map and the zone. It is built again only when it is not there, when
   one of its lights has `bLightChanged`, or, for a mover's surface, after the
   mover moves, turns or changes leaf.
