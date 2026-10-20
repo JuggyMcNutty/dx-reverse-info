@@ -253,8 +253,17 @@ fields, after their properties (none):
     stops 2 units off what it meets, plus the trace's backoff
     ([traces](#traces)): what falls rests 2 + (last move + 2) / 10 over the
     floor.
-  - Unless a test: what stands on the actor moves with it; a non-pawn that
-    encroaches on something there does not move (`CheckEncroachment`); then the
+  - No move (each axis of the delta under 0.0001) and no turn does nothing
+    (true). A turn alone, with nothing standing on the actor, only sets its
+    rotation (true), but for a brush that is not static, which turns as a
+    move does, below. Such a brush traces nothing.
+  - Unless a test: what stands on the actor moves first, each by a
+    `MoveActor` of the delta plus its turn round the actor by the change of
+    yaw (each yaw to a multiple of 4), what it stands on passed over, its own
+    yaw (and a pawn's view) turned by the change; then a non-pawn that
+    encroaches on something at its new place and rotation does not move
+    (`CheckEncroachment`, without touches), what stands on it left where it
+    went. Otherwise it moves and turns at once, refiled in the hash; then the
     hit's `Bump`s (Deus Ex's `BumpWall` for the level) and the touches of what
     it passed before the hit.
 - **A wall hit** (`AActor::processHitWall(HitNormal, HitActor)`, `0x103cecc0`):
@@ -838,8 +847,15 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   `Player`), `bBlockActors` otherwise; two actors block each other when each
   blocks the other's kind, a projectile counting as a player.
   `CheckEncroachment` checks only an actor that collides with actors or blocks
-  (or a brush); after the `EncroachingOn` questions, each actor there that
-  blocks it hears `EncroachedBy`.
+  (or a brush that is not static); after the `EncroachingOn` questions, each
+  actor there that blocks it hears `EncroachedBy`.
+- **A brush's push** (`CheckEncroachment`): a brush that is not static, before
+  asking about an actor there that blocks it and is no such brush, moves it by
+  the brush's move, the new place less the old (`moveSmooth`; no turn). Then
+  the hash is asked again at the new place: an actor no longer there is not
+  asked about; one still there is moved back by the same move, the brush's
+  `Location` set to the new place for it and put back after (not refiled),
+  and then `EncroachingOn` is asked. A brush that only turns pushes nothing.
 - **Spawning** (`ULevel::SpawnActor`, `0x10394f60`) fits the new actor the same
   way; after `PostBeginPlay`, unless `bNoCollisionFail`, it checks the actor's
   encroachment without touches: stopped, the actor is destroyed and the spawn
