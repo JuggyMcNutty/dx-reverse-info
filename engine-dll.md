@@ -1291,7 +1291,10 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   ([by role](network.md#replication)): nothing else in stasis (counted as
   ticked); the owner's test (above); the level's mark; its animation; then
   its script `Tick`, its state code, its timer, its `LifeSpan` and its
-  physics, in that order. A player's pawn with a player (not a camera) has, in
+  physics, in that order. The timer calls `Timer` once a tick, however many
+  of its periods passed: the counter keeps what is left over them, and a
+  timer that does not loop stops. With under 0.0001 s of `LifeSpan` left,
+  `Expired`, then the actor is destroyed and its tick ends. A player's pawn with a player (not a camera) has, in
   place of `Tick`, its player's input read, `PlayerInput` and `PlayerTick`, and
   the input read again with −1 (cleared); so its physics, later in the same
   tick, take the move `PlayerTick` makes.
