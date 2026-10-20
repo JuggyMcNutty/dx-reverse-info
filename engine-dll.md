@@ -249,6 +249,9 @@ fields, after their properties (none):
   is the level's time; out of it, `EnemyNotVisible`. Its counter is then 0.1
   s, under 0 only within its own tick, so such a pawn is never sent
   `SeePlayer`.
+- **A pawn's pain and speech timers**, there after its sight: `PainTime`,
+  then `SpeechTime`, each above 0 loses the tick, and once under a thousandth
+  of a second is set to 0 and sends `PainTimer` (or `SpeechTimer`).
 
 ## Moving
 
