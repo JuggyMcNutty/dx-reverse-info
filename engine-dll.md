@@ -1206,6 +1206,18 @@ in `User.ini`). Where each goes depends on what the key did:
 So a key bound to `Shot` (`DefUser.ini`'s `GreyStar`) takes a screenshot, and a
 viewport word is taken before an exec function of its name.
 
+A player's input, each tick, in `AActor::Tick` (`0x103a1aa0`): the player's
+`ReadInput` with the tick's time, then the pawn's `PlayerInput` and
+`PlayerTick`, then `ReadInput` with -1. **`UInput::ReadInput`** (`0x10394580`)
+takes the player class's `input` properties:
+
+- With a time: each key still down gets its binding again as held, and each
+  `input` float is scaled by 20 / the time.
+- With -1: each `input` float is set to 0. Its `input` bytes (the buttons) stay.
+
+Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
+`PlayerInput` alone, then sets each `input` float to 0 itself.
+
 ## A level's tick
 
 - **A level's start** (`UGameEngine::LoadMap`, `0x1038c1f0`), for a level not
