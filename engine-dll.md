@@ -577,6 +577,28 @@ fields, after their properties (none):
   - From `physWalking`: its velocity as the old, the step's time and the time
     left; after a step's move and step up, after the step down to the floor,
     and after a slide down a slope.
+- **Rolling** (`AActor::physRolling`, `0x103d4b80`), UT's, the whole tick at
+  once:
+  - the velocity less (its direction less the acceleration's, each made
+    `SafeNormal`) × its speed × the tick × the zone's ground friction, then ×
+    (1 − the tick × its fluid friction), plus the acceleration × the tick;
+  - the move that velocity plus the zone's velocity, in steps of the time
+    left, or half of it, of at most 0.1 s, up to 8;
+  - each step moved (`MoveActor`); a wall gives `HitWall`. With `bBounce` the
+    step's time not moved goes back to the time left, at most twice;
+    without, it slides along the wall, and along a second wall through
+    `TwoWallAdjust`, `HitWall` again;
+  - then 16 units down, against gravity's direction. A slope whose normal's Z
+    × the zone's ground friction is under 3.3 slides it down by gravity × the
+    tick² / (2 × that friction, at least 0.5), as walking does;
+  - no floor, or one under 0.7: moved back up as far as it went down, what the
+    step did not move across back to the time left, `Falling`, and from
+    rolling to falling. Falling, its velocity is the tick's move so far, made
+    level, and it falls the time left over 0.005 s. Otherwise it moves on by
+    the move over the time left and goes on stepping;
+  - a floor's actor (the level for the world) is its base
+    (`SetSupportBase`);
+  - its velocity after is the tick's move over the tick.
 - **Swimming** (`APawn::physSwimming`, `0x103d3cd0`), the whole tick at once,
   after the ladder check:
   - With its head out of water, a Z velocity over 100 is × (1 − the tick).
