@@ -100,7 +100,7 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   DLL registers its classes and natives from, which IDA leaves as `sub_...`, and the class
   object of each class the DLL does not export (`Engine.dll`'s AI events, pending levels and
   `UServerCommandlet`, `IpDrv.dll`'s two commandlets), with the name its export would have.
-  A new database gets the three scripts in turn: types, strings, names. The types again
+  A fresh database gets the three scripts in turn: types, strings, names. The types again
   after the names check the unexported classes too.
 - **The script and the headers.** Every native class declares its fields in its script, in
   the order its C++ class has them: after `UObject`'s 0x28 bytes, bools packed 32 to a
@@ -135,6 +135,7 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   default `Proton-CachyOS Latest`) and a prefix with Windows Python (`WIZ_PREFIX`, default
   `umu-default`; `WIZ_PYTHON`), as `idalib-mcp.sh` does. The captures (default
   `reference/original-wizard/`) are the game's pictures: they stay out of the repositories.
+
 ### Reading a binary
 
 - **A native's `exec` function holds the defaults of its optional parameters**: each is set
@@ -149,6 +150,7 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   produces wrong documentation here.
 - **The game's UnrealScript source is embedded in `System/DeusEx.u`** (and the other `.u`
   files). Search it, a regex over the file, before guessing what the game's script does.
+
 ### What goes in this repository
 
 Behaviour in our own words, with addresses, offsets and names: never a decompiled listing or

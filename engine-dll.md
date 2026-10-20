@@ -1206,14 +1206,14 @@ in `User.ini`). Where each goes depends on what the key did:
 So a key bound to `Shot` (`DefUser.ini`'s `GreyStar`) takes a screenshot, and a
 viewport word is taken before an exec function of its name.
 
-A player's input, each tick, in `AActor::Tick` (`0x103a1aa0`): the player's
-`ReadInput` with the tick's time, then the pawn's `PlayerInput` and
-`PlayerTick`, then `ReadInput` with -1. **`UInput::ReadInput`** (`0x10394580`)
-takes the player class's `input` properties:
+**`UInput::ReadInput`** (`0x10394580`), which a player's tick calls with the
+tick's time before `PlayerInput` and with −1 after `PlayerTick`
+([a level's tick](#a-levels-tick)), takes the player class's `input`
+properties:
 
 - With a time: each key still down gets its binding again as held, and each
   `input` float is scaled by 20 / the time.
-- With -1: each `input` float is set to 0. Its `input` bytes (the buttons) stay.
+- With −1: each `input` float is set to 0. Its `input` bytes (the buttons) stay.
 
 Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
 `PlayerInput` alone, then sets each `input` float to 0 itself.
@@ -1416,7 +1416,8 @@ and it stays on the screen until the next frame is drawn.
 
 ## Sounds
 
-Who hears a sound an actor plays. What the audio subsystem then does with it:
+Who hears a sound an actor plays, and how a sound is cut down as it loads.
+What the audio subsystem then does with it:
 [`Galaxy.dll`](galaxy-dll.md#playing-a-sound).
 
 - **`PlaySound(Sound, Slot, Volume, bNoOverride, Radius, Pitch)`**
@@ -1467,11 +1468,11 @@ Who hears a sound an actor plays. What the audio subsystem then does with it:
   - 16 bits below 22,050 Hz: 8 bits alone (`0x10370520`), each sample biased
     to unsigned, rounded to its top byte, the error carried on;
   - 8 bits at 22,050 Hz or more: the rate halved alone (`0x10370690`), the
-    same 1, 2, 1 weighting, 8 or 16 bits kept.
+    same 1, 2, 1 weighting, its 8 bits kept.
 
   Then (`0x10370010`) the header: the data's size, the file's, the block size
-  and bytes a second; the `smpl` chunk's loop starts and ends scaled by the
-  new size; the chunks after the data moved down.
+  and bytes a second; the `smpl` chunk's loop starts and ends scaled to the
+  converted data; the chunks after the data moved down.
 
 ## A texture's mips
 
