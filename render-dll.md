@@ -574,6 +574,9 @@ least 1), from `LightPhase`'s 256ths of a turn.
     `(2v³ − 3v² + 1) ÷ v` over `d² ÷ r²` in 4096ths, `v = d ÷ r`, times the
     light's height over the surface's plane ÷ r. So it is
     `(1 − 3v² + 2v³)` times the cosine of the light's angle to the surface.
+    The height is its size: a moving light behind a surface lights it as
+    from in front (a light 24 units under Liberty Island's pier lights its
+    deck).
     Times the shadow byte, rounded.
   - **The spotlight's** (`SpatialSpotlight`, `0x10b04f80`): the same times
     `((cos − c) ÷ (1 − c))²` inside its cone, `c = 1 − LightCone ÷ 256`,
