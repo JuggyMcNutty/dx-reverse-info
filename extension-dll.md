@@ -213,6 +213,25 @@ are `exec` exports.
   (but for its choices), while a key waits to be bound, while the credits
   roll, and while its multiplayer HUD and message window are up.
 
+### Timers
+
+A window's timers (`AddTimer`, `0x1004fc20`; `InvokeTimers`, `0x10051340`)
+run in its tick, after its script's `Tick` and before its children
+([the engine and the input](#the-engine-and-the-input)).
+
+- **Added**: due its time out, at least a microsecond, after the moment it
+  is added: the time the windows' clock has run since their last tick
+  (`GetTickOffset`) is counted in, as the next tick takes the whole frame
+  off. The newest is first in the window's list. Its id is its record's
+  address, never 0; a window being destroyed adds none and gets 0.
+- **Each tick**, newest first, each timer once: one past its time calls its
+  function once, with its id, how many of its time outs have passed (a
+  looping one ⌊overrun ÷ time out⌋ + 1, due again that many on; a single
+  one 1, and then removed) and its client data. With no function name it
+  calls the window's native `Timer`, which only a button has (its keyboard
+  press's delay, [buttons](#buttons)). A timer added meanwhile waits for the
+  next tick; the walk stops once the window is being destroyed.
+
 ### Keyboard focus
 
 - **Window types** (`windowType`):
