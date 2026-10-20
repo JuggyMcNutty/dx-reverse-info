@@ -284,8 +284,11 @@ The renderer keeps it; the engine and the scripts read it
 - **A zone's** (`Zones[i].LastRenderTime` in the level's model) is stamped by
   `OccludeBsp`: the frame's first zone, and each zone seen through a portal.
   `InStasis` reads it.
-- **A decal's own `LastRenderedTime`** is stamped when `DrawFrame` puts the
-  decal on a surface it draws. `LastRendered()` does not read it: it reads
+- **A decal's own `LastRenderedTime`** is stamped when `DrawFrame` draws it:
+  the decal is clipped to each piece of its surface that is drawn
+  (`ClipDecal`, `0x10b1bda0`; a decal that lists its nodes, only to theirs),
+  and drawn and stamped only where some of it is left. A decal on a drawn
+  surface but out of view is not stamped. `LastRendered()` does not read it: it reads
   `LastRenderTime`, which a decal never gets. So a decal, and Deus Ex's
   `Shadow`, never counts as drawn. When an NPC moves, its shadow is laid
   again only if the NPC was drawn in the last second, else taken off. The
