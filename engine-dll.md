@@ -1321,9 +1321,10 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   connection has the connection closed instead.
 - Then, any step stopping once the script has destroyed the actor itself: the
   `EndState` of its state, if it probes it; its base cleared, and every actor
-  standing on it set free; out of the collision hash; `Destroyed`; every actor
-  it owns loses its owner, every actor it touches is untouched; its owner's
-  `LostChild`; the net and demo drivers told.
+  standing on it set free; out of the collision hash; `Destroyed`; in the
+  level's order, every actor it owns loses its owner, and every other actor
+  touching it is sent `UnTouch` (the actor itself nothing); its owner's
+  `LostChild`, the actor keeping its `Owner`; the net and demo drivers told.
 - Its slot in `Actors` becomes None, `bDeleteMe` is set, the audio subsystem is
   told (`NoteDestroy`), and the actor is destroyed (`ConditionalDestroy`: its
   strings and arrays emptied, [Core](core-dll.md#garbage-collection)). It goes
