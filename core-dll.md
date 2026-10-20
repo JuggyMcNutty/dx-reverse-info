@@ -512,7 +512,8 @@ The rest are UE1's own. The details:
     A negative `i` gives an empty string: it clamps as unsigned. Its end, a
     count past the string or a negative one, is observed, not read:
     `Mid("hello", 2, -5)` is `"llo"`.
-  - `Chr` and `Asc` take UTF-16 code units, as this build is Unicode.
+  - `Chr` and `Asc` take UTF-16 code units, as this build is Unicode;
+    `Chr(0)` is the empty string (`0x1013c520`).
 - **Math:**
   - an integer divided by 0 is 0 (`0x10133710`); a byte divided by 0 with
     `/=` is left as it was;
@@ -521,7 +522,16 @@ The rest are UE1's own. The details:
   - `VRand` (`0x10139080`) draws points in the cube from −1 to 1 and takes
     the first inside the unit sphere, scaled to length 1: a direction with
     none favoured;
-  - `Normal` of a zero vector is zero.
+  - `Normal` (`0x10138de0`, `FVector::SafeNormal` `0x10144be0`) is zero
+    under a squared length of 1e-8, a length of 0.0001; otherwise the vector
+    times one over the root, in double.
+- **A float made an int** -- `int(f)` (`0x10131b40`), `byte(f)`
+  (`0x10131aa0`, the int's low 8 bits) and a rotator scaled by a float
+  (`0x101395e0`, each angle times the float rounded to a float first) -- by
+  MSVCRT's `_ftol`: truncated to 64 bits and the low 32 kept, so past an
+  int's range it wraps (3e9 is −1,294,967,296); NaN, or past 64 bits, 0.
+- **`IsInState(S)`** (`0x1013ece0`): true for the object's state or any
+  state it extends.
 - **Rotators:**
   - `rotator(v)` (`FVector::Rotation`, `0x10144390`): yaw `atan2(Y, X)` and
     pitch `atan2(Z, √(X² + Y²))`, each × 65535 / 2π, truncated and not
