@@ -188,6 +188,12 @@ over one that is:
   game's classes only `Decal` sets it, and a decal is drawn with its
   surface, not here;
 - a brush: a mover goes to the level's brush tracker, the rest is the world.
+  The tracker files a mover's polygons into the level's BSP, where the walk
+  takes them as the level's own surfaces (observed): a one-sided one seen
+  from behind is passed over, and a mirrored one opens a mirror's frame
+  ([a frame](#a-frame)), 24 movers on 15 of the game's maps having one --
+  Hong Kong's club glass, the Smuggler's, the intro's and the endings'
+  marble.
 
 Each other actor gets one sprite. A light, hidden or not, with a type,
 brightness and radius, that is `bDynamicLight` or neither `bStatic` nor
