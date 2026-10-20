@@ -711,6 +711,14 @@ text plus both margins. Turning it on widens every column
 (`ResizeColumns(true)`, `0x1002fc40`). `ResizeColumns(false)` first shrinks
 every column to its margins.
 
+- **A field's width** (`ComputeFieldSize`, `0x10031e60`): the GC's extent
+  of its text in the column's font, special text off: its widest line, each
+  character as the GC finds it, one the font lacks taking no room. A column
+  with no font measures 0.
+- **A column's font**: the window's when the column is made (`InitColumn`,
+  `0x100314f0`, which also makes it 20 wide plus its margins), and the
+  window's again for `SetColumnFont(None)`.
+
 ### The list's size
 
 - **What it asks for** (`ParentRequestedPreferredSize`, `0x10033260`): the
