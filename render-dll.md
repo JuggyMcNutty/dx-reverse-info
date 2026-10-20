@@ -240,6 +240,36 @@ then gives each surface its lights and each sprite its leaf's
 - **A sprite's rectangle:** its texture's size times the draw scale, round
   where its location lands, rounded up; none nearer than a unit.
 
+## Sprites
+
+`DrawActorSprite` (`0x10b25080`) draws a kept sprite whose actor is
+`DT_Sprite` or `DT_SpriteAnimOnce` with a texture as a tile: the canvas's
+`DrawIcon` (`Engine.dll` `0x10376640`) hands `UCanvas::DrawTile`
+(`0x10376160`) the whole texture at the sprite's place and depth, and the
+render device draws it as a tile ([`D3DDrv`'s](d3ddrv-dll.md#tiles)).
+
+- **The flags**: the actor's (below), its texture's own `PolyFlags`, and
+  `PF_TwoSided`; `UCanvas::DrawTile` adds the masked bit of the frame it
+  draws.
+- **An actor's flags** (`0x10b26230`), its sprite's and its mesh's
+  ([meshes](#meshes)): `PF_Masked` for `STY_Masked`, `PF_Translucent` for
+  `STY_Translucent`, `PF_Modulated` for `STY_Modulated`; `PF_NoSmooth` for
+  `bNoSmooth`; `PF_Selected` for `bSelected`; `PF_Environment` for
+  `bMeshEnviroMap`; `PF_Flat` unless `bMeshCurvy`; `PF_Unlit` for `bUnlit`,
+  an actor in zone 0, a viewer whose `RendMap` is not `REN_DynLight` (5), or
+  the client's `NoLighting`.
+- **The size**: the texture's `USize` and `VSize` times the draw scale, at
+  the sprite's depth. The colour: white times `ScaleGlow`, each channel at
+  most 1.
+- **Upright**, as every tile: the texture's first row at the top of the
+  screen.
+- **The texture**: for `DT_SpriteAnimOnce`, the frame of its animation the
+  actor's life has reached, `n × t − ½` rounded of its n frames, held to 0
+  to n − 1, where t is 1 − `LifeSpan` ÷ the class's default `LifeSpan`, held
+  to 0 to 1; otherwise the animation's current frame. A player viewer's
+  `Sprite`, when set, is drawn in its place, at the size of the actor's
+  texture ([mesh textures](#mesh-textures)).
+
 ## Render iterators
 
 An actor with a `RenderIteratorClass`, while the game runs, is drawn as the
@@ -688,8 +718,8 @@ least 1), from `LightPhase`'s 256ths of a turn.
   - `DrawMesh`, for a plain mesh, culls a face turned away only when its own
     flags are `PF_Flat` without `PF_TwoSided` or `PF_Invisible`
     (`0x10b0dc8a`).
-  - The actor's flags are its style's (masked, translucent, modulated) and
-    `bMeshEnviroMap`'s (`0x10b26230`): none makes a face two-sided.
+  - The actor's flags (`0x10b26230`, [sprites](#sprites)) make no face
+    two-sided.
   - `D3DDrv` draws with culling off, so only this keeps a translucent mesh's
     back faces unseen.
   - **In face order** on a render device that is not span-based: opaque,

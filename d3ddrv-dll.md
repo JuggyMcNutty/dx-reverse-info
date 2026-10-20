@@ -95,15 +95,16 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
 - **The handlers.** Each texture format has a handler, a setup and a per-mip
   conversion (constructor, `0x10001ee0`): palettized (`TEXF_P8`),
   `TEXF_RGBA7` (light and fog maps), and DXT1 as it is.
-- **32-bit.** A palette's colours as they are, alpha whole (`0x10002320`); a
-  light map's bytes doubled (`0x10002120`); the stage's modulation colour 1.
-  So the colours drawn are the texture's own.
+- **32-bit.** A palette's colours as they are, alpha whole, but colour 0
+  cleared for a masked draw (`0x10002320`); a light map's bytes doubled
+  (`0x10002120`); the stage's modulation colour 1. So the colours drawn are
+  the texture's own.
 - **16-bit, a palette** (`0x100026b0`):
   - each channel against the texture's `MaxColor` M (at least 1):
     (2^n − 1) / M in fixed point (2^31 for red, 2^26 green, 2^21 blue, the
     quotient made a float and back), times the colour, the top 5 bits, at
     most 31. So the largest colour is 31, and one under 1/32 of M is 0;
-  - alpha one bit, set at 128; a masked texture's entry 0 cleared.
+  - alpha one bit, set at 128; entry 0 cleared for a masked draw.
 
   A texture first drawn modulated takes its colours to 5 bits unscaled
   ((c − 1) / 8 for c over 0, alpha set) and is drawn untinted. `MaxColor` is
@@ -117,6 +118,12 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
   (`FTextureInfo::CacheMaxColor`, Engine.dll `0x103f08f0`: twice each
   channel's largest byte, at least 1). Red's entry is capped for A1R5G5B5
   but masked with R5G6B5's `0xF800`, so red loses its lowest bit.
+- **One copy a texture.** `SetTexture` finds a texture's copy by its cache
+  ID alone, the draw's flags no part of it. The draw that first sets a
+  texture makes the copy, colour 0 cleared or not as that draw is masked or
+  not, and every later draw takes it so until it is made again (a realtime
+  texture's change): a texture drawn both masked and not shows its colour 0
+  in every draw as the first had it.
 - **The modulation.** In 16 bits the stage's colour is `MaxColor` over 255,
   multiplied into the vertex colour of every draw that is not modulated. A
   one-pass surface's diffuse is trunc(256 × both stages' colours − 0.5). So
@@ -136,6 +143,21 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
 | `PF_Invisible` | `ZERO` / `ONE` | draws nothing but still fills the Z buffer |
 | `PF_NoSmooth` | point sampling | the filter drops to nearest for the draw |
 | `PF_RenderFog` | specular on | vertex fog added per pixel (below) |
+
+## Tiles
+
+`DrawTile` (`0x10005ba0`) draws a rectangle of a texture on the screen: the
+canvas's tiles and text, and every sprite
+([sprites](render-dll.md#sprites)). It changes the flags it is given before
+it sets the blending and the texture:
+
+- **A palette with alpha**, its entry 128's alpha not 255 (the fonts'
+  palettes, `Engine.u`'s `LargeFont` and `DXFonts.utx`'s two TrueType ones,
+  and three in `BobPage.utx` and `OceanLab.utx`), draws `PF_Highlighted`,
+  premultiplied ([blending](#blending)), unless the tile is translucent.
+- **A modulated tile** draws `PF_Modulated` and `PF_Masked` alone, every
+  other flag dropped, `PF_NoSmooth` with them, in white: its colour 0 is cut
+  out, and the rest doubles what is behind it.
 
 ## Fog
 
@@ -214,6 +236,7 @@ the static pointer it is read through is set.
   `UsePrecache` (`0x10002ec9`), and the game engine's next frame shows
   `PRECACHING` and precaches the level
   ([the loading screen](engine-dll.md#the-loading-screen)).
-- **Meshes and sprites** (`DrawGouraudPolygon`): the vertex's light colour
-  becomes the diffuse (times the modulation compensation); a modulated draw
-  is untinted white. Tiles (`DrawTile`) carry one colour the same way.
+- **Meshes** (`DrawGouraudPolygon`): the vertex's light colour becomes the
+  diffuse (times the modulation compensation); a modulated draw is untinted
+  white. Tiles ([tiles](#tiles)), sprites among them, carry one colour the
+  same way.
