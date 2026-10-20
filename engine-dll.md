@@ -237,6 +237,18 @@ fields, after their properties (none):
   lie within (collision radius + 3.6) × 100,000 squared units, within 60° of the
   view's line either way along it (the cosine squared) unless the view is
   behind, and in the player's `LineOfSightTo`.
+- **Sight in the tick** (`AActor::Tick`, `0x103a1aa0`), a pawn's with
+  authority, on a full tick, before its `PainTime`: its `SightCounter`, under 0,
+  gains 0.2 s, then loses the tick. A player not `bHidden` shows itself
+  (`APawn::ShowSelf`, `0x103c0410`): every other pawn whose counter is under 0
+  and that probes `SeePlayer` is sent it, naming the player, if it `CanSee`
+  the player. No health is checked and no enemy is left out; `SeePlayer` names
+  only a player. Then a pawn whose counter is under 0 and that probes
+  `EnemyNotVisible` checks its enemy (`APawn::CheckEnemyVisible`,
+  `0x103c0280`): in `LineOfSightTo` without the LOS flag, its `LastSeenTime`
+  is the level's time; out of it, `EnemyNotVisible`. Its counter is then 0.1
+  s, under 0 only within its own tick, so such a pawn is never sent
+  `SeePlayer`.
 
 ## Moving
 
