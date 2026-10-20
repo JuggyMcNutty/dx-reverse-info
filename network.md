@@ -542,6 +542,20 @@ A run of properties comes between the actor's `PreNetReceive` and
   (`UActorChannel::Destroy`, `0x103fd120`), unless it was sent to keep
   (`bNetTemporary`).
 
+**A client replicates too** (`ULevel::TickNetClient`, `0x103a2f10`): each tick,
+while its connection to the server is open, each open actor channel whose actor
+is a player pawn with a player -- the local player's own -- goes through the same
+`ReplicateActor`. Its own pawn is owned there (`bNetOwner`: its top owner's
+player a viewport), and the statements are evaluated as the client has the
+roles, so what goes is what a statement sends from a client: the native lists
+send nothing (each returns at once unless its actor's `Role` is the authority:
+`AActor`'s `0x103618c0`, `APawn`'s `0x10363bc0`, `APlayerPawn`'s `0x103649d0`),
+the script classes' own statements their values -- Deus Ex's `FrobTarget`,
+replicated `if (Role < ROLE_Authority)`, which the server's `ParseRightClick`
+picks up. A closed connection there has the client browse `?failed`. Each side
+keeps a copy of what the other last got (`SetChannelActor`, `0x103fd620`, on
+either side).
+
 **On a server** a client's bunch is taken with the roles as the client has them:
 a property value or a call only when its replication statement then holds and
 the client owns the actor. Anything else is read and dropped ("unwanted").
