@@ -61,7 +61,7 @@ time it has played, when its lip sync is next worked out, the sample's mean
 | `UseDigitalMusic`, `UseCDMusic` | True, False | the level's tracker music; CD audio |
 | `UseReverb` | True | each zone's reverb ([reverb](#reverb)) |
 | `Use3dHardware` | False | A3D or EAX hardware, when found and `-no3dsound` is not given |
-| `LowSoundQuality` | False | read by the engine as it loads each sound: 16-bit ones become 8-bit, and ones at 22,050 Hz or more are halved in rate (`Engine.dll`, `0x1036f040`) |
+| `LowSoundQuality` | False | read by the engine as it loads each sound: 16-bit ones become 8-bit, and ones at 22,050 Hz or more are halved in rate ([`Engine.dll`](engine-dll.md#sounds)) |
 | `Latency` | 40 | the output's mix-ahead in milliseconds |
 | `OutputRate` | 44100Hz | the mixing rate, 8,000 to 48,000 Hz; the reverb's delays are whole samples of it |
 | `EffectsChannels` | 16 | the voices for sounds, 0 to 32; a change applies at once (below) |

@@ -1457,6 +1457,33 @@ Who hears a sound an actor plays. What the audio subsystem then does with it:
   1,600.
 - **`StopSound(Id)`** (`0x103e27d0`) hands the ID to the audio subsystem (its
   virtual at +0x78), which stops that sound.
+- **Low sound quality** (`FSoundData::Load`, `0x1036f040`): with the audio
+  subsystem's `LowSoundQuality` on, outside the editor, a sound's WAV is made
+  smaller as it loads, its data taken as one channel whatever the header says:
+  - 16 bits at 22,050 Hz or more: both at once (`0x10370340`), each output
+    byte from three samples weighted 1, 2, 1 (the previous pair's second, the
+    pair's first twice, its second), with the rounding error of the last byte
+    added to the next;
+  - 16 bits below 22,050 Hz: 8 bits alone (`0x10370520`), each sample biased
+    to unsigned, rounded to its top byte, the error carried on;
+  - 8 bits at 22,050 Hz or more: the rate halved alone (`0x10370690`), the
+    same 1, 2, 1 weighting, 8 or 16 bits kept.
+
+  Then (`0x10370010`) the header: the data's size, the file's, the block size
+  and bytes a second; the `smpl` chunk's loop starts and ends scaled by the
+  new size; the chunks after the data moved down.
+
+## A texture's mips
+
+**`UTexture::Lock`** (`0x103ecc90`), a texture locked with no LOD of its own
+(-1, as every frame's are): the client's `TextureLODSet` for the texture's
+`LODSet` -- `TextureDetail` for the world's (1), `SkinDetail` for skins' (2),
+none for any other (0) -- raised to the render device's `RecommendedLOD`
+(`D3DDrv` never sets it: 0), held to 3 and to the last mip. The levels: High 0,
+Medium 1, Low 2, UltraLow 3 (`UClient::StaticConstructor`, `0x10375010`). The
+device gets the mips from that one down, that mip's size as the texture's, and
+the scale grown by the top mip's size over that one's, so a texel lands where
+it would.
 
 ## Small
 
