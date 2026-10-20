@@ -464,6 +464,10 @@ Which texture each face of a mesh draws:
 - **Animated.** Each slot's texture is brought up to date and shown at its
   animation's current frame, so an animated texture plays (a fractal one
   steps as in [stepping](fire-dll.md#stepping)).
+- **Where it lies**: a corner's coordinates are its wedge's U and V bytes
+  times the texture's size (its `USize` and `VSize` times its scale) ÷ 256
+  (`DrawLodMesh`, `0x10b10b4e`), so a byte of 255 falls a 256th short of the
+  texture's far edge.
 - **The environment map:** the actor's `Texture`; else its zone's
   `EnvironmentMap`; else the level's; else the texture of the last slot
   that has one. A face whose slot has no texture draws it, and so does an
