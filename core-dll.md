@@ -530,6 +530,8 @@ The rest are UE1's own. The details:
     take a sine table of 16384 steps round the turn (an angle's index its
     value >> 2, so its low 2 bits are dropped), a cosine the same table a
     quarter turn (0x4000) on. `GetUnAxes` gives `GetAxes`' axes transposed.
+  - `==` 142 and `!=` 203 (`0x10139400`, `0x101394f0`) compare every bit of
+    each angle: rotators a whole turn apart are not equal.
 - **`DynamicLoadObject(ObjectName, ObjectClass, MayFail)`** (`0x1013eb30`):
   `StaticLoadObject` (`0x10154d50`), a failure logged as a warning unless
   `MayFail`. Whatever groups the name gives, the object is looked for in the
