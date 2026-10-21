@@ -154,7 +154,11 @@ it sets the blending and the texture:
 - **A palette with alpha**, its entry 128's alpha not 255 (the fonts'
   palettes, `Engine.u`'s `LargeFont` and `DXFonts.utx`'s two TrueType ones,
   and three in `BobPage.utx` and `OceanLab.utx`), draws `PF_Highlighted`,
-  premultiplied ([blending](#blending)), unless the tile is translucent.
+  premultiplied ([blending](#blending)), unless the tile is translucent; its
+  masked bit stays, so the alpha test still cuts what is under half. No
+  stock tile is drawn so: the main menu's buttons and the colours screen's
+  example draw `MainMenuTrueType` translucent, as the console does
+  `LargeFont`.
 - **A modulated tile** draws `PF_Modulated` and `PF_Masked` alone, every
   other flag dropped, `PF_NoSmooth` with them, in white: its colour 0 is cut
   out, and the rest doubles what is behind it.

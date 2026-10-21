@@ -1595,3 +1595,10 @@ it would.
 - **`ResetKeyboard()`** (`0x103b96d0`): `UObject::ResetConfig` of the class of
   the viewport's input; `DeusExPlayer.TravelPostAccept` calls it on every level.
   What that does in Deus Ex: [configuration](core-dll.md#configuration).
+- **The canvas's text** (`DrawText`, `UCanvas::WrappedPrint`, `0x10376790`;
+  `DrawTextClipped`, `0x10378890`): each character a tile, with the style's
+  flag (`STY_None` invisible, `STY_Translucent` translucent, `STY_Modulated`
+  modulated, any other none), masked and unsmoothed
+  ([`D3DDrv`'s tiles](d3ddrv-dll.md#tiles)). `DrawTextClipped` first makes
+  a `LargeFont` or `BigFont` the canvas's `MedFont` unless the language is
+  `int`.
