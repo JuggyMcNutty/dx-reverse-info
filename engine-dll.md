@@ -996,9 +996,15 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
     one only as an actor (below). The tracker files every moving brush -- an
     `ABrush` with a brush that is not `bStatic`, which must be a mover (any
     other is a fatal error), whatever its collision, hidden or not -- into the
-    level's BSP: each polygon, at the mover's place, split down the tree, each
-    fragment that lands in empty space a node of its own and one that lands in
-    solid dropped (`FilterPoly`, `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`).
+    level's BSP. As it starts, each polygon gets a surface of its own in the
+    level's model (`AddActor`, `0x1037b5c0`), which its `iLink` then names and
+    each filing moves the base, normal and texture axes of: the polygon's
+    texture, pans and flags, without `PF_NoAddToBSP` (the editor's processed,
+    cut, selected and memorized bits), with `PF_SpecialLit` for a
+    `bSpecialLit` mover, the mover its actor. Each polygon is filed at the
+    mover's place, split down the tree, each fragment that lands in empty
+    space a node of its own and one that lands in solid dropped (`FilterPoly`,
+    `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`).
     A polygon's node blocks a line but for a `PF_NotSolid` polygon
     (`NF_NotCsg`); `PF_Invisible` or `PF_Portal` makes it a node that does not
     block visibility, `PF_Masked` a shoot-through one. It has no collision hull.
