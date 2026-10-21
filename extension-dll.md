@@ -905,7 +905,11 @@ test.
   `DSTY_Normal` with none.
 - **A tile's flags** (`GeneratePolyFlags`, `0x1002af00`): two-sided, then
   masked, translucent and modulated as set, and no smoothing unless
-  smoothing is on.
+  smoothing is on. Every tile goes to the canvas's `DrawTile`
+  (`XGC::DrawTile`, `0x1002a820`; `Engine.dll` `0x10376160`), which adds the
+  masked bit of the texture's frame, so a masked texture draws masked in any
+  style. A character goes to the render device's `DrawTile` itself, with
+  the text's flags ([`D3DDrv`'s tiles](d3ddrv-dll.md#tiles)).
 - **Text** keeps its own flags, which only `EnableTranslucentText`
   (`0x10027610`) sets: masked, or translucent when it is on, never
   modulated, whatever the style.
