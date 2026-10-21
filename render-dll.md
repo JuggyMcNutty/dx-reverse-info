@@ -324,10 +324,10 @@ The renderer keeps it; the engine and the scripts read it
   the decal is clipped to each piece of its surface that is drawn
   (`ClipDecal`, `0x10b1bda0`; a decal that lists its nodes, only to theirs),
   and drawn and stamped only where some of it is left. `LastRendered()`
-  does not read it: it reads `LastRenderTime`, which a decal never gets. So a decal, and Deus Ex's
-  `Shadow`, never counts as drawn. When an NPC moves, its shadow is laid
-  again only if the NPC was drawn in the last second, else taken off. The
-  script always lays the player's.
+  does not read it: it reads `LastRenderTime`, which a decal never gets. So
+  a decal, and Deus Ex's `Shadow`, never counts as drawn. When an NPC moves,
+  its shadow is laid again only if the NPC was drawn in the last second,
+  else taken off. The script always lays the player's.
 
 ## A pawn's attachments
 
@@ -481,7 +481,7 @@ Which texture each face of a mesh draws:
   flags). Such a face's texture coordinates are a reflection (`0x10b0bab0`):
   at each corner, the line from the eye made a unit vector, mirrored by the
   corner's normal and turned into the world's axes (the frame's `Uncoords`);
-  its X and Y + 1, × 128 × the texture's scale.
+  its X and Y + 1, × 128 × the texture's size ÷ 256, as a wedge's bytes are.
 - **Masked.** A masked texture is drawn masked (`PF_Masked`,
   [blending](d3ddrv-dll.md#blending)) whatever the face's own flags.
 - **The viewer's `Sprite`**, when set, stands in for every slot's texture and
@@ -561,10 +561,11 @@ least 1), from `LightPhase`'s 256ths of a turn.
   node's zone on the side of the plane the view's origin lies, `iZone[1]` in
   front and `iZone[0]` behind, the `LevelInfo` for zone 0, and a portal the
   other side's. Each of a plane's coplanar nodes (its `iPlane` list) is
-  judged by its own plane, which may face the other way. The map is kept in the global cache (`GCache`) under the model,
-  the light map and the zone. It is built again only when it is not there, when
-  one of its lights has `bLightChanged`, or, for a mover's surface, after the
-  mover moves, turns or changes leaf.
+  judged by its own plane, which may face the other way. The map is kept in
+  the global cache (`GCache`) under the model, the light map and the zone. It
+  is built again only when it is not there, when one of its lights has
+  `bLightChanged`, or, for a mover's surface, after the mover moves, turns or
+  changes leaf.
 - **The fog map** ([`D3DDrv`'s fog](d3ddrv-dll.md#fog)), only when the render
   device takes fog maps and does volumetric lighting (`SupportsFogMaps`,
   `VolumetricLighting`) and the viewport's actor is in a fog zone

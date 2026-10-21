@@ -591,7 +591,7 @@ fields, after their properties (none):
     step's time not moved goes back to the time left, at most twice;
     without, it slides along the wall, and along a second wall through
     `TwoWallAdjust`, `HitWall` again;
-  - then 16 units down, against gravity's direction. A slope whose normal's Z
+  - then 16 units down, along gravity's direction. A slope whose normal's Z
     × the zone's ground friction is under 3.3 slides it down by gravity × the
     tick² / (2 × that friction, at least 0.5), as walking does;
   - no floor, or one under 0.7: moved back up as far as it went down, what the
@@ -1337,10 +1337,11 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   physics, in that order. The timer calls `Timer` once a tick, however many
   of its periods passed: the counter keeps what is left over them, and a
   timer that does not loop stops. With under 0.0001 s of `LifeSpan` left,
-  `Expired`, then the actor is destroyed and its tick ends. A player's pawn with a player (not a camera) has, in
-  place of `Tick`, its player's input read, `PlayerInput` and `PlayerTick`, and
-  the input read again with −1 (cleared); so its physics, later in the same
-  tick, take the move `PlayerTick` makes.
+  `Expired`, then the actor is destroyed and its tick ends. A player's pawn
+  with a player (not a camera) has, in place of `Tick`, its player's input
+  read, `PlayerInput` and `PlayerTick`, and the input read again with −1
+  (cleared); so its physics, later in the same tick, take the move
+  `PlayerTick` makes.
 
 ## Destroyed actors
 

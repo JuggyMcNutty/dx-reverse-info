@@ -2,7 +2,7 @@
 
 The game's display driver: `UD3DRenderDevice`, the Direct3D 7 render device
 it shipped with and its look was tuned on. Here: gamma, the light maps'
-brightness on screen, fog, detail textures, and the blending every pass
+brightness on screen, fog, detail textures, tiles, and the blending every pass
 uses, the reference a reimplemented look is judged against. Read with:
 [working on the binaries](README.md#working-on-the-binaries).
 
@@ -161,7 +161,8 @@ it sets the blending and the texture:
   `LargeFont`.
 - **A modulated tile** draws `PF_Modulated` and `PF_Masked` alone, every
   other flag dropped, `PF_NoSmooth` with them, in white: its colour 0 is cut
-  out, and the rest doubles what is behind it.
+  out where the texture's copy has it cleared ([textures](#textures)), and
+  the rest doubles what is behind it.
 
 ## Fog
 
@@ -173,11 +174,12 @@ Two kinds, as the engine hands them over:
   fog map is `TEXF_RGBA7` like a light map, uploaded the same way, a byte c
   worth 2c/255. **A surface with a fog map skips its detail texture**: the
   fog pass takes the detail pass's place.
-- **Vertex fog** (`UseVertexFog`, for meshes and sprites): a draw flagged
+- **Vertex fog** (`UseVertexFog`, for meshes): a draw flagged
   `PF_RenderFog` that is neither translucent nor modulated puts the vertex's
   fog colour in the D3D specular channel and turns specular on. So the
   hardware adds the fog after the texture is modulated. The fog values come
-  from the renderer's lighting ([meshes](render-dll.md#meshes)).
+  from the renderer's lighting ([meshes](render-dll.md#meshes)). A tile, a
+  sprite among them, gets none: `DrawTile` writes no specular colour.
 
 ## Detail textures
 

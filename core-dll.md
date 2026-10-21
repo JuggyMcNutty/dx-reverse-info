@@ -540,7 +540,7 @@ The rest are UE1's own. The details:
     take a sine table of 16384 steps round the turn (an angle's index its
     value >> 2, so its low 2 bits are dropped), a cosine the same table a
     quarter turn (0x4000) on. `GetUnAxes` gives `GetAxes`' axes transposed.
-  - `v << r` 275 and `v >> r` 276 (`0x10137d90`, `0x101380e0`) turn a
+  - `v >> r` 276 and `v << r` 275 (`0x101380e0`, `0x10137d90`) turn a
     vector by the rotator and back, by the same table: the unit coords
     turned step by step (`FCoords::operator*=`, each axis taken to its dots
     with the step's), for `<<` by the roll, then the pitch, then the yaw,

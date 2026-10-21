@@ -603,7 +603,9 @@ number, passes this first.
 - the local player's pawn runs its input, `PlayerInput`, `PlayerTick`, state
   code and timers, but its physics only in its moves (`AutonomousPhysics`);
 - a client's pawn on the server (remote role autonomous) runs its state code and
-  timers only: it moves by the client's `ServerMove`s;
+  timers, and, as any pawn with authority, its sight and its pain and speech
+  timers ([the senses](engine-dll.md#the-senses)): it moves by the client's
+  `ServerMove`s;
 - anything else ticks as a standalone game's.
 
 A viewport's own player is spawned with the remote role simulated

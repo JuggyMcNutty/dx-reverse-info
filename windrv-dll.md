@@ -5,7 +5,7 @@ software renderer's fullscreen modes, DirectInput for the mouse, the joystick, a
 render device a viewport opens with. Read for the command-line flags it honours -- four of
 the nine the launcher's safe mode emits
 ([`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode)), and `-safe` -- and for
-how a key reaches the game, not in full. Method:
+how a key and a typed character reach the game, not in full. Method:
 [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary

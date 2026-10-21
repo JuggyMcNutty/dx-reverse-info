@@ -673,8 +673,8 @@ new game.
     keys (column 0) are on;
   - the column margin is 3 and the row margin 1, and a double click counts;
   - there is one column.
-- **A new column** (`0x100314f0`): 20 wide plus both margins, left-aligned,
-  the window's text colour and font, string, and a sort key.
+- **A new column** (`InitColumn`, `0x100314f0`): 20 wide plus both margins,
+  left-aligned, the window's text colour and font, string, and a sort key.
 - **`GetField`** (`0x1002f250`) of a column that is not there is empty.
 - **`GetSelectedRow`** (`0x1002f740`) is the focus row if it is selected,
   else the first selected row.
@@ -715,9 +715,10 @@ every column to its margins.
   of its text in the column's font, special text off: its widest line, each
   character as the GC finds it, one the font lacks taking no room. A column
   with no font measures 0.
-- **A column's font**: the window's when the column is made (`InitColumn`,
-  `0x100314f0`, which also makes it 20 wide plus its margins), and the
-  window's again for `SetColumnFont(None)`.
+- **A column's font** (`SetColumnFont`, `0x100302d0`): `None` gives it the
+  window's again, as a new column has ([rows and fields](#rows-and-fields));
+  with auto-expanding columns, a new font widens every column
+  (`ResizeColumns(true)`).
 
 ### The list's size
 
