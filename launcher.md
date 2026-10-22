@@ -5,7 +5,8 @@
 it almost 1:1; each port branch's launcher is DXLauncher, departing from it as its
 `docs/LAUNCHER.md` records
 ([linux-x86_64's](https://github.com/JuggyMcNutty/deusex-launcher/blob/linux-x86_64/docs/LAUNCHER.md#what-it-changes-from-the-original),
-the same on linux-aarch64, and on trimui-smartpro with the device's changes).
+the same on linux-aarch64, as Windows has it on windows-x86_64, and on
+trimui-smartpro with the device's changes).
 Method: [working on the binaries](README.md#working-on-the-binaries).
 
 | File | Contents |
