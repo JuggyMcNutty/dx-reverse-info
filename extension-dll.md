@@ -452,12 +452,19 @@ yaw, its pitch left out.
   its clip shows, the block of rows placed by its alignment -- centred by
   the whole half of the room, margins and all -- each row by its own.
 - **An edit field** (`XEditWindow::Init`, `0x1001cea0`): from the top left,
-  3 in from the sides; editable and on several lines -- no game script
-  makes one single-line, so Enter is the script's line break in every one;
-  a white insertion point and grey selection; up to 200,000 characters and
-  64 undos; the cursor blinking each second after 0.75 s; no special text;
-  selectable. Measured (`0x10020ac0`) as a large text window, a single line
-  as one line high, a width not given a space wider.
+  3 in from the sides; editable and on several lines, word wrapped; a white
+  insertion point, grey selection and black text in it (`inverseColor`,
+  which `SetSelectedAreaTextColor`, `0x1001dc30`, sets); up to 200,000
+  characters and 64 undos; the insertion point shown, blinking each second
+  after 0.75 s; no special text; selectable. Measured (`0x10020ac0`) as a
+  large text window, a single line as one line high, a width not given a
+  space wider. `EnableSingleLineEditing` (`0x1001d620`, on when a script
+  gives no value) makes a single line take its text again, its line breaks
+  dropped, and not word wrap; several lines word wrap. The menus' fields
+  (`MenuUIEditWindow`) and the tools' (`ToolEditWindow`) are single lines,
+  where Enter activates the field (`EditActivated` up its parents); a note's
+  (`PersonaEditWindow`) has several, where the script's Enter puts in a line
+  break.
   - A script's `SetText` (`0x1001e260`) selects the whole text and puts the
     new one in as typing does (`InsertText`, `0x1001e3c0`, without undo:
     the undo list cleared, the text marked changed), then sets the
@@ -465,8 +472,55 @@ yaw, its pitch left out.
     in at the end, the insertion point then at the start too.
   - A change of anything (`ReplaceText`, `0x1001fe20`) announces
     `TextChanged` to the field and up its parents until one takes it
-    (`ChangeText`, `0x1001fab0`), lays the field out again and leaves the
-    insertion point after what it put in.
+    (`ChangeText`, `0x1001fab0`), lays the field out again, then puts the
+    hook where the change began and the insertion point after what it put
+    in, so a text put in with `bSelect` is selected.
+  - **The rows** are the large text window's (`GenerateLines`): each its
+    start, its characters without and with the spaces it ends with -- the
+    last row's one more, for the place after the text -- and its text
+    state. A place in the text is on the last row starting at or before it
+    (`PosToRowCol`, `0x1001eba0`). A column lies across by the widths of the
+    characters before it, the row placed by the alignments (`ColToX`,
+    `0x1001e9d0`; `XGC::CharToPixel`, `0x10027fc0`); a point is before the
+    first character whose middle lies past it (`XToCol`, `0x1001e7f0`;
+    `XGC::PixelToChar`, `0x10028050`) on the row its height falls in, the
+    block placed as the large text window places it (`YToRow`,
+    `0x1001e740`).
+  - **Moving** (`MoveInsertionPoint`, `0x1001d250`): up and down a row, and
+    a page -- the rows the window's clip shows, at least one -- keeping the
+    column, in pixels, the insertion point was last put at (`SetCursorRow`,
+    `0x1001f200`); left and right a character; a word either way within the
+    row (`NextWord`, `0x1001f3b0`: past the word and its spaces, from the
+    row's last character the next row's start, with no word left the row's
+    end; `PrevWord`, `0x1001f550`: back to the start of the word before,
+    from the row's start the place before it); a row's start and end, its
+    characters with spaces less one; the text's start and end. Every move
+    but up and down sets the column (`SetCursorPoint`, `0x1001f140`). A drag
+    moves the insertion point and leaves the hook; the selection runs from
+    the hook to it (`ComputeSelectArea`, `0x1001f010`), whole words while
+    words are selected, the insertion point then at its far end.
+    `SetSelectedArea` (`0x1001d520`) puts the insertion point at the start,
+    then drags it to the end.
+  - **The insertion point** (`ComputeCursorConfig`, `0x1001f680`): Insert 2
+    wide (or its preferred width) and a row tall, centred on the place
+    between two characters; Underscore and Block as wide as the character
+    after it, Underscore 2 tall at the row's foot, Block a row and half the
+    spacing; the raw types the texture's size. Each move shows it again, its
+    blink started over, and asks the parents to show the character and it,
+    a pixel wider each side (`ShowCursor`, `0x1001ef40`). It blinks on and
+    off each half period (`Tick`, `0x100207d0`).
+  - **Drawing** (`Draw`, `0x10020d00`), editable and with the focus: within
+    the margins, each row by the alignments, a row at least 4 wide; a
+    selected stretch with the selection texture behind it, from half the
+    vertical spacing above the row and a row and its spacing tall, its text
+    in the inverse colour; then the insertion point while it is blinked on.
+    Otherwise as a large text window.
+  - **The mouse** (`0x10021570`, `0x100216b0`, `0x10021760`), after the
+    script's: the left button puts the insertion point where it is pressed,
+    dragging the selection with Shift held, and starts a drag, of whole
+    words with Ctrl held or on a second click; the pointer drags it, and
+    while the button is held the drag goes on every 0.1 s as far as the
+    pointer is (`Tick`); the release ends it.
   - With nothing selected the selection is -1, so `GetSelectedArea`
     (`0x1001d5c0`) gives 0 and 0.
 
