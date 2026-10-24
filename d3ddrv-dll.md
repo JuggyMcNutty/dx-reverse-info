@@ -2,8 +2,9 @@
 
 The game's display driver: `UD3DRenderDevice`, the Direct3D 7 render device
 it shipped with and its look was tuned on. Here: gamma, the light maps'
-brightness on screen, fog, detail textures, tiles, and the blending every pass
-uses, the reference a reimplemented look is judged against. Read with:
+brightness on screen, fog, detail textures, the screen's pixels, tiles, and
+the blending every pass uses, the reference a reimplemented look is judged
+against. Read with:
 [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
@@ -143,6 +144,22 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
 | `PF_Invisible` | `ZERO` / `ONE` | draws nothing but still fills the Z buffer |
 | `PF_NoSmooth` | point sampling | the filter drops to nearest for the draw |
 | `PF_RenderFog` | specular on | vertex fog added per pixel (below) |
+
+## The screen's pixels
+
+`D3DDrv` hands Direct3D its points already projected, each at the frame's
+`XB` and `YB` plus its screen coordinates, less half a pixel: a polygon's
+(`DrawComplexSurface`, `0x10003900`; `DrawGouraudPolygon`, `0x100056b0`)
+and a tile's corners (`DrawTile`). Direct3D 7 takes a pixel's centre at its
+whole coordinates, so a tile's edges fall on pixels' edges, as on a renderer
+that takes the centre at the pixel's middle. A polygon's points come from
+`Render.dll` about `FX15`, half a pixel past the frame's middle, and a
+tile's place about `FX2` ([its coordinates](render-dll.md#a-frame)): the
+polygons lie half a pixel right of and below the tiles, and of where
+`OpenGLDrv` draws them. Its frame and `OpenGLDrv`'s of one view, a wall and
+a floor (`LaserConsole`), fit best with `OpenGLDrv`'s moved half a pixel
+right and down: their grey levels 0.76 and 0.35 apart (RMSE, of 255) moved,
+1.65 and 0.80 unmoved.
 
 ## Tiles
 

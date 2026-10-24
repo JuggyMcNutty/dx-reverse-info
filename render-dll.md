@@ -60,13 +60,23 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
     `CopyFromRasterUpdate`, for a surface that also occludes) lays into the
     zone's span buffer; one with nothing left showing is flagged
     `NF_PolyOccluded` (0x08).
+  - **Its coordinates.** A surface's points are projected about the frame's
+    `FX15` and `FY15`, `(FX + 1.0001) ÷ 2` (`FSceneNode::ComputeRenderSize`,
+    `Engine.dll` `0x10372980`), as a mesh's are (`DrawMesh`, `0x10b0d1a0`;
+    `DrawLodMesh`, `0x10b0ea80`) and a decal's (`ClipDecal`, `0x10b1bda0`);
+    a child frame takes its parent's. `Project` (`0x10b20750`), which places
+    a sprite ([sprites](#sprites)), the coronas' places
+    ([coronas](#coronas)) and `BoundVisible`'s box go about `FX2` and
+    `FY2`, `FX ÷ 2`: half a pixel up and left of a polygon's.
   - **The pixels.** A surface's rows run from the one its top falls in to
     the one before the one its bottom falls in; a row's span, from where its
     left edge crosses the row's lower boundary to where its right edge does,
     each floored (16.16 fixed point): a pixel is in when its lower right
-    corner is. A span buffer's spans are half open, `[Start, End)`, and so
-    is the box `BoxIsVisible` (`0x10b21a20`) tests. A sprite's rectangle
-    goes by the same rule ([which actors are drawn](#which-actors-are-drawn)).
+    corner is, in coordinates about `FX15` -- so when its centre is, about
+    the frame's middle. A span buffer's spans are half open, `[Start,
+    End)`, and so is the box `BoxIsVisible` (`0x10b21a20`) tests. A
+    sprite's rectangle goes by the same rule
+    ([which actors are drawn](#which-actors-are-drawn)).
   - **What occludes**: a surface neither masked, translucent, modulated nor
     invisible, and besides an invisible zone portal (`PF_Portal` and
     `PF_Invisible`) and a mirror (`PF_Mirrored`).
