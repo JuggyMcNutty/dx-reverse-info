@@ -75,7 +75,8 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
     corner is, in coordinates about `FX15` -- so when its centre is, about
     the frame's middle. A span buffer's spans are half open, `[Start,
     End)`, and so is the box `BoxIsVisible` (`0x10b21a20`) tests. A
-    sprite's rectangle goes by the same rule
+    sprite's rectangle, rounded up about `FX2`, takes a pixel by its upper
+    left corner; `BoundVisible`'s box, rounded down, by its lower right
     ([which actors are drawn](#which-actors-are-drawn)).
   - **What occludes**: a surface neither masked, translucent, modulated nor
     invisible, and besides an invisible zone portal (`PF_Portal` and
