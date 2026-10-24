@@ -1023,6 +1023,34 @@ drawn:
 
 A debug window shows an actor with it too.
 
+### A point on the screen
+
+`ConvertVectorToCoordinates(location, x, y)` (native 1489) gives where a
+point in the world lands in a window, as the frob highlight, the vision
+augmentation and the targeting augmentation ask it, each from its
+`DrawWindow`:
+
+- **The root** (`XRootWindow::ConvertVectorToCoordinates`, `0x10039f10`)
+  projects it through the scene's frame about its middle (`FX2` and `FY2`,
+  [its coordinates](render-dll.md#a-frame)): the frame's pixels over the
+  root's multipliers, plus the render viewport's corner (`renderX`,
+  `renderY`), each truncated to a whole unit. A point at a depth of 1 or
+  less gives the frame's middle, `FX2` and `FY2` truncated, in pixels,
+  neither divided nor moved. It returns whether the point is in front,
+  wherever it lands: a corner off the screen counts.
+- **The frame** is a copy of the canvas's, which the root keeps only while
+  its windows draw (`PostRender`, `0x1003a960`); asked at any other time, it
+  fails an assertion, which stops the game.
+- **Any other window** (`XWindow`'s, `0x1004faf0`) asks its parent, takes
+  its own place off the answer and returns the parent's; one with no parent
+  gives its own middle, and false.
+- **A viewport window** (`XViewportWindow`'s, `0x1004afc0`) projects through
+  its own frame, the view it draws, in that frame's pixels, truncated; so,
+  through it, does every window inside one.
+
+`FrobDisplayWindow`'s box takes the target's middle and each corner of its
+collision box returned in front, the box then held inside the window.
+
 ### A viewport window
 
 A `ViewportWindow` draws the level from another place into its rectangle
