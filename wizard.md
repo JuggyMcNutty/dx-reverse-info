@@ -19,7 +19,7 @@ Evaluated only on a client (`GIsClient`), outside the editor (`GIsEditor`).
 
 | # | Condition | Page shown | Caption key (`Startup.int`) |
 |---|---|---|---|
-| 1 | `-safe` **or** `readini` in the cmdline, not straight after a letter or digit | SafeMode (2020) | `SafeMode` |
+| 1 | `-safe`, **or** `readini` not straight after a letter or digit ([the parsers](cli-flags.md)) | SafeMode (2020) | `SafeMode` |
 | 2 | `FirstRun < 400` | Renderer (2017) | `FirstTime` |
 | 3 | `-changevideo` | Renderer (2017) | `Video` |
 | 4 | no other instance running **and** `Running.ini` exists | SafeMode (2020) | `RecoveryMode` |
@@ -223,7 +223,7 @@ the edit with one line per choice, from Startup.int:
 
 | Line | When |
 |---|---|
-| `SoundLow` | no MMX, or 64 MB of memory or less (`0x1090EDA1`) |
+| `SoundLow` | no MMX, or 64 MB of memory or less (`GIsMMX`, `GPhysicalMemory`; `0x1090EDA1`) |
 | `SoundHigh` | otherwise |
 | `SkinsLow` | under 96 MB, or the renderer's `DescFlags` has bit 8 (`0x1090F0E0`) |
 | `SkinsHigh` | otherwise |

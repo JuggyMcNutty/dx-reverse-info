@@ -349,9 +349,9 @@ Deus Ex's scripts send it twice. The Display screen's Rendering Device sends
 renderer page ([the wizard](wizard.md)). The Host screen's dedicated server
 sends `Relaunch <map>?game=<class>?-server?log=server.log`: `ParseParam`
 finds `-server` in the URL, as it checks nothing after a flag's name
-([the parsers](cli-flags.md)). The new launcher does not forward either line
-to the instance still ending: both hold one of the words that keep a launch
-from forwarding ([the launch](launch-flow.md)).
+([the parsers](cli-flags.md)). The `deusex.exe` it starts does not forward
+either line to the instance still ending: both hold one of the words that
+keep a launch from forwarding ([the launch](launch-flow.md)).
 
 ## The platform's start
 
@@ -368,8 +368,11 @@ has it and the command line lacks its switch:
 | 3DNow! | `GIs3DNow` | `-nok6` |
 
 Galaxy's mixer picks its routines by them
-([Galaxy](galaxy-dll.md#hardware-and-the-console)). Whether another DLL
-reads them is not checked.
+([Galaxy](galaxy-dll.md#hardware-and-the-console)), `Render.dll` its
+surface clip by `GIs3DNow` ([a frame](render-dll.md#a-frame)), and the
+launcher the Detail page's sound by `GIsMMX`
+([the wizard](wizard.md#detail-2018)). `Engine.dll` imports `GIs3DNow` too,
+and `SoftDrv.dll` `GIsMMX`: neither use is read here.
 
 It seeds the C library's `rand` from the clock (`srand(time(0))`), once, so
 every number drawn from it differs from run to run: the script's `Rand`,

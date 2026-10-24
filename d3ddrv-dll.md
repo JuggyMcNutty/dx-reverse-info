@@ -154,12 +154,14 @@ and a tile's corners (`DrawTile`). Direct3D 7 takes a pixel's centre at its
 whole coordinates, so a tile's edges fall on pixels' edges, as on a renderer
 that takes the centre at the pixel's middle. A polygon's points come from
 `Render.dll` about `FX15`, half a pixel past the frame's middle, and a
-tile's place about `FX2` ([its coordinates](render-dll.md#a-frame)): the
-polygons lie half a pixel right of and below the tiles, and of where
-`OpenGLDrv` draws them. Its frame and `OpenGLDrv`'s of one view, a wall and
-a floor (`LaserConsole`), fit best with `OpenGLDrv`'s moved half a pixel
-right and down: their grey levels 0.76 and 0.35 apart (RMSE, of 255) moved,
-1.65 and 0.80 unmoved.
+sprite's or a corona's place, drawn as a tile, about `FX2`
+([its coordinates](render-dll.md#a-frame)): the polygons lie half a pixel
+right of and below the sprites and coronas, and of where `OpenGLDrv` draws
+them. Its frame and `OpenGLDrv`'s of one view, a wall and a floor (the
+harness's
+[`LaserConsole`](https://github.com/JuggyMcNutty/DXEngine/blob/main/docs/DEVELOPMENT.md#the-console-classes)),
+fit best with `OpenGLDrv`'s moved half a pixel right and down: their grey
+levels 0.76 and 0.35 apart (RMSE, of 255) moved, 1.65 and 0.80 unmoved.
 
 ## Tiles
 

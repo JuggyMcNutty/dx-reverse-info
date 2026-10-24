@@ -60,10 +60,10 @@ these. The engine and drivers read them, not `Launch`:
 | `-nosound` | `Engine.dll`, `UEngine::InitAudio` | no audio subsystem: no sound, no music ([`engine-dll.md`](engine-dll.md#starting-the-game-engine)) |
 | `-no3dsound` | `Galaxy.dll`, `Init` | no A3D or EAX sound hardware ([`galaxy-dll.md`](galaxy-dll.md#settings)) |
 | `-nohard` | `WinDrv.dll`, `UWindowsViewport::OpenWindow` | the software renderer instead of `GameRenderDevice` ([`windrv-dll.md`](windrv-dll.md#the-flags)) |
-| `-noddraw` | `WinDrv.dll`, `UWindowsClient::Init` | no DirectDraw: the software renderer, when it is the one used, has no fullscreen mode and runs in a window |
-| `-defaultres` | `WinDrv.dll`, `UWindowsClient::Init` | 640×480, windowed and fullscreen |
+| `-noddraw` | `WinDrv.dll`, `UWindowsClient::Init` | no DirectDraw: the software renderer, when it is the one used, has no fullscreen mode and runs in a window ([`windrv-dll.md`](windrv-dll.md#the-flags)) |
+| `-defaultres` | `WinDrv.dll`, `UWindowsClient::Init` | 640×480, windowed and fullscreen ([`windrv-dll.md`](windrv-dll.md#the-flags)) |
 | `-nommx`, `-nokni`, `-nok6` | `Core.dll`, `appPlatformInit` | the CPU's MMX, KNI (SSE) and 3DNow! left unused ([`core-dll.md`](core-dll.md#the-platforms-start)) |
-| `-nojoy` | `WinDrv.dll`, `UWindowsClient::PostEditChange` | no joystick |
+| `-nojoy` | `WinDrv.dll`, `UWindowsClient::PostEditChange` | no joystick ([`windrv-dll.md`](windrv-dll.md#the-flags)) |
 
 Which checkbox drives which flag, and the three that drive none:
 [the shipped bug](wizard.md#-shipped-bug-three-safe-mode-checkboxes-are-dead).

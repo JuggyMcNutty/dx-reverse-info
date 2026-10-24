@@ -102,7 +102,8 @@ are `exec` exports.
   multipliers (`PaintWindows`, `SetMultipliers`), and the rectangle
   `SetRenderViewport` gives in the root's units is multiplied by them into
   the frame's pixels (`PreRender`, `0x1003a760`); the mouse and
-  `ConvertVectorToCoordinates` divide by them.
+  `ConvertVectorToCoordinates` divide by them
+  ([a point on the screen](#a-point-on-the-screen)).
 - **What it takes** (`Process`, `0x1003b3e0`): every key while any window has
   grabbed the keyboard, and every mouse button while any window has grabbed
   the mouse -- the mouse's axes and wheel count as its buttons
@@ -459,8 +460,8 @@ yaw, its pitch left out.
   after 0.75 s; no special text; selectable. Measured (`0x10020ac0`) as a
   large text window, a single line as one line high, a width not given a
   space wider. `EnableSingleLineEditing` (`0x1001d620`, on when a script
-  gives no value) makes a single line take its text again, its line breaks
-  dropped, and not word wrap; several lines word wrap. The menus' fields
+  gives no value), turned on, takes the line breaks out of the text and
+  stops the word wrap; turned off, the field word wraps. The menus' fields
   (`MenuUIEditWindow`) and the tools' (`ToolEditWindow`) are single lines,
   where Enter activates the field (`EditActivated` up its parents); a note's
   (`PersonaEditWindow`) has several, where the script's Enter puts in a line
@@ -1026,9 +1027,10 @@ A debug window shows an actor with it too.
 ### A point on the screen
 
 `ConvertVectorToCoordinates(location, x, y)` (native 1489) gives where a
-point in the world lands in a window, as the frob highlight, the vision
-augmentation and the targeting augmentation ask it, each from its
-`DrawWindow`:
+point in the world lands in a window, as the frob highlight
+(`FrobDisplayWindow`'s `DrawWindow`), the defense and targeting
+augmentations (`AugmentationDisplayWindow`'s `PostDrawWindow`) and a debug
+window (`ActorDisplayWindow`) ask it, while the windows draw:
 
 - **The root** (`XRootWindow::ConvertVectorToCoordinates`, `0x10039f10`)
   projects it through the scene's frame about its middle (`FX2` and `FY2`,
@@ -1039,8 +1041,9 @@ augmentation and the targeting augmentation ask it, each from its
   neither divided nor moved. It returns whether the point is in front,
   wherever it lands: a corner off the screen counts.
 - **The frame** is a copy of the canvas's, which the root keeps only while
-  its windows draw (`PostRender`, `0x1003a960`); asked at any other time, it
-  fails an assertion, which stops the game.
+  its windows draw (the root's `PostRender`, `0x1003a960`, from the player's
+  `PostRenderFlash`); asked at any other time, it fails an assertion, which
+  stops the game.
 - **Any other window** (`XWindow`'s, `0x1004faf0`) asks its parent, takes
   its own place off the answer and returns the parent's; one with no parent
   gives its own middle, and false.
@@ -1049,7 +1052,9 @@ augmentation and the targeting augmentation ask it, each from its
   through it, does every window inside one.
 
 `FrobDisplayWindow`'s box takes the target's middle and each corner of its
-collision box returned in front, the box then held inside the window.
+collision box returned in front -- a mover's middle that of its box at its
+key ([`GetBoundingBox`](engine-dll.md#traces)), its corners a cube's 16
+units each way -- the box then held inside the window.
 
 ### A viewport window
 
@@ -1134,8 +1139,7 @@ The script's call always makes one. `bFilter` is not used. Three callers:
   ticks later takes one, but not under the OpenGL driver
   (`MenuScreenSaveGame.GenerateNewSnapShot`).
 - **The save itself:** `SaveGame` takes a 160 × 120 one into a texture made
-  beside the save info, so the save's `SaveInfo` file carries it, but none
-  when the ini's `GameRenderDevice` is `OpenGLDrv.OpenGLRenderDevice`
+  beside the save info, so the save's `SaveInfo` file carries it
   ([the game engine](deusex-dll.md#the-game-engine-travel-and-saving)). The
   screens show it for the selected save.
 - **The menus' background:** [the raw background](#the-raw-background).

@@ -382,7 +382,8 @@ many bits as the maximum needs (`FBitWriter::WriteInt`).
   gone for `KeepAliveTime`. A connection with nothing in for `ConnectionTimeout`
   (`InitialConnectTimeout` until it is open and its player in; a server's
   connection is open from a client's first packet,
-  [`UTcpNetDriver::TickDispatch`](ipdrv-dll.md)) closes (`Tick`, `0x10404a40`).
+  [`UTcpNetDriver::TickDispatch`](ipdrv-dll.md#the-net-driver)) closes
+  (`Tick`, `0x10404a40`).
   Sending stops for the tick when the bytes queued pass the connection's rate
   (`IsNetReady`): each tick the queue first drains by the rate, down to two
   ticks' worth below 0 (each rounded toward 0), then takes the tick's packet,

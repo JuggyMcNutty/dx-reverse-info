@@ -96,8 +96,9 @@ Returns the engine it made, or none to end the startup. The wizard's decision tr
 5. `FirstRun < 220` → migrate savegames (§6).
 6. `-consolecommand=<cmd>` → run it through `GExec`, then **return 0** (never launches).
 7. `-testrendev=<class>` → load the render-device class, write `Detected.ini`, **return 0**.
-   Before trying the device it sets `[<class>] DescFlags=2` (incompatible) and flushes the
-   configuration (`0x1090A86D`, `0x1090A886`); a device that starts writes its own.
+   Before trying the device it sets `[<class>] DescFlags=2` (incompatible); a device that
+   starts writes its own
+   ([`DescFlags`](ini-keys.md#descflags-and-description-are-runtime-values-not-shipped-defaults)).
 8. Otherwise run the config wizard if one is warranted. The splash closes while it shows
    (`0x1090B7FC`) and reopens after (`0x1090B885`); a cancelled wizard returns 0.
 9. Create `Running.ini`, the unclean-shutdown sentinel (`0x1090B903`).

@@ -32,6 +32,15 @@ dynamic lighting, meshes, sprites, decals and coronas. Read with:
 `DrawFrame` (`0x10b1a2d0`). Both recurse into the frame's children: mirrors,
 warp zones and the sky. [The overlays](#the-overlays) come last.
 
+- **Its coordinates.** A surface's points are projected about the frame's
+  `FX15` and `FY15`, `(FX + 1.0001) ÷ 2` (`FSceneNode::ComputeRenderSize`,
+  `Engine.dll` `0x10372980`), as a mesh's are (`DrawMesh`, `0x10b0d1a0`;
+  `DrawLodMesh`, `0x10b0ea80`) and a decal's (`ClipDecal`, `0x10b1bda0`); a
+  child frame (`CreateChildFrame`, `0x10b15a40`) has its parent's size, and
+  so its `FX15`. `Project` (`0x10b20750`), which places a sprite
+  ([sprites](#sprites)), the coronas' places ([coronas](#coronas)) and
+  `BoundVisible`'s box go about `FX2` and `FY2`, `FX ÷ 2`: half a pixel up
+  and left of a polygon's.
 - **`OccludeFrame`** calls `SetupDynamics` (`0x10b22d90`), then `OccludeBsp`
   (`0x10b173d0`).
   - `SetupDynamics` makes a sprite for each actor to draw, and a dynamic
@@ -60,24 +69,15 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
     `CopyFromRasterUpdate`, for a surface that also occludes) lays into the
     zone's span buffer; one with nothing left showing is flagged
     `NF_PolyOccluded` (0x08).
-  - **Its coordinates.** A surface's points are projected about the frame's
-    `FX15` and `FY15`, `(FX + 1.0001) ÷ 2` (`FSceneNode::ComputeRenderSize`,
-    `Engine.dll` `0x10372980`), as a mesh's are (`DrawMesh`, `0x10b0d1a0`;
-    `DrawLodMesh`, `0x10b0ea80`) and a decal's (`ClipDecal`, `0x10b1bda0`);
-    a child frame takes its parent's. `Project` (`0x10b20750`), which places
-    a sprite ([sprites](#sprites)), the coronas' places
-    ([coronas](#coronas)) and `BoundVisible`'s box go about `FX2` and
-    `FY2`, `FX ÷ 2`: half a pixel up and left of a polygon's.
   - **The pixels.** A surface's rows run from the one its top falls in to
     the one before the one its bottom falls in; a row's span, from where its
     left edge crosses the row's lower boundary to where its right edge does,
     each floored (16.16 fixed point): a pixel is in when its lower right
     corner is, in coordinates about `FX15` -- so when its centre is, about
-    the frame's middle. A span buffer's spans are half open, `[Start,
-    End)`, and so is the box `BoxIsVisible` (`0x10b21a20`) tests. A
-    sprite's rectangle, rounded up about `FX2`, takes a pixel by its upper
-    left corner; `BoundVisible`'s box, rounded down, by its lower right
-    ([which actors are drawn](#which-actors-are-drawn)).
+    the frame's middle. A span buffer's spans are half open,
+    `[Start, End)`, and so is the box `BoxIsVisible` (`0x10b21a20`) tests.
+    A sprite's rectangle and `BoundVisible`'s box take theirs by other
+    corners ([which actors are drawn](#which-actors-are-drawn)).
   - **What occludes**: a surface neither masked, translucent, modulated nor
     invisible, and besides an invisible zone portal (`PF_Portal` and
     `PF_Invisible`) and a mirror (`PF_Mirrored`).
@@ -253,9 +253,11 @@ then gives each surface its lights and each sprite its leaf's
   - none when every corner is behind the viewer or beyond one side.
 
   Each edge is the pixel it falls in; the right and bottom ones are left
-  out. A mesh whose location is behind the viewer gets no sprite at all.
+  out: a pixel is in when its lower right corner is. A mesh whose location
+  is behind the viewer gets no sprite at all.
 - **A sprite's rectangle:** its texture's size times the draw scale, round
-  where its location lands, rounded up; none nearer than a unit.
+  where its location lands, rounded up: a pixel is in when its upper left
+  corner is; none nearer than a unit.
 
 ## Sprites
 
