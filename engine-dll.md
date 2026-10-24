@@ -1312,6 +1312,11 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
 - **The game** is spawned only for a level whose `LevelInfo.Game` is None, on a
   server or standalone: a level returned to keeps the game it was saved with,
   its mutators and all.
+- **Detail by frame rate**: the game engine's tick (`UGameEngine::Tick`,
+  `0x1038fe90`) clears the level's `bDropDetail` and `bAggressiveLOD` before
+  each level tick when there is a client, and nothing in this build sets
+  them, whatever the frame rate: a script's test of either finds it off. A
+  dedicated server, which has no client, leaves them as the map has them.
 - **The time** (`ULevel::Tick`, `0x103a51a0`): the frame's time × the level's
   `TimeDilation` is added to the level's time, paused or not. The actors, the
   players' input and the event manager get that time held to 0.005..0.4 s.
