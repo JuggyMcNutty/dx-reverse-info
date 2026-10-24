@@ -160,7 +160,8 @@ a disassembly. The repository is public, and the code is not ours.
 
 One IDA database per binary, beside it, each backed up under the same name in
 `reference/idb-backup/`. `Window.dll` has none: [`tools/pe/dialogs.py`](tools/pe/dialogs.py)
-reads its templates. `gamefiles/System/DeusEx.exe.i64` holds the structs of
+reads its templates. Nor has `OpenGlDrv.dll`, read only beside `D3DDrv`.
+`gamefiles/System/DeusEx.exe.i64` holds the structs of
 [`types/launch.h`](types/launch.h), and the launcher's functions and vtables under the names
 [`launch-flow.md`](launch-flow.md) and [`wizard.md`](wizard.md) use. Each DLL's has the
 three scripts' work (the class layouts, the UTF-16 strings, the initializers' names), and:
