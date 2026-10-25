@@ -868,10 +868,13 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
 - Unless `noCheck`: an actor that collides with the world (or has
   `bCollideWhenPlacing`, off clients) is fitted in near the spot (`FindSpot`,
   `0x10398480`); no fit, false. Then, unless a test, the encroachment check at
-  the spot, with touches (`CheckEncroachment`, `0x1039a350`): an actor there
-  that blocks it and whose `EncroachingOn` agrees stops the move (false); those
-  it no longer overlaps are untouched, and those there that do not block it
-  touched.
+  the spot, with touches (`CheckEncroachment`, `0x1039a350`, its last
+  argument; `SpawnActor` and `MoveActor` pass it off): an actor there that
+  blocks it and whose `EncroachingOn` agrees stops the move (false); then
+  those of its `Touching` it no longer overlaps -- where it stands, its
+  `Location` not yet the spot -- are untouched, and, in one pass over what is
+  at the spot, each actor that blocks it hears `EncroachedBy` and each that
+  does not is touched.
 - Unless a test, whatever stands on it is unbased (`SetBase(None)`, with the
   event) and it is marked `bJustTeleported`, so physics does not take the jump
   for speed.
@@ -883,11 +886,12 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   −X, −Y and −Z, then +X, +Y and +Z, each by the box's reach on that axis
   (`AdjustSpot`, `0x10398360`: a line from the spot toward a point, level and
   movers; hit at time t, the spot goes back along the wall's normal by (1.05 −
-  t) × the line's length); where the box fits then, that is the spot. Else it is
-  pushed the same way toward the box's eight corners, each line of
-  length |extent| + 2, and kept if it moved no more than √1.5 × |extent| and the
-  box fits there; otherwise no spot. `FarMoveActor` passes neither flag;
-  `SpawnActor` passes `bCheckFirst`.
+  t) × a length it is given, the box's reach for these); where the box fits
+  then, that is the spot. Else it is pushed the same way toward the box's eight
+  corners, each line to the corner itself, the push scaled by |extent| + 2, and
+  kept if it moved no more than √1.5 × |extent| and the box fits there;
+  otherwise no spot. `FarMoveActor` passes neither flag; `SpawnActor` passes
+  `bCheckFirst`.
 - **What blocks what** (`AActor::IsBlockedBy`, and the same test in
   `CheckEncroachment`): the world and brushes block an actor that collides with
   the world, by their `bBlockPlayers` for a player's pawn (a `PlayerPawn` with a
@@ -907,6 +911,12 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   way; after `PostBeginPlay`, unless `bNoCollisionFail`, it checks the actor's
   encroachment without touches: stopped, the actor is destroyed and the spawn
   fails.
+  - After `Spawned`, `PreBeginPlay` and `BeginPlay`, and before
+    `PostBeginPlay`, the actor's zone is set
+    ([the zone an actor is in](#the-zone-an-actor-is-in)) with `forceRefresh`,
+    and as a test unless a template was given: no `ZoneChange`, and nothing
+    else -- an actor spawned into water keeps the physics its class gave it.
+    `LastRenderTime` is set to -10 s right after.
   - It refuses, logged, a class that is abstract, not an actor's, or (out of
     the editor) one whose defaults are `bStatic` or `bNoDelete` ("SpawnActor
     failed because class %s has bStatic or bNoDelete").
@@ -1158,10 +1168,28 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   0..3, no mesh or a sequence not in it logs and does nothing.
 - **`TweenBlendAnim(Sequence, Time, BlendSlot)`** (`0x103e1300`): `TweenAnim`
   for a slot.
-- **The tick.** `AActor::Tick` (`0x103a1aa0`) moves the slots after the main
-  animation, as it moves that: a tween up from a negative frame, then the rate
-  (or a velocity-scaled one) up to the last frame, where the slot stops. The
-  loop copies the main one's conditions and shares its four iterations:
+- **The main animation's tick** (`AActor::Tick`, `0x103a1aa0`), before the
+  slots: up to four passes over the tick's time, each from the frame it is at.
+  A tween (a negative frame) moves up by `TweenRate`; reaching 0 with time to
+  spare it goes on with that time, `AnimEnd` sent if there is no `AnimRate`.
+  Otherwise the frame moves by the rate (a velocity-scaled one for a negative
+  `AnimRate`); with `bAnimNotify`, the earliest notify of the sequence the step
+  crosses stops the pass there, the time past it kept, and its function is
+  called if the actor has one -- a notify without a function costs the pass all
+  the same. A step that stays short of `AnimLast` ends the tick's animation.
+  Past `AnimLast`: a looping animation goes on to 1.0 in the same pass, wrapping
+  to frame 0 with the time past 1.0 kept, or stops short of 1.0 with the
+  frame where the step took it and no time left; `AnimEnd` is sent when the
+  pass crossed `AnimLast` from below (a `FinishAnim` waiting on it released).
+  A non-looping one stops at `AnimLast` with `AnimRate` 0, `bAnimFinished` and
+  `AnimEnd` (a weapon's `SimAnim` packed), and the next pass ends on the rate.
+  A simulated proxy pawn's animation sends no `AnimEnd`. So a long tick through
+  a fast loop plays four loops of it and sends four `AnimEnd`s, the rest of the
+  time unplayed.
+- **The tick.** The slots move after the main animation, as it moves that: a
+  tween up from a negative frame, then the rate (or a velocity-scaled one) up
+  to the last frame, where the slot stops. The loop copies the main one's
+  conditions and shares its four iterations:
   - it runs only while the main animation plays or tweens, so with the main
     animation stopped the slots do not move;
   - each iteration moves every slot by the frame's time, and a slot that ends or

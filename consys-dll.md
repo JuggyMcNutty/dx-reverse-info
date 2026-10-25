@@ -154,9 +154,19 @@ are loaded here.
   `DeusExConText` with `audioPackageName` `Mission01` speaks from
   `DeusExConAudioMission01.u`.
 - **`GetSpeechLength(id)`** (`0x10010430`): 0 for -1 or no sound. Otherwise
-  the length read from the sound's header (`GetSoundLength`, `0x10010460`):
-  - a WAV's data bytes over its bytes a second;
-  - an MP3's bits over the first frame's bit rate;
+  the length read from the sound's header (`GetSoundLength`, `0x10010460`),
+  the sound's data loaded for it, in doubles:
+  - a WAV's (the data starting `RIFF`): the dword at byte 40 over the one at
+    byte 28 -- the data chunk's size and the format's bytes a second where
+    the canonical 44-byte header puts them, no chunk walked;
+  - an MP3's (the data starting with a frame's sync, `0xFF` then a byte with
+    its top three bits set): the data's bytes times 8 over 1,000 times the
+    bit rate in kbps of the first header, from a table of 16 rows by 5
+    columns -- the row the header's bit rate index, the column 0 for MPEG 1
+    layer I, 1 for its layer II, 2 for its layer III, 3 for MPEG 2 or 2.5
+    layer I and 4 for their layers II and III, a reserved layer or version
+    column 0; rows 0 and 15 hold -1, so a free-format or bad index gives a
+    negative length;
   - for anything else, a warning and 0.
 
   The script waits that long for each line.

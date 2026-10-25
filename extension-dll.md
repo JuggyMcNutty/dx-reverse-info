@@ -190,6 +190,11 @@ are `exec` exports.
   - sends `VisibilityChanged` to the window and to its descendants, each
     then playing its `visibleSound` or `invisibleSound`;
   - lays the tree out again.
+- **`IsVisible(bRecurse)` and `IsSensitive(bRecurse)`** (`execIsVisible`,
+  `0x10051a10`; `execIsSensitive`, `0x10051bd0`): the optional starts true,
+  so a call without it recurses -- up the parents: true when the window and
+  every ancestor has the flag, false at the first that lacks it. With
+  `False`, the window's own flag.
 - **A new window** (`NewChild`, `CreateNewWindow`, `0x1004df70`) starts
   hidden. Its parent gets `ChildAdded`, then the parent and each ancestor
   `DescendantAdded`, all before the window's `InitWindow`. Then, unless
