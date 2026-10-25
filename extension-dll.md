@@ -57,6 +57,9 @@ are `exec` exports.
 | `XExtString` | `UObject` | 0x38 | 7 |
 | `XExtensionObject` | `UObject` | 0x28 | 1: `StringToName` |
 | `APlayerPawnExt` | `APlayerPawn` | 0x99c | 3: `PreRenderWindows`, `PostRenderWindows`, `InitRootWindow` |
+  `InitRootWindow` (`0x10037e0b`) makes the pawn's root only when its `rootWindow`
+  (`+0x894`) is None, and keeps it there: a root per pawn, the engine drawing
+  its viewport's player's.
 | `XGameEngineExt` | `UGameEngine` | 0xd0 | -- (C++ only: the base of `DeusEx.DeusExGameEngine`) |
 | `XInputExt` | `UInput` | 0xfb0 | -- (C++ only: the ini's `Input=Extension.InputExt`) |
 
@@ -208,7 +211,19 @@ are `exec` exports.
 
   The object is deleted unless its `lockCount` holds it.
 - **The pointer** (`XRootWindow::PaintWindows`, `0x1003ac18`) is drawn last,
-  while a window takes the mouse and the root's `bCursorVisible` holds:
+  while a window takes the mouse and the root's `bCursorVisible` holds. Which
+  (`XWindow::QueryCursor`, `0x1004f910`): from the window under the mouse up
+  its parents, each is asked `CursorRequested` with the point in its own
+  coordinates (the mouse window's point plus each window's place as it goes
+  up), the hot spots given as −1 and the colour as white; a texture answered
+  is taken with the hot spot, colour and shadow the event gave, else the
+  window's `defaultCursor` with its `defaultCursorShadow`, `defaultHotX` and
+  `Y` and `defaultCursorColor`. A hot spot under 0 or not under the texture's
+  size becomes half the size less one. The shadow is drawn first with style
+  4 (modulated), then the cursor with style 2 (masked) in the colour, both at
+  the mouse less the hot spot. `SetDefaultCursor`'s native sets all five: an
+  omitted shadow is none, hot spots −1, the colour white.
+  `bCursorVisible`:
   `Init` sets that as the root starts; `ShowCursor` clears and sets it. A
   modal window with a parent takes the mouse as it is shown and lets it go
   as it is hidden (`XModalWindow::VisibilityChanged`, `0x10037330`, counting

@@ -287,6 +287,16 @@ fields, after their properties (none):
   its `Destination` (both made level when it walks) `MinHitWall` or less along
   the normal; then, with `HitWall` not probed and the pawn not falling, its
   `MoveTimer` goes to −1 and `bFromWall` is set instead.
+- **A projectile's move** (`AActor::physProjectile`, `0x103d4600`): in steps
+  of the time left, up to 8, each the velocity less the zone's fluid friction
+  (in water) plus the acceleration × the time left, a `Projectile` held to its
+  `MaxSpeed`, and one `MoveActor` by the velocity × the tick's whole time (not
+  the step's). A move that stops, the actor living and not teleported, gets
+  `HitWall` straight (not `processHitWall`) with the hit's actor, the level's
+  for the world: a mover's too. With `bBounce` the step's time not moved goes
+  back to the time left, twice at most, and an actor now falling takes
+  `physFalling` for it. Without `bBounce` the velocity is then the tick's move
+  over the tick.
 - **Ladders and the floor's texture** (`0x103cc450`), first in `physWalking`,
   `physFalling` and `physSwimming`, for a player only. Lines from 0.95 of its
   height under its middle, 2 × its radius out toward its facing (level), its
@@ -1242,6 +1252,11 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   line forwarded to the running game runs
   ([the receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
 
+- **A client's travel** (`UGameEngine::SetClientTravel`, `0x1038fa10`): the
+  player's viewport keeps the URL, its type and whether items travel; then
+  `PreTravel`, with no argument, goes to every actor of the level that has the
+  function, in actor-list order -- the mission scripts' among them.
+
 ## A key's binding
 
 A key's binding is a line of commands with `|` between them (`[Engine.Input]`
@@ -1283,7 +1298,11 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   yet begun (`bBegunPlay` unset), in order: the level's time set to 0; the
   game's `InitGame`; every actor's `PreBeginPlay` and `BeginPlay`; each actor's
   zone; every actor's `LastRenderTime` set to −10 s, whatever its map kept;
-  `PostBeginPlay`; `SetInitialState`; the actors' bases. Each pass runs over
+  `PostBeginPlay`; `SetInitialState`; the actors' bases: an actor with an
+  `AttachTag` bases the first actor of that tag on it; else a decoration,
+  inventory item or pawn with no base that collides with the world and is at
+  rest (none or rotating physics) gets `FindBase`'s ([moving](#moving)), and
+  one it based on the level keeps none. Each pass runs over
   the actor list as it grows: an actor spawned during the start takes the
   later passes too, after the same events from its spawn (a map's carcass
   spawns its items in `PostBeginPlay`, and the start's `SetInitialState`
@@ -1299,6 +1318,13 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   (`iFirstDynamicActor`, `ULevel`+0x110), where every pass of its tick starts,
   so a static actor is never ticked: on Liberty Island, 1,833 of some 2,600
   actors at its start. A spawned actor, never static, goes on the list's end.
+- **State code** (`AActor::ProcessState`, `0x103e5b60`), each tick for an actor
+  with a state frame and code, with authority or in a simulated state, not
+  destroyed: a latent action pending ticks first; then bytecodes run one after
+  another until the code ends or a latent action starts, before each the
+  actor's `bDeleteMe` ending them, and a state change counted (the frame's
+  node changed by a `GotoState`), the fifth ending the tick's.
+
 - **The player's login** (`ULevel::SpawnPlayActor`, `0x10396bd0`), a save's
   load's too: the game's `Login`, its options the URL's (a save's
   `?load?loadonly?loadgame` and the default player's, so `GameInfo.Login`
