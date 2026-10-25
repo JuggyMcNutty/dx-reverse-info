@@ -381,7 +381,9 @@ fields, after their properties (none):
 - **The latent moves** (`execMoveTo` `0x103bceb0`, `execMoveToward`
   `0x103bd150`; polls `0x103bd060`, `0x103bd370`): the call clears
   `bReducedSpeed`, holds the speed to 0..`MaxDesiredSpeed`, times the move
-  (`setMoveTimer`: 1 + 1.3 × distance / (the physics' speed × `DesiredSpeed`);
+  (`setMoveTimer`, `0x103be160`: 1 + 1.3 × distance / (the physics' speed ×
+  `DesiredSpeed`) -- `GroundSpeed` walking, falling or on a wall, `AirSpeed`
+  flying, `WaterSpeed` swimming, 200 with any other physics, none included;
   0.5 with no speed; 1.2 s toward a pawn) and takes the first step at once.
   - Each tick after: the destination is the target's place (a flyer's 0.7 of a
     pawn's height higher); a walking pawn with `bAdvancedTactics` has its
@@ -389,7 +391,10 @@ fields, after their properties (none):
     around what they bumped); a pawn target's speed is kept as it was, and one
     in water is given up by a pawn that cannot swim.
   - `APawn::performPhysics` counts the move's time down and keeps
-    `AvgPhysicsTime` = 0.8 × itself + 0.2 × the tick (`0x103c9c37`).
+    `AvgPhysicsTime` = 0.8 × itself + 0.2 × the tick (`0x103c9c37`); it runs
+    only for an actor with physics (`AActor::Tick`: `Physics` not none, the
+    role not an autonomous proxy), so a pawn with no physics keeps its time
+    and its move never runs out.
   - `WaitForLanding` (`0x103bb6f0`, poll `0x103bb730`) waits only while the
     pawn falls: `LatentFloat`, 2.5 at the call, counts the fall down, and once
     it is under 0 each tick sends `LongFall`.
@@ -482,7 +487,7 @@ fields, after their properties (none):
   (`0x103bd5f0`, `0x103bd8c0`; speed 1 by default): UE1's strafes with Deus Ex's
   speed. A player's `DesiredSpeed` is its `MaxDesiredSpeed`; an NPC's is that
   held to 0..speed. Both clear `bReducedSpeed` and time the move by its
-  distance. `StrafeTo` drops the move target and looks at the focus;
+  distance (`setMoveTimer`), the speed set first, so the time counts at it. `StrafeTo` drops the move target and looks at the focus;
   `StrafeFacing` needs a target (without one it does nothing), faces it and
   looks at where it is. The scripts give no speed: NPCs running and firing
   (`StrafeFacing`, in combat), stepping back from a door (`StrafeTo`).
@@ -1201,7 +1206,9 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   main animation's vertices as its difference from the mesh's first frame, so a
   blend sequence moves only what it changes. A slot tweening in moves from its
   last pose, cached per actor and slot, toward the sequence's first frame.
-  `UMesh::GetFrame` does not blend.
+  `UMesh::GetFrame` (`0x103a7780`) does not blend. Either draws an actor whose
+  `AnimSequence` the mesh lacks -- `None`, most decorations' -- at the mesh's
+  frame 0, not tweened; a blend slot naming one is passed over.
 - **Its vertex count.** `GetFrame` works out only the vertices the renderer's
   budget asks for, and the special ones, at most a frame's
   ([mesh detail](render-dll.md#mesh-detail)); tweening from the actor's cached
