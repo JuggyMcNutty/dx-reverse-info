@@ -286,8 +286,14 @@ run in its tick, after its script's `Tick` and before its children
   (`XModalWindow::Init`) and each tab group made under it. It is sorted top
   to bottom, then left to right, by each group's place: that of its first
   traversable window (`ComputeTabGroupLocation`, `0x10045000`).
+- **`SetSensitivity`** (`0x1004c890`): the flag set, and only when that
+  changes what the window has in effect (its own flag and every parent's)
+  the focus and a grab are checked (below), the accelerator table marked,
+  and `SensitivityChanged` sent with the new effect to the window and, down
+  through them, to each child whose own flag is on
+  (`InvokeSensitivityChange`, `0x10050ef0`).
 - **The focus moving off** (`CheckFocusWindow`, `0x10050b80`), which
-  `SetChildVisibility` and `SetSelectability` call: a focus window that is no
+  `SetChildVisibility`, `SetSelectability` and `SetSensitivity` call: a focus window that is no
   longer traversable with the modal check goes to the topmost modal's (or
   the root's) `preferredFocus` when that is traversable, else on as
   `MoveFocus` right moves it, and to none when that leaves it where it was.
