@@ -1175,7 +1175,10 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
     multi-hit check's BSP part (the iterators, `TraceActors`, `TraceTexture`)
     stop at a mover where it was filed, the hit the level's. A box is stopped
     only by the hull of a leaf of the level's own BSP, which no filed polygon
-    has: a filed mover stops no box.
+    has: a filed mover stops no box. Nor do the node flags a caller passes
+    reach a box: the box check keeps them (`0x103f18e0`) and never reads them
+    (`0x103f42f0`), so an `NF_NotVisBlocking` surface stops a box as any
+    other.
 - **`VisibleActors(BaseClass, Actor, Radius, Loc)`** (`0x103e5260`): each actor
   in the level's list, not hidden, of the class, whose location lies strictly
   within `Radius` of `Loc` (a radius of 0, the default: no limit), with
