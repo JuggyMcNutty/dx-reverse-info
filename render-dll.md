@@ -142,6 +142,11 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
     drawn), a translucent one with its own flags, over the reflection.
   - **Actors**: the viewer's pawn shows in it
     ([which actors are drawn](#which-actors-are-drawn)).
+- **A warp zone's frame**: `OccludeBsp` opens one for a portal surface whose
+  zone beyond is a `WarpZoneInfo`'s, while the frame's `Recursion` is under
+  3, only with the zone's `OtherSideActor` set, calling the zone's
+  `Generate` first when it is not (`FindFunctionChecked`); with none still,
+  no frame.
 
 ## The overlays
 
@@ -170,6 +175,11 @@ the world: no wall hides any part of it.
   (`REN_Wire`) for the call. The game sets neither: `Weapon`'s and
   `Inventory`'s `RenderOverlays` (`Engine.u`) call
   `Canvas.DrawActor(self, false)`.
+  Both natives clear the actor's `bHidden` for the draw and set it
+  afterwards, whatever it was. `Canvas.DrawClippedActor`
+  (`execDrawClippedActor`, `0x103780d0`) does the same through the frame
+  with its `X`, `Y`, `XB` and `YB` swapped for the call's
+  (`ComputeRenderCoords`, `ComputeRenderSize`), put back after.
 - **No depth of the world is left** after the clear, for the overlays or
   for the windows the player's `PostRenderFlash` draws after them: an actor
   that `GC.DrawActor` draws there without `bClearZ` shows through walls, as
