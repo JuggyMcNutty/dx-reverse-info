@@ -166,6 +166,18 @@ Its only users are `DeusExPlayer`'s debug console commands.
   - The GOG build's ini: `CachePath=..\Cache`, `CacheExt=.uxx`,
     `PurgeCacheDays=30`.
 
+- **A tagged property the class cannot take** (`UStruct::SerializeTaggedProperties`,
+  `0x10126730`) is logged and its bytes skipped, the object loading on: a name no property
+  has (`Property %s of %s not found`), another type (`Type mismatch in %s of %s: file %i,
+  class %i`), an element past the static array (`Array bounds in %s of %s: %i/%i`), another
+  struct (`Property %s of %s struct type mismatch %s/%s`), a native or, on a persistent
+  archive, transient property (`Property %s of %s is not serialiable`, sic); each skip logs
+  `Skipping %i bytes of type %i`, but for `XLevel`. A struct's binary (`UStruct::SerializeBin`,
+  `0x10126610`) is every member of it and the structs it extends, native members left out
+  and transient ones on a persistent archive, every element of a static array member;
+  a dynamic array's (`UArrayProperty::SerializeItem`, `0x10168520`) its count then each
+  element's.
+
 ## Garbage collection
 
 An object stays while it is reachable from the root set; everything else is
@@ -310,6 +322,49 @@ it walks every property instead and calls `Modify` before each change.
     (`GlobalSetProperty`, `0x101523a0`). Every object of the class or a
     subclass reads it, each then told of the change (`PostEditChange`); then
     the class's defaults; then the class's config is saved.
+
+### A property's text
+
+The text a property is read from and written to -- an ini's value, a `.int` file's, `SET`
+and `GET`, `SetPropertyText` and `GetPropertyText`, a travel's -- by each property class's
+`ImportText` and `ExportTextItem`:
+
+- **A struct** (`UStructProperty::ImportText`, `0x101698b0`): `(key=value,key[i]=value,...)`;
+  a key up to 63 characters, an element index in brackets, `=` (`Illegal or missing key
+  name`); the member found by name among the struct's and the structs it extends, within its
+  dimension, and given the text to import delimited; a key
+  no member has is skipped to the next `,` or `)` at depth 0, a quoted string whole (`Bad
+  quoted string`), nested parentheses counted (`Bad parenthesised struct`, `Incomplete
+  parenthesised struct`); then `,` or `)` (`Bad termination`). Members not named keep their
+  values. The index reader is broken: it starts on the `[` itself, finds no `]` there, logs
+  `ImportText: Illegal array element` and fails the import at that key (the members before it
+  set), so `N[1]=7` is never read -- though the export writes it (TextConsole, 2026-10-26).
+  Out (`ExportTextItem`, `0x10169710`): `(` + each portable member, the struct's own first,
+  then the extended struct's (a Plane's W before X, Y, Z), each element of a static array as
+  `Name[i]=`, joined by `,`, + `)` -- nothing at all when no member prints.
+- **A string** (`UStrProperty::ImportText`, `0x10167980`): delimited, one token by the
+  token reader (`0x10164cb0`): a quoted string's content, `\\` a backslash and `\xx` a hex
+  byte, or a bare run of letters, digits, `_` and `-`, else one character; undelimited, the
+  text whole. Out (`0x101678a0`): quoted when delimited, bare otherwise.
+- **A dynamic array** (`UArrayProperty::ImportText`, `0x10168830`): `(a,b,...)`, the array
+  emptied and each element's delimited text imported; out (`0x10168720`) the elements'
+  text joined by `,` in parentheses.
+- **An object** (`UObjectProperty::ImportText`, `0x10166e20`): `None`; `Type'Name'`, the
+  class `Type` found among the loaded (`StaticFindObject` in any package) and the object by
+  `Name` among its loaded instances, a path or a bare name; else the name among the
+  property class's loaded objects. Nothing found leaves None. Out (`0x10166d40`):
+  `Type'Package.Group.Name'` or `None`. **A class** (`UClassProperty::ImportText`,
+  `0x10167110`): the object's import, then None unless a class deriving from the metaclass;
+  out as an object's.
+- **A bool** (`0x10166380`): `1`, `True` or the localized true word; `0`, `False` or the
+  localized false; anything else fails, the value kept.
+- **`SaveConfig`** (`UObject::SaveConfig`, `0x10151540`): for each property with the flags
+  asked, under the class's path as its section (the declaring class's for a `globalconfig`
+  one, the object's name for a per-object config class): a dynamic array has the section's
+  lines of its name removed and one `Name=element` line written per element; a map's lines
+  are removed; anything else is one key, `Name` or `Name[i]`, its text exported undelimited
+  (a string bare, a struct's members quoted within); the config cache is flushed to disk at
+  once, and every class deriving from the config class re-reads its defaults.
 
 ### The .int files
 
@@ -485,7 +540,13 @@ How the original runs UnrealScript.
   Nothing else is checked: any other call runs.
 - **The mask is set at every `UObject::GotoState`** (`0x1012e8f0`), even
   into the state the object is in: the probes that the state or the class
-  has a function for, less those the state `ignores`.
+  has a function for, less those the state `ignores`. Into another state it
+  first sends `EndState` under `RF_InEndState` (`0x2000`; not from within
+  one), `RF_StateChanged` (`0x1000`) cleared before and tested after: a
+  `GotoState` finished during it sets the flag, and this one then returns
+  preempted (2), its state and label never taken. The state set, `BeginState`
+  the same way. A finished `GotoState` sets `RF_StateChanged` and returns 1;
+  the script's goes to its label only then.
 - **A script's `GotoState`** (`execGotoState`, `0x1013dd00`) calls it only
   for another state than the object's (one left out is the object's own),
   then goes to the label if the change was not preempted by a `GotoState` in
