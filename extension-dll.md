@@ -379,9 +379,11 @@ yaw, its pitch left out.
   parent's corner, left- and top-aligned with no margins and no size set.
 - **`SetPos(x, y)`** (`Move`, `0x1004ce80`) makes the window left- and
   top-aligned with x and y its margins. **`SetSize`**, `SetWidth` and
-  `SetHeight` (`Resize`, `0x1004cf70`) set its size, none below 0;
-  `ResetSize` takes it away; `SetConfiguration` (`Configure`, `0x1004cd40`)
-  does both. **`SetWindowAlignments`** (`0x1004d300`) sets the alignments
+  `SetHeight` (`Resize`, `0x1004cf70`; `0x1004d040`, `0x1004d0e0`) set its
+  size, none below 0, a side unset being −1; `ResetSize`, `ResetWidth` and
+  `ResetHeight` (`0x1004d410`, `0x1004d4c0`, `0x1004d550`) take it away,
+  asking for a layout only when a size was set; `SetConfiguration`
+  (`Configure`, `0x1004cd40`) does both. **`SetWindowAlignments`** (`0x1004d300`) sets the alignments
   and all four margins -- from a script (`0x10052360`) a first margin not
   given is 0, a second the first. Each lays the window out again when it
   changes anything.
