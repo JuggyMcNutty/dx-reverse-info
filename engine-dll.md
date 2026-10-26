@@ -253,6 +253,19 @@ fields, after their properties (none):
   then `SpeechTime`, each above 0 loses the tick, and once under a thousandth
   of a second is set to 0 and sends `PainTimer` (or `SpeechTimer`).
 
+- **Auto-aim's targets** (`APawn::execPickTarget`, `0x103baca0`;
+  `execPickAnyTarget`, `0x103bb130`), `PlayerPawn.AdjustAim`'s:
+  `PickTarget(bestAim, bestDist, FireDir, projStart)` walks the level's pawn
+  list -- a pawn but itself, its health above 0, `bProjTarget`, passed over
+  in a team game (the level's `Game` with `bTeamGame`) when both have a
+  `PlayerReplicationInfo` of one team, and every pawn when the level has no
+  `Game`. One ahead (the direction's dot with the way to its location above
+  0), nearer than 2000, whose aim (that dot over the distance) is above
+  `bestAim`, strictly, and in the pawn's sight (`LineOfSightTo`) becomes the
+  best, `bestAim` and `bestDist` its. `PickAnyTarget` does the same over the
+  level's actor list for the actors that are not pawns and have
+  `bProjTarget`, with no health or team test.
+
 ## Moving
 
 - **A move**
@@ -285,8 +298,10 @@ fields, after their properties (none):
     encroaches on something at its new place and rotation does not move
     (`CheckEncroachment`, without touches), what stands on it left where it
     went. Otherwise it moves and turns at once, refiled in the hash; then the
-    hit's `Bump`s (Deus Ex's `BumpWall` for the level) and the touches of what
-    it passed before the hit.
+    hit's `Bump`s: for the level (the hit's actor its info) Deus Ex's
+    `BumpWall(HitLocation, HitNormal)` to the actor alone, the hit's place
+    the trace's; for an actor the mover does not stand on, `Bump` to each
+    with the other; and the touches of what it passed before the hit.
 - **A wall hit** (`AActor::processHitWall(HitNormal, HitActor)`, `0x103cecc0`):
   nothing when the actor hit is a pawn. Any other actor gets `HitWall` if its
   state probes it. A pawn gets it only with an acceleration, the direction to
@@ -303,6 +318,16 @@ fields, after their properties (none):
   back to the time left, twice at most, and an actor now falling takes
   `physFalling` for it. Without `bBounce` the velocity is then the tick's move
   over the tick.
+- **A moving brush** (`AActor::physMovingBrush`, `0x103de690`), a `Mover`
+  alone: while it interpolates and time is left, its alpha goes on by
+  `PhysRate` × the time; past 1 it is held at 1 and the time past the key
+  kept for another pass. `MV_GlideByTime` eases the alpha (3a² − 2a³). The
+  key is `KeyNum`, at most 8; the place is `OldPos` + (`BasePos` + the key's
+  position − `OldPos`) × the alpha, the rotation likewise, and one
+  `MoveActor` goes there (no test, nothing passed over, failing allowed).
+  Moved at all, the alpha is taken, and at 1 the interpolation ends with
+  `InterpolateEnd`; refused, the alpha stays, the pass's time spent, so the
+  key's overflow tries it once more in the same tick.
 - **Ladders and the floor's texture** (`0x103cc450`), first in `physWalking`,
   `physFalling` and `physSwimming`, for a player only. Lines from 0.95 of its
   height under its middle, 2 × its radius out toward its facing (level), its
@@ -806,7 +831,9 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   line of sight, the pawn moved onto the node, the goal `actorReachable` from
   there, a point `pointReachable`); the first is the start, its distance its
   weight. None: `findPathTo` fails; `findPathToward` takes the nearest anyway
-  for a pawn with `bHunting`, else tries the second way (below).
+  for a pawn with `bHunting`, its squared distance the start's weight (the
+  root is taken only for a goal node found reachable), else tries the second
+  way (below).
 - **`breadthPathFrom(Start, &EndNode, bSinglePath, MoveFlags)`** (`0x103dcd60`),
   the search: best first, from the start over the reach specs the other way
   round (`upstreamPaths`, `0x320`: the node reached is the spec's `startActor`).
@@ -844,7 +871,8 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   The cheapest candidate the pawn's eye sees and `pointReachable` finds replaces
   the route's first node.
 - **The second way** (`findPathToward` only; no goal node reaching the goal, no
-  `bHunting`): the lists are gathered again (the pawn's around wherever the
+  `bHunting`): the lists are gathered again, into what the first pass left,
+  nothing emptied, and none of the pawn's own once anchored (the pawn's around wherever the
   goal-node tries last moved it), `definePathsFor` marks the forward neighbours
   of the pawn's nearest node, `findEndPoint` runs, and the search runs from the
   pawn's first node, its distance its weight. A route ending no farther from the
