@@ -268,6 +268,12 @@ fields, after their properties (none):
     stops 2 units off what it meets, plus the trace's backoff
     ([traces](#traces)): what falls rests 2 + (last move + 2) / 10 over the
     floor.
+  - The answer is whether the actor moved at all: the hit's time above 0
+    once held off, so false for a move of 2 or less into what blocks it, and
+    false for the non-pawn that encroached. The script's `Move(Delta)`
+    (`0x103e3030`) is this move with the actor's own rotation, nothing
+    passed over and failing allowed (`bTest`, `bIgnorePawns`,
+    `bIgnoreBases` and `bNoFail` all 0), its answer given straight.
   - No move (each axis of the delta under 0.0001) and no turn does nothing
     (true). A turn alone, with nothing standing on the actor, only sets its
     rotation (true), but for a brush that is not static, which turns as a
