@@ -602,7 +602,10 @@ The rest are UE1's own. The details:
   outer given, or, with none, in the transient package (`GetTransientPackage`,
   `0x101573e0`): `new(Self)` on the player makes the object in its level's
   package. A flag outside the script's own (`RF_ScriptMask`, `0x704005`) is
-  logged, `new: Flags %08X not allowed`, and left out.
+  logged, `new: Flags %08X not allowed`, and left out. An Object of a config
+  class made so (`new class'X'`, `X` with a `config` variable) hangs the game
+  at exit, saved or not; one of a plain class does not (seen with the
+  harness's probes, 2026-10-26; the cause unread).
 
 ## Names hashed and compared
 
