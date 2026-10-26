@@ -569,9 +569,21 @@ fields, after their properties (none):
   distance. With no start node: the nearest 32 nodes within 1,000 units of
   `FromPoint`, or of the pawn, that the pawn can reach (`actorReachable`), at
   the straight distance.
-- **`ComputePathnodeDistances(startActor)`** (`0x103c8910`): clears the paths,
-  then sets each node's `visitedWeight` to its shortest distance over the path
-  network from `GetPathnodeList`'s nodes (`0x103c8a40`). No script calls it.
+- **`ComputePathnodeDistances(startActor)`** (`0x103c8910`): clears the paths
+  (`clearPaths`), then sets each node's `visitedWeight` to its shortest
+  distance over the path network from `GetPathnodeList`'s nodes
+  (`0x103c8a40`), each node's paths relaxed depth first
+  (`RelaxPathnodeDistances`). No script calls it.
+- **`FindRandomDest`** (`0x103bcb90`, clearing the paths unless told not to;
+  `APawn::findRandomDest`, `0x103dc700`) answers None: its first test
+  returns nothing when the level has navigation points (the branch's sense
+  is the wrong way round), and with none there is nothing to find. What
+  follows, never reached: the first four nodes in the level's list in sight
+  of the pawn's eye, sorted by distance, each not an end point and
+  `actorReachable` walked (`TraverseFrom`, `0x103dcba0`: a node marked an end
+  point, then each of its paths' ends not yet marked, not player-only for a
+  pawn that is not the player, fitting the pawn and within its move flags),
+  and one of the marked nodes picked at random. No script calls it.
 - **`StrafeTo(dest, focus, speed)`** and **`StrafeFacing(dest, target, speed)`**
   (`0x103bd5f0`, `0x103bd8c0`; speed 1 by default): UE1's strafes with Deus Ex's
   speed. A player's `DesiredSpeed` is its `MaxDesiredSpeed`; an NPC's is that
