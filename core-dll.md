@@ -283,6 +283,11 @@ it walks every property instead and calls `Modify` before each change.
     `"a b"` names `a b`.
   - Of a key given twice in a section the last is read, even empty: a user
     ini's second, empty `ngWorldSecret=` beats a first with a value.
+  - The file's bytes (`appLoadFileToString`, `0x101488c0`): a file of even
+    size beginning `FF FE` is UTF-16 little-endian, one beginning `FE FF`
+    big-endian, each unit a character and the byte-order mark dropped; any
+    other file is read byte by byte, each byte a character (Latin-1). So an
+    ini Notepad saved as "Unicode" reads as the 8-bit one does.
 - **`StaticSaveConfig()`** (`0x1013e7c0`): `SaveConfig` of the context's
   class's defaults (`UClass::Defaults`), from an object's call as from the
   class's; the object's own values are never written.
