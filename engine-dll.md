@@ -1162,6 +1162,44 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   slots are passed over, actors being destroyed are not. NPCs keep the index
   between calls to go on where they stopped (pawns, carcasses, food).
 
+## The animation calls
+
+- **`PlayAnim(Sequence, Rate, TweenTime)`** (`0x103e0160`; Rate 1, TweenTime
+  −1 by default): no mesh, or a sequence the mesh lacks, logs ("PlayAnim: No
+  mesh", "PlayAnim: Sequence '%s' not found in Mesh '%s'") and does nothing.
+  Else the sequence is set, `AnimRate` Rate × its rate / its frames,
+  `AnimLast` 1 − 1 / its frames, no loop or finish, `bAnimNotify` as it has
+  notifies; the tween in ([below](#the-tween-in)); `SimAnim` packed (the
+  frame × 10,000, the rate × 5,000 to 32,767, the tween rate × 1,000, the
+  last frame × 10,000), its last member one more when all four are as they
+  were, so the same animation again goes again; then `OldAnimRate` the rate.
+- **`LoopAnim(Sequence, Rate, TweenTime, MinRate)`** (`0x103e05e0`; Rate 1,
+  TweenTime −1, MinRate 0): the same logs ("LoopAnim: ..."). The sequence
+  already looping and moving -- tweening at a rate, or playing at one --
+  goes on: `bAnimFinished` cleared, its rate and `AnimMinRate` (MinRate × the
+  sequence's rate / its frames, 0 for 0) set anew, `OldAnimRate` the rate,
+  and `SimAnim`'s rate and last frame (negative, a loop's) packed, one more
+  when unchanged. Else it starts as `PlayAnim`'s does, looping, with the
+  least rate, the tween in, `OldAnimRate` the rate and `SimAnim` packed with
+  the last frame negative, never bumped.
+- **`TweenAnim(Sequence, Time)`** (`0x103e0bd0`; Time 0): the same logs
+  ("TweenAnim: ..."). The sequence is set with no loop, notify or finish, no
+  last frame, no rate, least rate or old rate; a Time over 0 tweens a frame
+  over it (`TweenRate` 1 / (the frames × Time), the frame −1 / the frames),
+  none tweens nothing (the frame 0); `SimAnim` packed with no rate or last
+  frame.
+- **The tween in**, `PlayAnim`'s and `LoopAnim`'s, after the rate and last
+  frame: nothing playing before (`AnimSequence` None) makes TweenTime 0. A
+  one-frame sequence (`AnimLast` 0) drops its notify, least and old rates
+  and its rate, and tweens its whole frame (−1) at 1 / TweenTime, or 10 a
+  second with none. Else TweenTime over 0 tweens a frame (−1 / the frames) at
+  1 / (the frames × TweenTime); −1 tweens a frame at `OldAnimRate` when that
+  is over 0, at 1 / (the frames × 0.025) when it is 0 (after a tween, or
+  nothing), and after a velocity-scaled rate (one under 0) at the greater of
+  the velocity's size × −`OldAnimRate` and half the new rate; any other
+  tweens nothing, the frame set to 0.001 (`PlayAnim`) or 0.0001
+  (`LoopAnim`), a shade past the first.
+
 ## Blend animations
 
 Four slots of animation over an actor's main one (`BlendAnimSequence[4]` and the
