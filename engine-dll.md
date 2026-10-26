@@ -1276,9 +1276,19 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
     landing at the second wall too, whose place is that end. The speed is
     held to the zone's terminal velocity at the step's end, not in a
     bouncing step that hit.
+  - Each move (`0x1036ca90`) is `MoveActor`'s: the step's line is checked
+    (`MultiLineCheck`, the cylinder as the extent) to 2 units past its end;
+    the first hit the level's or a `bBlockActors` actor's, none of the
+    thrower's or of an actor based on it, is taken; a hit ends the move
+    2 units short of it along the line (no move within 2 units), the hit's
+    time that of the move made over the step's length; the region is found
+    again where the move ends. A move under 0.0001 on every axis is not
+    made, and the last move's hit stands for it.
   - It fails (0, its final location the start) on entering water, leaving the
-    world, a step longer than about 1,580 units, or running out of time; else it
-    returns the time of flight, and where it landed.
+    world, a step longer than about 1,580 units, or running out of time, the
+    landing step counted; else it returns the time of flight, and where it
+    landed. On water the step count is set to 0 and then counted, so its time
+    is one step's (0.01 with steps of 0.01 s), the location the start.
 
   NPCs use it for where a falling grenade will land, and whether a throw of
   their own is safe (`AISafeToThrow`).
