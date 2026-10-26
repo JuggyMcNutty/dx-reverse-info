@@ -1080,6 +1080,12 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   default the actor's own place): each actor in the level's list, of the
   class, whose location lies strictly within `Radius` plus its own
   `CollisionRadius` of `Loc`, hidden or not, colliding or not.
+- **`BasedActors`** (`0x103e4800`), **`ChildActors`** (`0x103e4600`) and a
+  zone's **`ZoneActors`** (`0x103e5960`) walk the level's list the same way,
+  from the slot after the last given, so an actor spawned during the body is
+  reached and the order is the level's: those based on the actor; those whose
+  owner chain reaches it, itself among them (`IsOwnedBy` starts at the actor);
+  those whose region is the zone.
 - **The line walk** (`UModel::LineCheck` with no extent, `0x103f3560`) follows
   the BSP's solid space, not its polygons. The segment is classified plane by
   plane, both ends within a thousandth of a unit of the plane counting as in
