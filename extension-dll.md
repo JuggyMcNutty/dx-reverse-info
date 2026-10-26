@@ -1002,6 +1002,12 @@ test.
 - **Text** keeps its own flags, which only `EnableTranslucentText`
   (`0x10027610`) sets: masked, or translucent when it is on, never
   modulated, whatever the style.
+- **`DrawBox(x, y, w, h, orgX, orgY, thickness, texture)`** (`0x10028c50`):
+  nothing without a texture, with drawing off, or with a thickness of 0 or
+  less. A box no wider or taller than twice the thickness is one
+  `DrawPattern` of the whole. Else four that do not overlap: the top and
+  bottom strips the box's width, the left and right between them, each
+  tiled from the origin moved along with it.
 
 ### Borders
 
