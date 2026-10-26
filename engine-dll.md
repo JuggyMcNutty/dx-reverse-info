@@ -1172,7 +1172,7 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
   mesh", "PlayAnim: Sequence '%s' not found in Mesh '%s'") and does nothing.
   Else the sequence is set, `AnimRate` Rate × its rate / its frames,
   `AnimLast` 1 − 1 / its frames, no loop or finish, `bAnimNotify` as it has
-  notifies; the tween in ([below](#the-tween-in)); `SimAnim` packed (the
+  notifies; the tween in (below); `SimAnim` packed (the
   frame × 10,000, the rate × 5,000 to 32,767, the tween rate × 1,000, the
   last frame × 10,000), its last member one more when all four are as they
   were, so the same animation again goes again; then `OldAnimRate` the rate.
