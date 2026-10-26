@@ -253,6 +253,11 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   `NETSPEED <rate>`. `LANSPEED` does the same for a `?LAN` server, and keeps its
   rate as `ConfiguredInternetSpeed` too, the field `NETSPEED` writes (the
   connection takes `ConfiguredLanSpeed`, the next one, for `?LAN`).
+- **The connection's** (`UNetConnection::Exec`, `0x10401c50`): `GETPING`
+  answers a float of the connection times 1000 as an int and `GETLOSS`
+  another float as an int -- by UT's `UnNet.h` layout its best lag of the
+  stats period and its incoming packet loss in percent -- then
+  `UPlayer::Exec`.
 
 ## Server travel
 

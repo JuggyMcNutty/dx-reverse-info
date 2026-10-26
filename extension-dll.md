@@ -558,6 +558,15 @@ yaw, its pitch left out.
   - With nothing selected the selection is -1, so `GetSelectedArea`
     (`0x1001d5c0`) gives 0 and 0.
 
+- **An edit field's copy, cut and paste** (`CopyToTextBuffer`, `0x1001e5f0`;
+  `PasteFromTextBuffer`, `0x1001e6b0`): a copy or cut takes the selection into
+  a text buffer of the DLL's own, one for every field, and does nothing with
+  no selection; a paste puts the buffer's text in. No desktop clipboard is
+  touched (the DLL imports no clipboard function).
+- **A log window** (`XTextLogWindow::Init`, `0x100474b0`): left and top
+  aligned, each line kept 5 s. Its tick (`0x10047c30`) counts every line's
+  time down and drops the lines whose time is out, so a timeout of 0 drops a
+  line at the tick after it was added.
 ## Buttons
 
 - **Defaults** (`XButtonWindow::Init`, `0x10007640`): no repeat, a press
@@ -737,6 +746,12 @@ new game.
 
 ### Rows and fields
 
+- **Its defaults** (`XListWindow::Init`, `0x1002e900`): the delimiter `;`,
+  auto sort off, auto-expanding columns, multiple selection and hot keys
+  (column 0) on, a column margin of 3 and a row margin of 1, double clicks
+  (`maxClicks` 2), one column; the selected text black (`inverseColor`,
+  which `SetHighlightTextColor`, `0x10031310`, sets), the highlight white
+  and the focus outline grey, 1 thick; selectable.
 - **Rows.** A row's text is split at the delimiter's first character into a
   field for each column (`FillRow`, `0x100322a0`): a field past the last
   column is dropped, a column past the last field gets an empty one, and a
