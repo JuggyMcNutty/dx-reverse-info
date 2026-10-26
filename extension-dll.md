@@ -200,6 +200,11 @@ are `exec` exports.
   `DescendantAdded`, all before the window's `InitWindow`. Then, unless
   `NewChild` was asked not to, it is shown as `Show` shows it, so
   `VisibilityChanged` reaches it and every window its `InitWindow` made.
+  No class gives None. The window is locked from its `InitWindow` to after
+  its layout, so a destroy from inside (`SafeDestroy`) waits until the lock
+  lifts, and such a window is None to its maker.
+- **`KillAllChildren`** (`0x100505d0`) takes each child in turn by the next
+  it had before the child's destroy.
 - **`DeusExHUD`** overrides the event to lay the HUD out again as its parts
   come and go, the InfoLink and the log among them.
 - **`Destroy`** (`SafeDestroy`, `0x1004c0b0`, through `PreDestroy`,
