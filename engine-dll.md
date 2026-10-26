@@ -302,6 +302,17 @@ fields, after their properties (none):
     `BumpWall(HitLocation, HitNormal)` to the actor alone, the hit's place
     the trace's; for an actor the mover does not stand on, `Bump` to each
     with the other; and the touches of what it passed before the hit.
+- **A smoothed move** (`AActor::moveSmooth(Delta)`, `0x103c9020`; the
+  script's `MoveSmooth`, `0x103c8e10`, clears `bJustTeleported` first), a
+  brush's push (below) and a client's smoothing (`PostNetReceive`): one
+  `MoveActor` of the delta (no test, nothing passed
+  over, failing allowed); stopped, a slide by the rest of the move less its
+  part into the normal, unless that heads back; a wall the slide meets gets
+  `HitWall` (its normal and actor), `TwoWallAdjust` and a third move. One
+  hit serves the three moves, and a move of nothing (each axis under 0.0001)
+  leaves it as it was, so a slide of nothing after a blocked move still
+  sends `HitWall` with the first move's hit. The answer is the first move's:
+  whether the actor moved at all.
 - **A wall hit** (`AActor::processHitWall(HitNormal, HitActor)`, `0x103cecc0`):
   nothing when the actor hit is a pawn. Any other actor gets `HitWall` if its
   state probes it. A pawn gets it only with an acceleration, the direction to
