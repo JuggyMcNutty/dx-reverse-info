@@ -50,6 +50,9 @@ The natives are the links': eight of `InternetLink`, nine of `TcpLink`, five of 
 - **A connection** (`UTcpipConnection`, `0x107092d0`): packets of at most 512 bytes
   (`MaxPacket`), each counted against the rate as 32 bytes more (`PacketOverhead`,
   [packets](network.md#packets)); `LowLevelSend` (`0x10709580`) sends each as one datagram.
+  A server named by a host name, not a dotted number, is looked up on a thread the
+  constructor starts ("Resolving <host>"); until it answers, `LowLevelSend` sends nothing,
+  and a lookup that failed logs its error and fails the pending level.
 
 ## The script's links
 

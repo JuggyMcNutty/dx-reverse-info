@@ -110,7 +110,10 @@ The control channel carries lines of text: the server's side is
    `ConfiguredInternetSpeed`, or `ConfiguredLanSpeed` with `?LAN` in its URL
    (`0x10401490`).
 6. **Server:** spawns the player (`SpawnPlayActor`, the game's `Login`, as an
-   autonomous proxy), or answers `FAILURE` and the reason.
+   autonomous proxy), or answers `FAILURE` and the reason. The `JOIN` is taken
+   whenever the connection has no player yet, whatever came before it: a
+   `HELLO` and a `JOIN` log a player in with no challenge answered and no
+   `PreLogin` asked (`0x1039f780`).
 
 A client refused (`FAILURE`) or told `UPGRADE` stays in the level it was in,
 shown why ([what the player sees](#what-the-player-sees-of-a-join)). A
@@ -413,7 +416,8 @@ its heritage list, its one generation its counts.
 
 - **An object:** a bit; 1 and a channel number for a dynamic actor (its actor
   channel on this connection; 0 for None or an actor without one), 0 and the
-  object's number otherwise (`UPackageMapLevel::SerializeObject`, `0x104089f0`).
+  object's number otherwise (`UPackageMapLevel::SerializeObject`, `0x104089f0`);
+  an object by number is loaded if it is not (`IndexToObject` with Load).
 - **A name:** its number, up to the count of names; the count is None.
 - **A class's fields:** numbered on from its parent class's: its own replicated
   properties and its net functions that override none, in the order of its
@@ -487,8 +491,13 @@ copy and is compared with its defaults.
   (the client has it from the map), any other by class and location, for the
   client to spawn. It is reliable, except for an actor sent to keep, whose one
   unreliable bunch opens and closes the channel; the actor is then one of the
-  connection's sent temporaries, until the channel goes with its open never
-  acknowledged, when it can go again.
+  connection's sent temporaries. A temporary channel goes only once its open
+  is acknowledged (`UChannel::ReceivedAcks`, `0x103fac10`); one whose open
+  packet is lost stays, its open never acknowledged, for the connection's
+  life: the NAK (`UNetConnection::ReceivedNak`, `0x10402f10`) resends the
+  reliable bunches and, for an actor channel, marks the lost properties for
+  sending again (`UActorChannel::ReceivedNak`, `0x103fd4e0`), and deletes
+  nothing.
 - **Roles:** `bNetOwner` is whether the connection's player owns the actor (its
   top owner that player's pawn). An autonomous proxy goes as a simulated one
   unless the client owns it or it has no instigator (or its instigator was last
@@ -517,7 +526,10 @@ copy and is compared with its defaults.
 
 **Receiving** (`UActorChannel::ReceivedBunch`, `0x103fd980`): a new channel's
 first bunch names the actor, or its class and place; that actor is spawned there
-without looking for room, its roles exchanged (a remote-owned spawn). Each bunch
+without looking for room, its roles exchanged (a remote-owned spawn). A first
+bunch that is not an open ends the game (`GError`, "New actor channel received
+non-open packet"), and a spawn that gives no actor fails an assertion
+(`InActor`). Each bunch
 then sets `bNetOwner` (whether the actor's top owner is a player pawn one of
 this machine's viewports plays), and reads fields by number to its end:
 
