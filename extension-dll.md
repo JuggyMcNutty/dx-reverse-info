@@ -861,6 +861,26 @@ every column to its margins.
 - **`ShowFocusRow`** (`0x10033040`) asks the parent to scroll the focus row
   into view.
 
+### Drawing
+
+`XListWindow::Draw` (`0x10033350`), the GC pushed and popped round it, in
+masked style with word wrap and special text off, left and top aligned:
+
+- the rows the clip reaches, from the first the clip's top falls in to the
+  one its bottom does;
+- each selected row's highlight: `DrawPattern` of the highlight texture in
+  the highlight colour across the whole row;
+- column by column, the hidden passed over, in the column's font: each
+  field's text in the inverse colour on a selected row, else the column's;
+  the clip cut down to the cell less the column and row margins; the text
+  placed by the column's alignment -- the left margin in, the right margin
+  short of the right edge, or centred by its measured width -- with its
+  bottom a row margin less one over the row's end (`y + lineSize − height −
+  rowMargin + 1`), drawn at its measured size;
+- while the list is the focus window, the focus row's outline:
+  `DrawBox` of the focus texture in the focus colour, `focusThickness`
+  thick, across the whole row.
+
 ## The computer window
 
 `XComputerWindow` types text out a character at a time behind a cursor, on a
