@@ -260,6 +260,15 @@ it walks every property instead and calls `Modify` before each change.
     | int, byte or bool | what it had: its text is neither a number nor a known word (the token reader gives an empty token, `0x10164cb0`) |
 
     So a game ini's `ServerName=` is a server's name, empty.
+
+    The token reader (`0x10164cb0`, UE1's `ReadToken`) gives: a quoted
+    string to its closing quote, with `\\` and `\xx` (two hex digits, one
+    that is none counting 0) escapes, no token when the quote is left open
+    ("ReadToken: Bad quoted string"); else, from a letter or digit, the run
+    of letters, digits, `_` and `-` (and `.` where dots are allowed); else
+    the first character alone. A name's import (`UNameProperty::ImportText`)
+    is its first token, dots not allowed: `-7` names `-`, `a b` names `a`,
+    `"a b"` names `a b`.
   - Of a key given twice in a section the last is read, even empty: a user
     ini's second, empty `ngWorldSecret=` beats a first with a value.
 - **`ResetConfig()`** (`0x1013e8c0`; it calls `UObject::ResetConfig`,
