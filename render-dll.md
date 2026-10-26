@@ -560,7 +560,10 @@ table counts its shape as changing.
 | palette | through its palette once over its life (`1 − LifeSpan ÷` the default's, times 255), or at 35 turns a second over the period; times `(2 red + 3 green + blue) ÷ 1536 × 2.8` of the entry |
 
 Both pulses' sines run at 35 turns a second over `LightPeriod` (at
-least 1), from `LightPhase`'s 256ths of a turn.
+least 1), from `LightPhase`'s 256ths of a turn. The palette loop runs at
+that rate too, but adds `LightPhase` in whole turns, which its entry, the
+turn's 256ths modulo 255, drops: the phase changes nothing, and the
+palette's last entry never shows (`0x10b05d40`).
 
 ### Light maps
 
