@@ -958,6 +958,9 @@ test with `noCheck`; Deus Ex's particle iterator moves its proxy with neither
 - A pawn's feet (its location − its collision height) and head (+ `EyeHeight`)
   the same way, each with `FootZoneChange` or `HeadZoneChange` before it is set;
   then, off clients, its `PlayerReplicationInfo`'s `PlayerZone`.
+- A test (`MoveActor`'s and `FarMoveActor`'s test moves, `jumpLanding`'s among
+  them) sets the three regions the same and sends no event, so a test move's
+  feet are in the zone they moved to.
 
 That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
 (`Pawn.FootZoneChange` and `HeadZoneChange`), stray inventory in a
@@ -1446,6 +1449,24 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   read, `PlayerInput` and `PlayerTick`, and the input read again with −1
   (cleared); so its physics, later in the same tick, take the move
   `PlayerTick` makes.
+
+## Touches
+
+- **`AActor::BeginTouch(Other)`** (`0x10369570`): each side links on its own
+  (`0x10369630`), this actor's side first, then the other's unless this
+  side's `Touch` event undid the link. A side already touching the other
+  does nothing more. Else it takes the last free of its four `Touching`
+  slots; with none free it makes room: every toucher with no physics is
+  untouched (`EndTouch`, both told), the last of them giving the slot; else,
+  for a pawn coming, the first toucher that is no pawn; else, for a player
+  coming, the first that is no player; with no room made the side stays
+  unlinked, the other side linked all the same. The other goes in the slot
+  and the side's `Touch` is sent. So a trigger full of resting decorations
+  drops them for a pawn walking in.
+- **`AActor::EndTouch(Other, bNoNotifySelf)`** (`0x10369970`): this actor's
+  first slot holding the other is cleared and, unless told not to, its
+  `UnTouch` sent; then the other's first slot holding this one, and the
+  other's `UnTouch` sent.
 
 ## Destroyed actors
 
