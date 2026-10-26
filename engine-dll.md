@@ -1179,6 +1179,10 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
     reach a box: the box check keeps them (`0x103f18e0`) and never reads them
     (`0x103f42f0`), so an `NF_NotVisBlocking` surface stops a box as any
     other.
+- **Every actor iterator** (`AllActors` `0x103e43f0`, `BasedActors`,
+  `ChildActors`, `TouchingActors`, `RadiusActors`, `VisibleActors`,
+  `ZoneActors` `0x103e5960`, `CycleActors`): a None class is Actor, and the
+  actors walked are the caller's own level's (`XLevel`).
 - **`VisibleActors(BaseClass, Actor, Radius, Loc)`** (`0x103e5260`): each actor
   in the level's list, not hidden, of the class, whose location lies strictly
   within `Radius` of `Loc` (a radius of 0, the default: no limit), with
@@ -1821,7 +1825,19 @@ it would.
   subsystem's own call for it (its virtuals at +0x90, +0x94, +0x98), which
   applies it at once instead of at the next tick
   ([`Galaxy.dll`](galaxy-dll.md#volume)).
-- **`GetPlayerPawn()`**: the first viewport's actor.
+- **`GetPlayerPawn()`** (`0x1036d2a0`): the first viewport's actor; None with
+  no client (a dedicated server), no viewport or no actor in it.
+- **`RemovePawn()`** (`APawn::execRemovePawn`, `0x103bb570`): the pawn
+  unlinked from the level's `PawnList`, its own `nextPawn` left as it was.
+- **`GetNextSkin(Prefix, CurrentSkin, Dir, SkinName, SkinDesc)`**
+  (`0x103b8f10`): over the `.int` files' registered Texture objects
+  (`GetRegistryObjects`) in their order, those whose name starts with
+  `Prefix` (`appStrnicmp` over its length: an empty prefix takes all). `Dir`
+  0 gives the one named `CurrentSkin` (`appStricmp`), 1 the one after it
+  (the first when it is last), −1 the one before it (none when it is first);
+  a `CurrentSkin` not among them gives the last of them; none at all, two
+  empty strings. The game's `.int` files register no Texture, so the server
+  browser's `LocalizeSkin` always falls back to the skin's item name.
 - **`FGetHSV(hue, saturation, value)`** (`0x103ec8d0`): the colour of a light
   and of a zone's ambient light, as the renderer lights with it
   ([`Render.dll`](render-dll.md#lighting)).
@@ -1852,6 +1868,15 @@ it would.
 - **`ResetKeyboard()`** (`0x103b96d0`): `UObject::ResetConfig` of the class of
   the viewport's input; `DeusExPlayer.TravelPostAccept` calls it on every level.
   What that does in Deus Ex: [configuration](core-dll.md#configuration).
+- **The canvas's measuring**: `StrLen` (`0x10377650`) lays the text out
+  through `WrappedPrint` with a style of none, which draws nothing, so it
+  measures whatever the canvas's `Style`, and asserts with no font;
+  `TextSize` (`0x10378be0`) sums each character's glyph width and takes the
+  tallest, no spacing, no wrapping. `DrawText` (`0x103778f0`) under
+  `STY_None` lays nothing out, 0 by 0, the cursor down by `CurYL` alone on a
+  CR; with no font it, `DrawTextClipped` (`0x10378890`) and `TextSize` log
+  `DrawText: No font` (each its own name) and do nothing, `TextSize` leaving
+  its outputs as they were.
 - **The canvas's text** (`DrawText`, `UCanvas::WrappedPrint`, `0x10376790`;
   `DrawTextClipped`, `0x10378890`): each character a tile, with the style's
   flag (`STY_None` invisible, `STY_Translucent` translucent, `STY_Modulated`

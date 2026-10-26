@@ -271,6 +271,9 @@ it walks every property instead and calls `Modify` before each change.
     `"a b"` names `a b`.
   - Of a key given twice in a section the last is read, even empty: a user
     ini's second, empty `ngWorldSecret=` beats a first with a value.
+- **`StaticSaveConfig()`** (`0x1013e7c0`): `SaveConfig` of the context's
+  class's defaults (`UClass::Defaults`), from an object's call as from the
+  class's; the object's own values are never written.
 - **`ResetConfig()`** (`0x1013e8c0`; it calls `UObject::ResetConfig`,
   `0x10151ac0`, with the object's class):
   1. The class's section is copied key by key into the live ini from
@@ -442,7 +445,8 @@ How the original runs UnrealScript.
     call. Strings and arrays among the locals are freed.
 - **Virtual calls** (`VirtualFunction`, `0x101301e0`) look the function up by
   name in a hash of 256 buckets, keyed on the low byte of the name's index:
-  the current state's first, then the class's (`FindObjectField`,
+  the current state's first (its own, then the state it extends or
+  overrides, up that chain), then the class's (`FindObjectField`,
   `0x10150b50`). A final call carries the function itself.
 - **Running a function** (`ProcessInternal`, `0x1013f690`): tokens up to
   `Return`, then the return value evaluated into the caller's buffer. A
@@ -455,6 +459,14 @@ How the original runs UnrealScript.
   counted with the rest.
 - **`a.b` with `a` `None`** (`Context`, `0x101300d0`): a warning ("Accessed
   None"), `b` skipped by a size stored inline, and a zero result.
+- **`switch`** (`execSwitch`, `0x1012f850`): the condition kept, then each
+  case's value compared with it -- a string by `appStricmp`, without regard
+  to case; any other type by `appMemcmp` over the switch's size, so a float
+  by its bits (−0.0 is not 0.0).
+- **A dynamic array's element** (`execDynArrayElement`, `0x1012f190`)
+  asserts, `Array` (UnCorSc.cpp 325), on every access: its array pointer is
+  a null the source left (`//!!`). Deus Ex's scripts declare `array<>`
+  properties and never index one.
 
 ### Events and probes
 
@@ -527,7 +539,9 @@ The rest are UE1's own. The details:
   - `Chr` and `Asc` take UTF-16 code units, as this build is Unicode;
     `Chr(0)` is the empty string (`0x1013c520`).
 - **Math:**
-  - an integer divided by 0 is 0 (`0x10133710`); a byte divided by 0 with
+  - an integer divided by 0 is 0 (`0x10133710`; INT_MIN / −1 is unguarded:
+    the x86 divide error, a crash); a shift takes its count's low 5 bits,
+    the x86 instruction's; a byte divided by 0 with
     `/=` is left as it was;
   - `Rand(n)` is 0 for `n` of 0 or less, else the C library's `rand()`
     modulo `n`, which is below 32,768;
@@ -541,7 +555,12 @@ The rest are UE1's own. The details:
   (`0x10131aa0`, the int's low 8 bits) and a rotator scaled by a float
   (`0x101395e0`, each angle times the float rounded to a float first) -- by
   MSVCRT's `_ftol`: truncated to 64 bits and the low 32 kept, so past an
-  int's range it wraps (3e9 is −1,294,967,296); NaN, or past 64 bits, 0.
+  int's range it wraps (3e9 is −1,294,967,296); NaN, or past 64 bits, 0. An
+  int scaled in place by a float, `*=` 159 (`0x10134280`) and `/=` 160
+  (`0x10134370`), is `_ftol` of the product or quotient, which the x87, at
+  the game's 24-bit precision, rounds to a float first (7 *= 3e9 is
+  −474,836,992, 512 under the exact product's low bits); `/=` by 0.0 makes
+  it 0.
 - **`IsInState(S)`** (`0x1013ece0`): true for the object's state or any
   state it extends.
 - **Rotators:**
@@ -561,6 +580,13 @@ The rest are UE1's own. The details:
     its last float digits are its own.
   - `==` 142 and `!=` 203 (`0x10139400`, `0x101394f0`) compare every bit of
     each angle: rotators a whole turn apart are not equal.
+  - `bool(r)` (`execRotatorToBool`, `0x10137060`) is true when any angle has
+    a bit in its low 16: `rot(65536,0,0)` is false.
+  - `OrthoRotation(X, Y, Z)` (`execOrthoRotation`, `0x1013a700`;
+    `FCoords::OrthoRotation`, `0x10144830`): yaw `atan2(X.Y, X.X)` and pitch
+    `atan2(X.Z, √(X.X² + X.Y²))`, each × 32768 / π made an int by `_ftol`;
+    then the unit coords turned by that pitch and yaw (`FCoords /= FRotator`)
+    and the roll `atan2(Z · their Y axis, Y · their Y axis)` the same way.
 - **`DynamicLoadObject(ObjectName, ObjectClass, MayFail)`** (`0x1013eb30`):
   `StaticLoadObject` (`0x10154d50`), a failure logged as a warning unless
   `MayFail`. Whatever groups the name gives, the object is looked for in the
