@@ -708,7 +708,9 @@ least 1), from `LightPhase`'s 256ths of a turn.
 - **The candidates:** the static lights that reach into the actor's leaf of
   the BSP, the moving lights in it, and the lights it had last frame (kept
   in the cache under the actor, up to 16). Each counts once a frame, and
-  only if its `bSpecialLit` is the actor's. Its strength at the actor's
+  only if its `bSpecialLit` is the actor's. The leaf's volumetric lights
+  (`LeafVolumetricLighting`, the fog map's list) are its fog, every one
+  listed, while the light infos have room (256 in all). Its strength at the actor's
   centre is `(1 − distance / radius) × LightBrightness`, the byte. A
   cylinder light counts with three quarters of its brightness and radius.
 - **The pick**, strongest first: static lights, up to 8; then the others
