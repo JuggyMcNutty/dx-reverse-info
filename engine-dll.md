@@ -339,6 +339,53 @@ fields, after their properties (none):
   Moved at all, the alpha is taken, and at 1 the interpolation ends with
   `InterpolateEnd`; refused, the alpha stays, the pass's time spent, so the
   key's overflow tries it once more in the same tick.
+- **Each tick's physics** (`AActor::performPhysics`, `0x103c9770`;
+  `APawn::performPhysics`, `0x103c9a70`), once a tick with the whole tick for
+  an actor whose physics is not None: a pawn walks, falls, swims, flies,
+  follows a path (`physPathing`) or climbs (`physSpider`); any other actor
+  falls, flies as a projectile, rolls, follows a path, moves as a brush or
+  trails its owner (`physTrailer`), a path's and a brush's velocity then
+  the tick's move over the tick; in any other physics, rotating among
+  them, nothing. Then the turn: an actor's `physicsRotation` (below) when
+  its `RotationRate` has a component (in its low 16 bits), a pawn's own
+  unless it climbs, a player's only when its rotation is not the desired
+  one or its rate has a roll ([turning](#the-senses)); a pawn's
+  `AvgPhysicsTime` follows; then the pending touch's `PostTouch`.
+- **An actor's turn** (`AActor::physicsRotation`, `0x103ca1e0`): with
+  `bRotateToDesired` or `bFixedRotationDir`, and not at `DesiredRotation`
+  when turning to it, yaw, pitch and roll each turn by their rate × the
+  tick (truncated), each only when that is not 0 and, turning to the
+  desired rotation, not there yet, `fixedTurn`'s way (`0x103c9dc0`, angles
+  kept to 16 bits): with both flags the turn goes the delta's way and stops
+  at the desired angle; with a fixed direction alone it goes on; to a
+  desired rotation alone it goes the shortest way, by the delta's size. A
+  rotation that changed goes through `MoveActor` with no move (a brush
+  turns as a move does, what stands on the actor turns with it); at the
+  desired rotation, `EndedRotation` where the state probes it.
+- **A trailer** (`AActor::physTrailer`, `0x103d7850`), an actor with an owner:
+  a sprite goes to the owner's place plus its `PrePivot` with
+  `bTrailerPrePivot`, else with `bTrailerSameRotation` the owner's place
+  less the owner's facing × the trailer's `Mass`, else the owner's place.
+  Anything else goes to the owner's place and turns, through `MoveActor`
+  with no move, to the owner's rotation with `bTrailerSameRotation`, else
+  against the owner's velocity, or straight up (pitch 16384) with none.
+  Each place is a `FarMoveActor` without a check.
+- **A path** (`AActor::physPathing`, `0x103dd8a0`): while `PhysRate` is not
+  0, the actor interpolates and time is left -- from its `Target`, an
+  `InterpolationPoint`, to that point's `Next`: the rate's modifier, the
+  level's `TimeDilation` and a player's flash scale, fog and field of view
+  (× the class's default) are blended between the two points by `PhysAlpha`;
+  the alpha goes on by the rate × its modifier × the time, held to 0 to 1
+  for the place; the place and rotation lie between the points, a spline
+  through the four around them where the point before and the one after
+  exist (the weights x⁴/16 − x²/2 + 1 at the alpha + 1, the alpha, − 1 and
+  − 2, each rotation term truncated, the sum scaled and truncated), else
+  straight; one `MoveActor` with the turn, a pawn's `ViewRotation` the
+  rotation after. An alpha past 1 (under 0 at a negative rate) starts over
+  at 0 (at 1), the time past the end kept for the next point: the point and
+  the actor get `InterpolateEnd` (the actor with the point), the `Target`
+  steps on past the points with `bSkipNextPath`, and running backwards the
+  actor gets `InterpolateEnd(None)` as well.
 - **Ladders and the floor's texture** (`0x103cc450`), first in `physWalking`,
   `physFalling` and `physSwimming`, for a player only. Lines from 0.95 of its
   height under its middle, 2 × its radius out toward its facing (level), its
@@ -1011,6 +1058,13 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
 (`Pawn.FootZoneChange` and `HeadZoneChange`), stray inventory in a
 `bNoInventory` zone (`ZoneInfo.ActorEntered` gives it 1.5 seconds) and
 `bDestructive` (decorations and fragments).
+- **A warp zone's `Warp` and `UnWarp`** (`AWarpZoneInfo::execWarp`,
+  `0x103e39e0`; `execUnWarp`, `0x103e3e70`): the place, the velocity and the
+  rotation taken through the zone's `WarpCoords` -- `Warp` by their inverse
+  (out of the warp's space), `UnWarp` by the coords themselves (into it): a
+  point less the coords' origin, and a vector, dotted with the three axes;
+  the rotation's own coords (`GMath.UnitCoords / R`) dotted the same way
+  and read back as a rotation with its roll (`FCoords::OrthoRotation`).
 
 ## Traces
 
