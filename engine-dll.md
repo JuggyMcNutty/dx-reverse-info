@@ -1877,6 +1877,12 @@ it would.
   CR; with no font it, `DrawTextClipped` (`0x10378890`) and `TextSize` log
   `DrawText: No font` (each its own name) and do nothing, `TextSize` leaving
   its outputs as they were.
+- **`ScriptedTexture.ReplaceTexture(Tex)`** (`execReplaceTexture`,
+  `0x103eb1e0`): with a texture whose USize and VSize are the scripted
+  texture's, that texture's current animation frame is updated to the
+  scripted texture's LocalTime, locked, and its top mip's bytes copied over
+  the scripted texture's; else a line in the log, `ReplaceTexture: Missing
+  Texture` or `ReplaceTexture: Dimensions are different`.
 - **The canvas's text** (`DrawText`, `UCanvas::WrappedPrint`, `0x10376790`;
   `DrawTextClipped`, `0x10378890`): each character a tile, with the style's
   flag (`STY_None` invisible, `STY_Translucent` translucent, `STY_Modulated`
