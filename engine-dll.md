@@ -1145,8 +1145,13 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
     zone's velocity. On a hit it lands if the surface is a floor (its normal's
     Z > 0.7) and it is not bouncing or is slower than the landing speed; else it
     bounces: the velocity mirrored about the surface × the elasticity, the rest
-    of the step slid along it, a second wall handled as falling handles one. The
-    speed is held to the zone's terminal velocity.
+    of the step slid along it (if the slide heads along the move). A second
+    wall the slide meets mirrors the velocity again, a floor there landing;
+    then the slide is turned by `TwoWallAdjust` and traced once more, a floor
+    met landing, and the flight goes on from where that ends -- after a
+    landing at the second wall too, whose place is that end. The speed is
+    held to the zone's terminal velocity at the step's end, not in a
+    bouncing step that hit.
   - It fails (0, its final location the start) on entering water, leaving the
     world, a step longer than about 1,580 units, or running out of time; else it
     returns the time of flight, and where it landed.
