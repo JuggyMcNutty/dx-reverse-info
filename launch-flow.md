@@ -49,13 +49,13 @@ arrives before then, during the wizard, does nothing.
 | `GLazyLoad` set on a server or with `-lazy` | `0x10908E18` | |
 | low-memory override | `0x10908E3B` | 64 MB of memory or less (`GPhysicalMemory`) sets `GLazyLoad`, and logs *"** Deus Ex - Low memory conditions detected - Forcing lazy loading"* |
 
-**The log** (`FOutputDeviceFile::Serialize`, `0x10903760`): opened at the first line written,
-at `LOG=`'s path under the base folder, else `ABSLOG=`'s, else `<base>\<Package>.log`, through
-the file manager's writer (`0x109067B0`: `GENERIC_WRITE`, shared for reading alone,
-`CREATE_ALWAYS`; `OPEN_ALWAYS` when opened again after a close), its first line *"Log file
-open, <timestamp>"*. A writer that cannot be made -- the folder missing, or the file held by a
-running instance, which shares it for reading alone -- sets the device dead: nothing is
-logged again, and the game runs on.
+**The log** (`FOutputDeviceFile::Serialize`, `0x10903760`): opened at the first line
+written, at `LOG=`'s path under the base folder, else `ABSLOG=`'s, else
+`<base>\<Package>.log`, through the file manager's writer (`0x109067B0`: `GENERIC_WRITE`,
+shared for reading alone, `CREATE_ALWAYS`; `OPEN_ALWAYS` when opened again after a close),
+its first line *"Log file open, <timestamp>"*. A writer that cannot be made -- the folder
+missing, or the file held by a running instance, which shares it for reading alone -- sets
+the device dead: nothing is logged again, and the game runs on.
 
 ## 3. Splash screen (`0x10908E93`–`0x10909205`)
 

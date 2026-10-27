@@ -349,7 +349,7 @@ fields, after their properties (none):
   them, nothing. Then the turn: an actor's `physicsRotation` (below) when
   its `RotationRate` has a component (in its low 16 bits), a pawn's own
   unless it climbs, a player's only when its rotation is not the desired
-  one or its rate has a roll ([turning](#the-senses)); a pawn's
+  one or its rate has a roll (turning, below); a pawn's
   `AvgPhysicsTime` follows; then the pending touch's `PostTouch`.
 - **An actor's turn** (`AActor::physicsRotation`, `0x103ca1e0`): with
   `bRotateToDesired` or `bFixedRotationDir`, and not at `DesiredRotation`
@@ -588,10 +588,11 @@ fields, after their properties (none):
   (`0x103bd5f0`, `0x103bd8c0`; speed 1 by default): UE1's strafes with Deus Ex's
   speed. A player's `DesiredSpeed` is its `MaxDesiredSpeed`; an NPC's is that
   held to 0..speed. Both clear `bReducedSpeed` and time the move by its
-  distance (`setMoveTimer`), the speed set first, so the time counts at it. `StrafeTo` drops the move target and looks at the focus;
-  `StrafeFacing` needs a target (without one it does nothing), faces it and
-  looks at where it is. The scripts give no speed: NPCs running and firing
-  (`StrafeFacing`, in combat), stepping back from a door (`StrafeTo`).
+  distance (`setMoveTimer`), the speed set first, so the time counts at it.
+  `StrafeTo` drops the move target and looks at the focus; `StrafeFacing` needs
+  a target (without one it does nothing), faces it and looks at where it is. The
+  scripts give no speed: NPCs running and firing (`StrafeFacing`, in combat),
+  stepping back from a door (`StrafeTo`).
 - **`SetPhysics(newPhysics, newFloor)`** (`0x103c8ea0`; `AActor::setPhysics`,
   `0x103c95f0`): only a change of physics does anything. A change to none,
   walking, rolling, rotating or spider takes `newFloor` as the actor's base
@@ -942,15 +943,15 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   the route's first node.
 - **The second way** (`findPathToward` only; no goal node reaching the goal, no
   `bHunting`): the lists are gathered again, into what the first pass left,
-  nothing emptied, and none of the pawn's own once anchored (the pawn's around wherever the
-  goal-node tries last moved it), `definePathsFor` marks the forward neighbours
-  of the pawn's nearest node, `findEndPoint` runs, and the search runs from the
-  pawn's first node, its distance its weight. A route ending no farther from the
-  goal than the pawn is taken, reversed (`ReverseRouteFor`, `0x103dd810`) to run
-  from the pawn's node; where the next node after it is within 120 units of the
-  pawn's height (or the pawn is anchored at the first), in sight and
-  `pointReachable`, the route starts there instead. A route that is only the
-  anchor is no path.
+  nothing emptied, and none of the pawn's own once anchored (the pawn's around
+  wherever the goal-node tries last moved it), `definePathsFor` marks the
+  forward neighbours of the pawn's nearest node, `findEndPoint` runs, and the
+  search runs from the pawn's first node, its distance its weight. A route
+  ending no farther from the goal than the pawn is taken, reversed
+  (`ReverseRouteFor`, `0x103dd810`) to run from the pawn's node; where the next
+  node after it is within 120 units of the pawn's height (or the pawn is
+  anchored at the first), in sight and `pointReachable`, the route starts there
+  instead. A route that is only the anchor is no path.
 - **`HandleSpecial`** (`0x103c5de0`): the node's `SpecialHandling` answers. The
   same node: the route stands. None: no path. Another actor: for a pawn with
   `bCanDoSpecial` it becomes `SpecialGoal`, and the route is that actor where
@@ -1070,13 +1071,13 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
 (`Pawn.FootZoneChange` and `HeadZoneChange`), stray inventory in a
 `bNoInventory` zone (`ZoneInfo.ActorEntered` gives it 1.5 seconds) and
 `bDestructive` (decorations and fragments).
-- **A warp zone's `Warp` and `UnWarp`** (`AWarpZoneInfo::execWarp`,
-  `0x103e39e0`; `execUnWarp`, `0x103e3e70`): the place, the velocity and the
-  rotation taken through the zone's `WarpCoords` -- `Warp` by their inverse
-  (out of the warp's space), `UnWarp` by the coords themselves (into it): a
-  point less the coords' origin, and a vector, dotted with the three axes;
-  the rotation's own coords (`GMath.UnitCoords / R`) dotted the same way
-  and read back as a rotation with its roll (`FCoords::OrthoRotation`).
+**A warp zone's `Warp` and `UnWarp`** (`AWarpZoneInfo::execWarp`,
+`0x103e39e0`; `execUnWarp`, `0x103e3e70`): the place, the velocity and the
+rotation taken through the zone's `WarpCoords` -- `Warp` by their inverse
+(out of the warp's space), `UnWarp` by the coords themselves (into it): a
+point less the coords' origin, and a vector, dotted with the three axes; the
+rotation's own coords (`GMath.UnitCoords / R`) dotted the same way and read
+back as a rotation with its roll (`FCoords::OrthoRotation`).
 
 ## Traces
 
@@ -1284,11 +1285,11 @@ That is all; Deus Ex's scripts do the rest: pain zones' `PainTime`
     time that of the move made over the step's length; the region is found
     again where the move ends. A move under 0.0001 on every axis is not
     made, and the last move's hit stands for it.
-  - It fails (0, its final location the start) on entering water, leaving the
-    world, a step longer than about 1,580 units, or running out of time, the
-    landing step counted; else it returns the time of flight, and where it
-    landed. On water the step count is set to 0 and then counted, so its time
-    is one step's (0.01 with steps of 0.01 s), the location the start.
+  - It fails (0, its final location the start) on leaving the world, a step
+    longer than about 1,580 units, or running out of time, the landing step
+    counted; on entering water with one step's time (0.01 with steps of
+    0.01 s: the step count is set to 0 and then counted), the location the
+    start; else it returns the time of flight, and where it landed.
 
   NPCs use it for where a falling grenade will land, and whether a throw of
   their own is safe (`AISafeToThrow`).

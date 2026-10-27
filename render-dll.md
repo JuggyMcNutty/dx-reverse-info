@@ -338,8 +338,7 @@ The renderer keeps it; the engine and the scripts read it
     `bConstrain` ([actors in a window](extension-dll.md#actors-in-a-window)):
     an NPC the vision augmentation draws through a wall counts as drawn.
   - `Canvas.DrawActor` (`UCanvas::execDrawActor`, `Engine.dll` `0x10377ed0`;
-    the first-person weapons) calls it too, clearing `bHidden` for the call
-    and setting it after, whatever it was.
+    the first-person weapons) calls it too ([the overlays](#the-overlays)).
 - **A zone's** (`Zones[i].LastRenderTime` in the level's model) is stamped by
   `OccludeBsp`: the frame's first zone, and each zone seen through a portal.
   `InStasis` reads it.
@@ -721,11 +720,12 @@ palette's last entry never shows (`0x10b05d40`).
 - **The candidates:** the static lights that reach into the actor's leaf of
   the BSP, the moving lights in it, and the lights it had last frame (kept
   in the cache under the actor, up to 16). Each counts once a frame, and
-  only if its `bSpecialLit` is the actor's. The leaf's volumetric lights
-  (`LeafVolumetricLighting`, the fog map's list) are its fog, every one
-  listed, while the light infos have room (256 in all). Its strength at the actor's
+  only if its `bSpecialLit` is the actor's. Its strength at the actor's
   centre is `(1 − distance / radius) × LightBrightness`, the byte. A
   cylinder light counts with three quarters of its brightness and radius.
+  The leaf's volumetric lights (`LeafVolumetricLighting`, the fog map's
+  list) are the actor's fog, every one listed while the light infos have
+  room (256 in all).
 - **The pick**, strongest first: static lights, up to 8; then the others
   while fewer than 8 lights in all are taken; none below an eighth of the
   strongest taken.

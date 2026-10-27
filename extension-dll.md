@@ -57,9 +57,6 @@ are `exec` exports.
 | `XExtString` | `UObject` | 0x38 | 7 |
 | `XExtensionObject` | `UObject` | 0x28 | 1: `StringToName` |
 | `APlayerPawnExt` | `APlayerPawn` | 0x99c | 3: `PreRenderWindows`, `PostRenderWindows`, `InitRootWindow` |
-  `InitRootWindow` (`0x10037e0b`) makes the pawn's root only when its `rootWindow`
-  (`+0x894`) is None, and keeps it there: a root per pawn, the engine drawing
-  its viewport's player's.
 | `XGameEngineExt` | `UGameEngine` | 0xd0 | -- (C++ only: the base of `DeusEx.DeusExGameEngine`) |
 | `XInputExt` | `UInput` | 0xfb0 | -- (C++ only: the ini's `Input=Extension.InputExt`) |
 
@@ -94,6 +91,9 @@ are `exec` exports.
 
 ### The root window
 
+- **One a pawn** (`APlayerPawnExt::InitRootWindow`, `0x10037e0b`): the pawn's
+  root is made only when its `rootWindow` (`+0x894`) is None, and kept there;
+  the engine draws its viewport's player's.
 - **Its size and scale** (`ResizeRoot`, `0x1003adf0`, each frame from
   `PreRender`): one multiplier for both axes, the smaller of the viewport's
   width over 640 and its height over 480, each truncated and at least 1,
@@ -293,9 +293,9 @@ run in its tick, after its script's `Tick` and before its children
   through them, to each child whose own flag is on
   (`InvokeSensitivityChange`, `0x10050ef0`).
 - **The focus moving off** (`CheckFocusWindow`, `0x10050b80`), which
-  `SetChildVisibility`, `SetSelectability` and `SetSensitivity` call: a focus window that is no
-  longer traversable with the modal check goes to the topmost modal's (or
-  the root's) `preferredFocus` when that is traversable, else on as
+  `SetChildVisibility`, `SetSelectability` and `SetSensitivity` call: a focus
+  window that is no longer traversable with the modal check goes to the topmost
+  modal's (or the root's) `preferredFocus` when that is traversable, else on as
   `MoveFocus` right moves it, and to none when that leaves it where it was.
   A grab (`CheckGrabbedWindow`, `0x10050c90`) is let go when the window or a
   parent is hidden or insensitive.
@@ -389,10 +389,10 @@ yaw, its pitch left out.
   size, none below 0, a side unset being −1; `ResetSize`, `ResetWidth` and
   `ResetHeight` (`0x1004d410`, `0x1004d4c0`, `0x1004d550`) take it away,
   asking for a layout only when a size was set; `SetConfiguration`
-  (`Configure`, `0x1004cd40`) does both. **`SetWindowAlignments`** (`0x1004d300`) sets the alignments
-  and all four margins -- from a script (`0x10052360`) a first margin not
-  given is 0, a second the first. Each lays the window out again when it
-  changes anything.
+  (`Configure`, `0x1004cd40`) does both. **`SetWindowAlignments`**
+  (`0x1004d300`) sets the alignments and all four margins -- from a script
+  (`0x10052360`) a first margin not given is 0, a second the first. Each lays
+  the window out again when it changes anything.
 - **Its preferred size** (`QueryPreferredSize`, `0x1004e790`): a side the
   window has a size for counts as asked for. With a side not asked for, the
   window says (`ParentRequestedPreferredSize`), -1 standing for that side;
@@ -770,12 +770,6 @@ new game.
     the number as `%f`.
   - `SetColumnType` (`0x10030480`) sets every row's field again from its
     text as the new type reads it.
-- **Defaults** (`Init`, `0x1002e900`):
-  - the delimiter is `;`;
-  - auto sort is off; auto-expanding columns, multiple selection and hot
-    keys (column 0) are on;
-  - the column margin is 3 and the row margin 1, and a double click counts;
-  - there is one column.
 - **A new column** (`InitColumn`, `0x100314f0`): 20 wide plus both margins,
   left-aligned, the window's text colour and font, string, and a sort key.
 - **`GetField`** (`0x1002f250`) of a column that is not there is empty.
@@ -876,7 +870,7 @@ every column to its margins.
 - **`ShowFocusRow`** (`0x10033040`) asks the parent to scroll the focus row
   into view.
 
-### Drawing
+### Drawing a list
 
 `XListWindow::Draw` (`0x10033350`), the GC pushed and popped round it, in
 masked style with word wrap and special text off, left and top aligned:

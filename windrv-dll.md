@@ -60,9 +60,9 @@ the rest to the engine's input:
 - **The window's key messages** (`UWindowsViewport::ViewportWndProc`, `0x11109b30`):
   `WM_KEYDOWN` and `WM_SYSKEYDOWN` press their code (`0x1110a2a9`), `WM_KEYUP` and
   `WM_SYSKEYUP` release it (`0x1110a356`); Enter with Alt held toggles fullscreen instead
-  (`0x1110a28e`). The window returns on each, `DefWindowProc` never seeing them: Alt's release
-  enters no menu mode, Alt+F4 closes nothing. A held key's repeats press it again. A shift,
-  control or alt comes as the code of both sides: `VK_SHIFT`, `VK_CONTROL`, `VK_MENU`
+  (`0x1110a28e`). The window returns on each, `DefWindowProc` never seeing them: Alt's
+  release enters no menu mode, Alt+F4 closes nothing. A held key's repeats press it again. A
+  shift, control or alt comes as the code of both sides: `VK_SHIFT`, `VK_CONTROL`, `VK_MENU`
   (`IK_Alt`).
 - **A poll of every code** at the end of `UWindowsViewport::UpdateInput` (`0x11109280`, its
   loop at `0x11109880`): each code from 0 to 255 that is not a joystick's or the mouse's this
@@ -77,13 +77,13 @@ The Windows keys and the menu key are `Unknown5B`, `Unknown5C` and `Unknown5D`, 
 and `GreySlash`, its Enter `IK_Enter`. DirectInput is the mouse's alone
 (`UWindowsViewport::diSetupKeyboardMouse`, `0x1110c700`: `GUID_SysMouse`, the mouse's data
 format, exclusive in the foreground): its buttons `LeftMouse`, `RightMouse` and
-`MiddleMouse`, its moves `MouseX` and `MouseY`, and its wheel's movement since the last poll,
-whatever its size, one press and release of `MouseWheelUp` or `MouseWheelDown` by its sign
-(`UpdateInput` reads the device's state once a poll, `GetDeviceState`; its buffered data
-serves the buttons alone). A `WM_MOUSEWHEEL` the window gets likewise presses and releases
-once by the delta's sign, whatever the delta, after handing the delta to the `MouseW` axis
-(`0x1110b2bd`). The joystick (`joyGetPosEx`) gives `Joy1` up, its axes
-and its hat.
+`MiddleMouse`, its moves `MouseX` and `MouseY`, and its wheel's movement since the last
+poll, whatever its size, one press and release of `MouseWheelUp` or `MouseWheelDown` by its
+sign (`UpdateInput` reads the device's state once a poll, `GetDeviceState`; its buffered
+data serves the buttons alone). A `WM_MOUSEWHEEL` the window gets likewise presses and
+releases once by the delta's sign, whatever the delta, after handing the delta to the
+`MouseW` axis (`0x1110b2bd`). The joystick (`joyGetPosEx`) gives `Joy1` up, its axes and its
+hat.
 
 **Typed characters** come apart from the keys: `WM_CHAR` and `WM_SYSCHAR` (`0x11109b30`) hand
 the engine's `Key` the character's code, one a message, as Windows sends it to the window --
