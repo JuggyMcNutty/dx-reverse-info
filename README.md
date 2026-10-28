@@ -62,12 +62,14 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
 ### The tools
 
 - **IDA runs headless, through Hex-Rays' own IDA MCP server.** IDA Pro 9.4 for Linux is in
-  `~/ida-pro-9.4`, its `idalib` named in the user's `~/.idapro/ida-config.json`. Claude Code
-  runs the server (`ida-mcp stdio`, under `uv`) from the plugin `ida-mcp@HexRaysSA`,
-  installed once per machine for the user, so in every folder:
+  `~/ida-pro-9.4`, its `idalib` named in the user's `~/.idapro/ida-config.json`. It runs in
+  the distrobox, its window too: the distrobox has a home of its own, and IDA keeps its
+  settings and its licence's acceptance in that home's `~/.idapro`. Claude Code runs the
+  server (`ida-mcp stdio`, under `uv`) from the plugin `ida-mcp@HexRaysSA`, installed once
+  per machine for the user, so in every folder:
   `claude plugin marketplace add HexRaysSA/claude-marketplace`, then
   `claude plugin install ida-mcp@HexRaysSA`. Its tools:
-  `open_database` (a database by its path, in a headless `idalib` worker of its own),
+  `open_database` (a database by its path, in a headless `idat` worker of its own),
   `execute_python` (IDAPython and Hex-Rays' `ida-domain` API; `db` is the open database;
   names and imports persist while the session holds it; a script runs by `exec`-ing its
   file), `reference` (the API), `list_databases`, `save_database`, `close_database`. IDA's
@@ -75,6 +77,21 @@ cloned beside the game install (`gamefiles/`) and the reference material (`refer
   has open. Without IDA for Linux, [`tools/ida/idalib-mcp.sh`](tools/ida/idalib-mcp.sh)
   serves databases from Windows IDA under Proton's wine (ida-pro-mcp's idalib supervisor,
   over stdio, in the distrobox; it needs the plugin `ida-pro-mcp@mrexodia` installed).
+- **IDA's Python is pyenv's**, as every Python here is
+  ([the dependencies](https://github.com/JuggyMcNutty/port-ex-machina/blob/main/docs/DEVELOPMENT.md#dependencies)),
+  in a virtual environment: hcli installs the plugin in `~/.idapro/plugins/` into no
+  distribution's Python. It is set up once, and again for a new pyenv Python:
+  1. `~/ida-pro-9.4/idapyswitch -s` with pyenv's `libpython3.<minor>.so.1.0`.
+  2. `uv venv --seed --python` with pyenv's `python3`, making `~/.idapro/venv`.
+  3. `IDAPYTHON_VENV_EXECUTABLE` naming that environment's `python3`, in `~/.bash_profile`
+     and in the `env` of Claude Code's `~/.claude/settings.json`, beside `UV_PYTHON` naming
+     pyenv's `python3`, which the server's own environment is built on.
+  4. `uvx ida-hcli plugin install ida-mcp@https://github.com/HexRaysSA/ida-mcp`.
+
+  The server's workers then run in `idat`, on that environment.
+- **IDA's licence agreement is accepted once**, in its window or by
+  `uvx ida-hcli ida accept-eula ~/ida-pro-9.4`: until then a headless worker stops at
+  `License not yet accepted, cannot run in batch mode`.
 - **Back a database up before closing it**: `close_database` rewrites its `.i64` even
   without `save_database`, and leaves no working files beside it
   ([the databases](#the-databases)).
