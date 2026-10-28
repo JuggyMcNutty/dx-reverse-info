@@ -58,6 +58,7 @@ value. Besides it, only the skins' and the world's lines depend on the renderer,
 `DescFlags`.
 
 The shipped `System/DeusEx.ini` has `[FirstRun] FirstRun=0`, `[Engine.Engine] CdPath=..\`
+(Steam's `..\GOTY_1`: [the CD check](launch-flow.md#8-cd-check-0x1090b9ce0x1090bafd))
 and `GameRenderDevice=GlideDrv.GlideRenderDevice`, and the `[WinDrv.WindowsClient]` and
 `[Galaxy.GalaxyAudioSubsystem]` sections. Every key above is in both `DeusEx.ini` and
 `Default.ini` **except three**: `DescFlags` and `Description` (below), and `SlotNames[%i]`,

@@ -150,8 +150,9 @@ Read `[Engine.Engine] CdPath`. If it is non-empty, loop until
 `GIsCriticalError` and ends the process with 0 (`0x1090BAE8`). That is after step 9 of §5,
 so `Running.ini` stays and the next launch opens in RecoveryMode.
 
-The shipped `DeusEx.ini` sets `CdPath=..\`, so on a GOG or Steam install the check passes
-against the game's own `Textures\` and never prompts.
+The shipped `CdPath` passes the check, so it never prompts: GOG's is `..\`, the game's own
+`Textures\`; Steam's is `..\GOTY_1`, with no backslash at its end, a folder of its own beside
+`System\` that holds only `Textures\Palettes.utx`, a copy of the game's.
 
 ## 9. Main loop and shutdown (`0x10909443` onward)
 
