@@ -574,10 +574,14 @@ palette's last entry never shows (`0x10b05d40`).
 
   | Kind | Lights |
   |---|---|
+  | *moving* | `bDynamicLight`, whatever else it is, or neither `bStatic` nor `bNoDelete`; it casts no shadow |
   | *static* | `bStatic`, `LT_Steady`, and an effect whose shape and brightness hold still |
-  | *animated* | any other `bStatic` or `bNoDelete` light that is not `bDynamicLight` |
-  | *moving* | `bDynamicLight`, or neither `bStatic` nor `bNoDelete`; it casts no shadow |
+  | *animated* | any other `bStatic` or `bNoDelete` light |
 
+  In that order: `bDynamicLight` (bit 0x800 of the actor's first flags) is
+  tested first, so a static light that has it is a moving one. A light with
+  no type or no brightness is none; lighting an actor (its owner given),
+  every light is a moving one, but the actor itself.
   With the client's `NoDynamicLights` on (an ini setting, off by default),
   animated lights count as static and moving ones are left out.
 - **The static map:** the zone's ambient light, and each static light through
