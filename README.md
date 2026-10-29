@@ -21,8 +21,10 @@ None of the game's files are here, and no decompiled code
 
 All in the game's `System/`, from the GOG build of 1.112fm; the DLLs' build date is March
 2001. DXEngine recognises the install by `DeusEx.exe`'s SHA1
-([`launcher.md`](launcher.md#the-binary)). Each DLL's doc gives the binary, its classes and
-what each function does, with addresses.
+([`launcher.md`](launcher.md#the-binary)). Steam's install's DLLs hold the same functions at
+the docs' addresses, but its `DeusEx.exe` is packed (64,000 bytes): IDA reads no code in it,
+so the launcher is read from GOG's. Each DLL's doc gives the binary, its classes and what
+each function does, with addresses.
 
 | Binary | What it holds | Docs | Read |
 |---|---|---|---|
@@ -175,25 +177,26 @@ a disassembly. The repository is public, and the code is not ours.
 
 ## The databases
 
-One IDA database per binary, beside it, each backed up under the same name in
+One IDA database per DLL, beside it, each backed up under the same name in
 `reference/idb-backup/`. `Window.dll` has none: [`tools/pe/dialogs.py`](tools/pe/dialogs.py)
-reads its templates. Nor has `OpenGLDrv.dll`, read only beside `D3DDrv`.
-`gamefiles/System/DeusEx.exe.i64` holds the structs of
-[`types/launch.h`](types/launch.h), and the launcher's functions and vtables under the names
+reads its templates. Nor has `OpenGLDrv.dll`, read only beside `D3DDrv`. `DeusEx.exe` has
+none: its database takes GOG's build ([the binaries](#the-binaries)), given the structs of
+[`types/launch.h`](types/launch.h) and the launcher's functions and vtables under the names
 [`launch-flow.md`](launch-flow.md) and [`wizard.md`](wizard.md) use. Each DLL's has the
-three scripts' work (the class layouts, the UTF-16 strings, the initializers' names), and:
+three scripts' work (the class layouts, the UTF-16 strings, the initializers' names), no
+comments, and:
 
-| Database | Besides the scripts' work | One-line comments |
-|---|---|---|
-| `gamefiles/System/Core.dll.i64` | 246 initializers' names are the natives' inlined registrations; by hand, a name for `UObject`'s deleting destructor | most documented functions |
-| `gamefiles/System/Engine.dll.i64` | by hand: the event manager's classes and enums from the SDK header; the documented functions' prototypes; names for their helpers and the event classes' vtables; for [`network.md`](network.md), the pending level's handler, the relevancy test, the priority and its sort | most documented functions, [`network.md`](network.md)'s too |
-| `gamefiles/System/DeusEx.dll.i64` | by hand: the inlined `FString` and `TArray` helpers (`TArrayTCHAR_*`, `TArrayFString_*`). Unnamed: only the C runtime and small thunks | the native tick, `Browse`, the save functions, the iterators, the alliance functions |
-| `gamefiles/System/Extension.dll.i64` | by hand: the list's row comparison (`XListWindow_CompareRows`), its sort keys (`GListSortCols`, `GListNumSortCols`), `Extension_RegisterNames` | most documented functions |
-| `gamefiles/System/ConSys.dll.i64` | by hand: the object iterator's step (`TObjectIterator_Advance`), the two array serializers (`Serialize_TArray_FString`, `Serialize_TArray_USoundPtr`) | most documented functions |
-| `gamefiles/System/DeusExText.dll.i64` | by hand: the tag names (`GDeusExTextTagNames`), the string and array helpers (`FString_*`, `TArray_FString_*`), the deleting destructors | most documented functions |
-| `gamefiles/System/Render.dll.i64` | from [`tools/ida/render_types.py`](tools/ida/render_types.py): the renderer's C++ types, `URender`'s methods typed, the texture, light map and cache structures, names for the sprite's constructor and `Setup`, a dynamic light's filter, the light manager's methods and helpers, and the globals of the weapon triangle and the lighting (the light map and fog map being built, the effects, the light records and their counts by kind); by hand, `CoronaTest` | most documented functions |
-| `gamefiles/System/D3DDrv.dll.i64` | | |
-| `gamefiles/System/IpDrv.dll.i64` | by hand: the key table and the encryption's helpers (`GenerateSecretKey`, `rc4_prepare_key`, `rc4`, `trip2kwart`, `encode_ct`) | most documented functions |
-| `gamefiles/System/Galaxy.dll.i64` | by hand: `UGalaxyAudioSubsystem` and its channel record `FPlayingSound` as read here; `UViewport`'s first members from the SDK's `UnCamera.h`; Galaxy's own structures and function prototypes from the SDK's `GALAXY.H` (its licence keeps them out of this repository); the library's functions named from their assertion texts; the lip sync's helpers, the music's globals, the mixer's and the reverb's SSE routines | most documented functions |
-| `gamefiles/System/Fire.dll.i64` | by hand: the shared tables (`GFireSinTable`, `GFireSinTablePlus32`, `GFireSinTablePlus128`, `GFireRandTable`, `GFireRandIndex`) and `FireInitTables` | |
-| `gamefiles/System/WinDrv.dll.i64` | no layouts for its two classes, which have no script (the header has them) | most documented functions |
+| Database | Besides the scripts' work |
+|---|---|
+| `gamefiles/System/Core.dll.i64` | 246 initializers' names are the natives' inlined registrations; by hand, from the docs: `ULinkerLoad::Create`, `ULinkerLoad::CreateExport`, `appPlatformInit` |
+| `gamefiles/System/Engine.dll.i64` | by hand, from the docs: `AddActor`, `ClassifyDistanceSq`, `FBspNode::IsCsg`, `GSpawnNotifying`; for [`network.md`](network.md), the pending level's handler (`UNetPendingLevel::NotifyReceivedText`) and `NotifyReceivedFile` |
+| `gamefiles/System/DeusEx.dll.i64` | |
+| `gamefiles/System/Extension.dll.i64` | |
+| `gamefiles/System/ConSys.dll.i64` | |
+| `gamefiles/System/DeusExText.dll.i64` | by hand: the tag names (`GDeusExTextTagNames`) |
+| `gamefiles/System/Render.dll.i64` | from [`tools/ida/render_types.py`](tools/ida/render_types.py): the renderer's C++ types, `URender`'s methods typed, the texture, light map and cache structures, names for the sprite's constructor and `Setup`, a dynamic light's filter, the light manager's methods and helpers, and the globals of the weapon triangle and the lighting (the light map and fog map being built, the effects, the light records and their counts by kind); by hand, `CoronaTest`, `SpatialPlain`, `SpatialSpotlight` |
+| `gamefiles/System/D3DDrv.dll.i64` | |
+| `gamefiles/System/IpDrv.dll.i64` | by hand: `getlocalhostaddr` |
+| `gamefiles/System/Galaxy.dll.i64` | by hand: `glxInit` |
+| `gamefiles/System/Fire.dll.i64` | |
+| `gamefiles/System/WinDrv.dll.i64` | no layouts for its two classes, which have no script (the header has them) |
