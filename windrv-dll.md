@@ -4,8 +4,9 @@ The Windows client and viewport: the window the game draws into, DirectDraw for 
 software renderer's fullscreen modes, DirectInput for the mouse, the joystick, and which
 render device a viewport opens with. Read for the command-line flags it honours -- four of
 the nine the launcher's safe mode emits
-([`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode)), and `-safe` -- and for
-how a key and a typed character reach the game, not in full. Method:
+([`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode)), and `-safe` -- for
+how a key and a typed character reach the game, and for where the game's window opens,
+not in full. Method:
 [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
@@ -90,6 +91,19 @@ the engine's `Key` the character's code, one a message, as Windows sends it to t
 on a Unicode system its UTF-16, so an e acute is 0xE9 -- all but a carriage return, which
 Enter's own key carries. The console takes it first; in Deus Ex, the root window then
 ([the engine and the input](extension-dll.md#the-engine-and-the-input)).
+
+## The window
+
+`UWindowsViewport::OpenWindow` (`0x11107590`) takes the window's place and its
+client area's size; a place of `INDEX_NONE` (-1) is Windows' default,
+`CW_USEDEFAULT`, and a size of -1 the client's `WindowedViewportX` and `Y`.
+The game's viewport is opened so, with neither given: `UGameEngine::Init`'s
+call (`Engine.dll` `0x10389776`) passes no parent, not temporary, and -1 for
+all four. So Windows puts the game's window where it puts any new one, and
+sizes it about a client area of `WindowedViewportX` by `WindowedViewportY`
+(`AdjustWindowRect` on the window's style, `WS_OVERLAPPEDWINDOW`, its caption
+and frame round the client area), the menu bar the editor's alone. A viewport
+already open is moved and sized with `SetWindowPos` instead.
 
 ## Choosing the render device
 
