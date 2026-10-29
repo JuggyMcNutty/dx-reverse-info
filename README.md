@@ -21,10 +21,10 @@ None of the game's files are here, and no decompiled code
 
 All in the game's `System/`, from the GOG build of 1.112fm; the DLLs' build date is March
 2001. DXEngine recognises the install by `DeusEx.exe`'s SHA1
-([`launcher.md`](launcher.md#the-binary)). Steam's install's DLLs hold the same functions at
-the docs' addresses, but its `DeusEx.exe` is packed (64,000 bytes): IDA reads no code in it,
-so the launcher is read from GOG's. Each DLL's doc gives the binary, its classes and what
-each function does, with addresses.
+([`launcher.md`](launcher.md#the-binary)). Steam's install has GOG's DLLs, byte for byte,
+but its `DeusEx.exe` is packed (64,000 bytes) and IDA reads no code in it: the launcher is
+read from GOG's install, `goggamefiles/`. Each DLL's doc gives the binary, its classes and
+what each function does, with addresses.
 
 | Binary | What it holds | Docs | Read |
 |---|---|---|---|
@@ -58,7 +58,8 @@ Beside them in `gamefiles/System/`, not the game's:
 ## Working on the binaries
 
 A path below that is not this repository's is the parent folder's, where this repository is
-cloned beside the game install (`gamefiles/`) and the reference material (`reference/`)
+cloned beside the game install (`gamefiles/`), GOG's (`goggamefiles/`) and the reference
+material (`reference/`)
 ([the layout](https://github.com/JuggyMcNutty/port-ex-machina/blob/main/README.md#layout)).
 
 ### The tools
@@ -177,14 +178,15 @@ a disassembly. The repository is public, and the code is not ours.
 
 ## The databases
 
-One IDA database per DLL, beside it, each backed up under the same name in
+One IDA database per binary, beside it, each backed up under the same name in
 `reference/idb-backup/`. `Window.dll` has none: [`tools/pe/dialogs.py`](tools/pe/dialogs.py)
-reads its templates. Nor has `OpenGLDrv.dll`, read only beside `D3DDrv`. `DeusEx.exe` has
-none: its database takes GOG's build ([the binaries](#the-binaries)), given the structs of
-[`types/launch.h`](types/launch.h) and the launcher's functions and vtables under the names
-[`launch-flow.md`](launch-flow.md) and [`wizard.md`](wizard.md) use. Each DLL's has the
-three scripts' work (the class layouts, the UTF-16 strings, the initializers' names), no
-comments, and:
+reads its templates. Nor has `OpenGLDrv.dll`, read only beside `D3DDrv`.
+`DeusEx.exe`'s is GOG's build's, `goggamefiles/System/DeusEx.exe.i64`
+([the binaries](#the-binaries)): the structs of [`types/launch.h`](types/launch.h), the
+UTF-16 strings, and the names [`launch-flow.md`](launch-flow.md), [`wizard.md`](wizard.md)
+and [`launcher.md`](launcher.md) give the functions they enter; its vtables have none. Each
+DLL's has the three scripts' work (the class layouts, the UTF-16 strings, the initializers'
+names), no comments, and:
 
 | Database | Besides the scripts' work |
 |---|---|
