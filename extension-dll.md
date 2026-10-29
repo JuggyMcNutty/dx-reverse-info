@@ -1260,7 +1260,9 @@ What the game shows under a menu, by the player's UI background option
 - **`ExtString`** (`0x10044350` to `0x10044ad0`): a text, read in parts of
   239 characters. `GetFirstTextPart` gives the first and starts the count
   again; each `GetNextTextPart` gives the next, and once none is left gives
-  0, its argument left as it was. `GetTextPart(start, count)` gives at most
-  240 characters, none from a negative start. No script calls them.
+  0, its argument left as it was, but for a text a multiple of 239 long,
+  whose first call past the end empties it. `GetTextPart(start, count)`
+  gives at most 240 characters, none from a negative start. No script calls
+  them.
 - **No script calls** `GC`'s `PushGC`, `PopGC`, `CopyGC` and `Intersect`,
   `ClipWindow`'s unit sizes, or 24 of `ComputerWindow`'s 33 natives.

@@ -180,8 +180,12 @@ Saves live under the ini's `SavePath`:
 **`Browse(url)`** (`0x10010b90`), after `XGameEngineExt::Browse` has had its
 turn:
 
-- **`?restart`:** empties `Current`, then reloads the current map
-  (`?loadonly`).
+- **`?restart`:** empties `Current`, then loads the map the
+  `DeusExLevelInfo`'s `MapName` names (`GetDeusExLevelInfo`, below: the
+  current level's once the levels left are collected) with the last URL's
+  portal, `?loadonly` and no other option, so the player logs in with no
+  name, and no travel info; with no `DeusExLevelInfo`, the last URL as it
+  is.
 - **`?loadgame=N`** (-1 for the quick save): reads the slot's `SaveInfo`,
   empties `Current`, copies the slot into it, and loads
   `Current\<MapName>.<ext>?load?loadonly?loadgame`.
@@ -193,7 +197,11 @@ turn:
   - A new mission, a map outside any, or a player with `bStartingNewGame` set
     (which it then clears): `Current` is emptied first, and the destination
     loads from `Maps`. The screen shows `LOADING` alone, as for a
-    `?loadgame`.
+    `?loadgame`. A destination that fails to load (not there) is followed by
+    the current level's map loaded again with the same travel info (`Dx.Dx`
+    with no level): the level starts afresh, the failure's message gone with
+    it. Within one mission a failed load leaves the level playing, pruned,
+    with the message ([the loading screen](engine-dll.md#the-loading-screen)).
 
 **`SaveCurrentLevel(slot)`** (`0x1000fac0`):
 

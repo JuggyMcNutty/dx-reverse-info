@@ -348,9 +348,10 @@ fields, after their properties (none):
   the tick's move over the tick; in any other physics, rotating among
   them, nothing. Then the turn: an actor's `physicsRotation` (below) when
   its `RotationRate` has a component (in its low 16 bits), a pawn's own
-  unless it climbs, a player's only when its rotation is not the desired
-  one or its rate has a roll (turning, below); a pawn's
-  `AvgPhysicsTime` follows; then the pending touch's `PostTouch`.
+  unless it climbs, a player's every tick, any other pawn's only when its
+  rotation is not the desired one, the whole numbers compared, or its rate
+  has a roll (turning, below); a pawn's `AvgPhysicsTime` follows; then the
+  pending touch's `PostTouch`.
 - **An actor's turn** (`AActor::physicsRotation`, `0x103ca1e0`): with
   `bRotateToDesired` or `bFixedRotationDir`, and not at `DesiredRotation`
   when turning to it, yaw, pitch and roll each turn by their rate × the
@@ -938,7 +939,7 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   other nodes are weighed against the end point, each its distance plus what the
   search found it cost. A candidate costs less than the end point's own sum,
   lies within 120 units of the pawn's height, and is on the far side of the pawn
-  from the route's first node or cheaper by 15% (or 150, whichever cuts deeper).
+  from the route's first node or cheaper by 15% (or 150, whichever cuts less).
   The cheapest candidate the pawn's eye sees and `pointReachable` finds replaces
   the route's first node.
 - **The second way** (`findPathToward` only; no goal node reaching the goal, no
@@ -1244,7 +1245,8 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   `0x1039aed0`, flags 55 with `bTraceActors`, else 6) whose kind the flags
   take -- the level 4, pawns 1, movers 2, zone infos 8, other actors 16, which
   32 narrows to projectile targets and what blocks actors and players alike --
-  and that is not the tracing actor or one it owns; with nothing hit the
+  and that is neither the tracing actor nor one of its owners, up its `Owner`
+  chain (a weapon's trace passes over its pawn); with nothing hit the
   location and normal are zero.
 - **`TraceActors(BaseClass, Actor, HitLoc, HitNorm, End, Start, Extent)`**
   (`0x103e4bc0`): every hit of the multi-hit check, in turn, the level's
@@ -1546,7 +1548,8 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   `?load?loadonly?loadgame` and the default player's, so `GameInfo.Login`
   keeps the saved player, unoccupied, and Deus Ex's leaves it as saved); the
   player's `TravelPreAccept`; its travelling items' `TravelPreAccept`, none
-  for `?loadonly`; the game's `AcceptInventory`; the items'
+  for `?loadonly`, which takes nothing of the travel info, the player's own
+  properties nor its items; the game's `AcceptInventory`; the items'
   `TravelPostAccept`, then the player's; the game's `PostLogin`. Deus Ex's
   player spawns the level's mission script in its `TravelPostAccept` when none
   runs: a save holds none
@@ -1688,7 +1691,10 @@ and it stays on the screen until the next frame is drawn.
   `SetViewport` with its own viewport (`GetViewport`), which stops the sounds
   and leaves the music playing
   ([`Galaxy.dll`](galaxy-dll.md#playing-a-sound)); then `LevelAction` 0,
-  whatever it was. Then the new map's package is checked (`LOAD_Verify`), the
+  whatever it was. Then the new map's package is checked (`LOAD_Verify`): a
+  map that is not there fails the load here, its progress lines Core's
+  `UrlFailed` ("Failed launching URL") over the error ("Can't find file
+  '<map>'") for 6 s (`SetProgress`), the old level playing on. Then the
   game engine's `NotifyLevelChange` sends the first viewport's console its
   event of that name, each viewport's player is destroyed, the old level goes
   ([the map load's collection](#the-map-loads-collection)) and the new one is

@@ -303,6 +303,12 @@ A URL names a server in what comes before its options (`?`) and portal (`#`)
   as any URL's port);
 - after the `/` comes the map (the default map without one).
 
+Built on a base, as a travel builds it: a relative travel's URL takes the
+base's protocol, host, map, portal and port, a relative or partial one the
+base's options but `PUSH`, `POP`, `PEER` and a bare `LOAD` (any case), and the
+text's over them: a partial travel, the console's `open`, keeps the player's
+options and none of the server.
+
 As text (`FURL::String`, `0x103f9210`): the protocol and `:` only when it is not
 the default (or the URL is asked whole), `//` after them with a host; the host
 when it, or the port, is not the default, then `:port` only for a port not the
