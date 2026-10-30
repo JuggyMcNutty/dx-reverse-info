@@ -1830,6 +1830,15 @@ it would.
 
 ## Small
 
+- **A rotator's turn** is the sine table's wherever the engine turns by one,
+  as the scripts' conversions are ([`Core.dll`](core-dll.md#the-natives)):
+  through Core's `FCoords` turned by a rotator (`*=`, `/=`), as the scene's
+  coordinates are (`FSceneNode::ComputeRenderCoords`, `0x10372580`), a
+  mesh's frame (`ULodMesh::GetFrame`, `0x10355360`) and a brush's
+  coordinates (`ABrush::ToWorld` and `ToLocal`, `0x1030f310`,
+  `0x1030ef90`), or from the table itself, as an actor's coordinates are
+  (`AActor::ToWorld` and `ToLocal`, `0x1030dab0`, `0x1030d750`). So a view, a
+  mesh or a mover turned by less than 4 units of 65536 is not turned.
 - **`AttachDecal`** (`execAttachDecal`, `0x103e7250`) attaches nothing and
   returns false while the client's `Decals` (the Display menu's Decals) is
   off or there is no client: the game's decals then destroy themselves as
