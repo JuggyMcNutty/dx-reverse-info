@@ -73,6 +73,17 @@ the rest to the engine's input:
   `VK_RSHIFT`, `VK_LCONTROL`, `VK_RCONTROL`, and `VK_LMENU` and `VK_RMENU`, which `EInputKey`
   names `UnknownA4` and `UnknownA5`.
 
+The keypad's digits and point are `VK_NUMPAD0` to `VK_NUMPAD9` and `VK_DECIMAL` (`NumPad0` to
+`NumPadPeriod`) while Num Lock is on and, with it off, the keys they move by, as Windows' layouts
+code them: `VK_INSERT`, `VK_END`, `VK_DOWN` and the rest, `VK_CLEAR` for 5 (`Unknown0C`),
+`VK_DELETE`. The ISO key beside the left Shift is `VK_OEM_102`, `EInputKey`'s `JoyZ`. Under Wine
+a key's code is the one Wine's X11 keyboard driver gives it: from what the keys type it finds the
+layout's family and takes the typing keys' codes from that family's table
+(`dlls/winex11.drv/keyboard.c`, `main_key_vkey_*`) -- a QWERTY's by their places, as most
+layouts', a QWERTZ's with Y and Z swapped, an AZERTY's, a Dvorak's and a Swedish's as Windows'
+French, Dvorak and Swedish layouts code them, a Brazilian ABNT's and a Japanese 106's by tables of
+their own.
+
 The Windows keys and the menu key are `Unknown5B`, `Unknown5C` and `Unknown5D`, Print Screen
 `IK_PrintScrn` (`VK_SNAPSHOT`), the keypad's operators `GreyStar`, `GreyPlus`, `GreyMinus`
 and `GreySlash`, its Enter `IK_Enter`. DirectInput is the mouse's alone
@@ -91,6 +102,16 @@ the engine's `Key` the character's code, one a message, as Windows sends it to t
 on a Unicode system its UTF-16, so an e acute is 0xE9 -- all but a carriage return, which
 Enter's own key carries. The console takes it first; in Deus Ex, the root window then
 ([the engine and the input](extension-dll.md#the-engine-and-the-input)).
+
+**The focus** (`ViewportWndProc`): losing it (`WM_KILLFOCUS`, `0x1110a0a3`) lets the mouse's
+capture go (`SetMouseCapture`), runs `SETPAUSE 1` -- a command nothing in the game takes, so the
+game goes on -- ends a drag and resets the engine's input (`UInput::ResetInput`, `Engine.dll`
+`0x10394910`): its table of the keys held cleared and every `input` property of the player's
+zeroed, with no release sent, so the root window keeps its marks of the keys held and an Alt held
+into Alt+Tab stays down to its windows until Alt is pressed again
+([the root window](extension-dll.md#the-root-window)); full screen, the window leaves full screen
+and is minimised; the mouse's DirectInput device is let go. Gaining it (`WM_SETFOCUS`,
+`0x1110a1ab`) runs `SETPAUSE 0`, resets the input again and takes the mouse's device back.
 
 ## The window
 
