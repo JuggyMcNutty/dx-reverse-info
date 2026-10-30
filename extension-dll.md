@@ -738,6 +738,43 @@ yaw, its pitch left out.
   (`ConfigurationChanged`, `0x10045640`), else its layout is the script's.
   `MenuUIWindow` turns the first off, for its script's.
 
+## Border windows
+
+- **A border window** (`XBorderWindow`, `Init` `0x100010c0`) frames its top
+  shown child with nine textures ([borders](#borders)) and gives it the
+  inside. It starts with no textures, a normal style, not smoothed, tiled,
+  not resizeable, its margins from the border.
+- **The border's size** (`ComputeWindowBorders`, `0x10001500`): each side as
+  thick as the largest of its textures -- the left from the two left
+  corners and the left edge, the top from the two top corners and the top
+  edge, and so on --, none without a style. `SetBorders` (`0x10001280`)
+  computes it again; `SetBorderStyle`, the script's, does not.
+- **Layout** (`ConfigurationChanged`, `0x10001bc0`): the top shown child
+  alone is placed, within the child margins (`SetBorderMargins`) and, while
+  the margins are from the border (`BaseMarginsFromBorder`), within the
+  border as well; any other child places itself by its alignment. The
+  script gets no `ConfigurationChanged`. The preferred size
+  (`ParentRequestedPreferredSize`, `0x10001a40`) is that child's, asked for
+  the inside, with the same margins, no less than the border; with no
+  shown child, the size asked for stands. A child's request goes on up
+  (`ChildRequestedReconfiguration`, `0x100421d0`, takes none).
+- **Drawing** (`Draw`, `0x10001ce0`, which sends the script no
+  `DrawWindow`): nothing without a style; else the nine textures in it,
+  smoothed and stretched both ways as set, each side as thick as the
+  border's size.
+- **From a script**, a texture not given is none (`execSetBorders`,
+  `0x10002260`; `execSetMoveCursors`, `0x100025d0`), a margin 0
+  (`execSetBorderMargins`, `0x10002400`), a flag true
+  (`execBaseMarginsFromBorder`, `0x100024f0`; `execEnableResizing`,
+  `0x10002560`). Each setter lays the window out again, but `EnableResizing`
+  and `SetMoveCursors` (`0x10001480`, `0x100014a0`).
+- **Resizing** by dragging the border (`bResizeable`; `CursorRequested`,
+  `MouseButtonPressed` and the rest) was not read: no script of the game
+  turns it on.
+- **The game's** border windows are its cheat screens' tool windows'
+  (`ToolWindow.CreateToolWindowContainer`, and `ToolBorderWindow` around
+  their lists and edit fields), DeusEx.u's only ones.
+
 ## Lists
 
 `XListWindow`: the load and save screens, emails, the logs, images, the
