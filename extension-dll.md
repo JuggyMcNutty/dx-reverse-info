@@ -107,16 +107,25 @@ are `exec` exports.
   the frame's pixels (`PreRender`, `0x1003a760`); the mouse and
   `ConvertVectorToCoordinates` divide by them
   ([a point on the screen](#a-point-on-the-screen)).
-- **What it takes** (`Process`, `0x1003b3e0`): every key while any window has
-  grabbed the keyboard, and every mouse button while any window has grabbed
-  the mouse -- the mouse's axes and wheel count as its buttons
-  (`IsMouseButton`, `0x1003a2c0`), so the mouse turns no view then. Taking a
-  button clears the player's `bFire` and `bAltFire`.
-  Every modal window grabs both while it is shown: the menus and the game's
-  screens. The root marks every press and release of a key or button, taken
-  or not; a release of one not down is taken, while the grab holds, and goes
-  to no window. With no grab it goes to the game as any other. `IsKeyDown`
-  (`0x1004c980`) reads those marks.
+- **What it takes** (`Process`, `0x1003b3e0`): every key while the root's
+  count of the keyboard's grabs (`handleKeyboardRef`, `+0x5D0`) is not 0,
+  and every mouse button while its count of the mouse's
+  (`handleMouseRef`, `+0x5CC`) is not 0 -- the mouse's axes and wheel
+  count as its buttons (`IsMouseButton`, `0x1003a2c0`), so the mouse turns
+  no view then. Taking a button clears the player's `bFire` and `bAltFire`.
+  Every modal window with a parent raises both counts as it is shown and
+  lowers them as it is hidden, after the script's event
+  (`XModalWindow::VisibilityChanged`, `0x10037330`): the menus and the
+  game's screens, so a message box over a menu counts 2. A count goes
+  down only from above 0 (`UngrabKeyboardEvents`, `0x1003a1b0`;
+  `UngrabMouseEvents`, `0x1003a270`). The first grab of the keyboard
+  clears the marks of the keys held that are not the mouse's
+  (`GrabKeyboardEvents`, `0x1003a110`), the first of the mouse the
+  mouse's (`GrabMouseEvents`, `0x1003a1d0`). RootWindow's script functions
+  of the same names only count. The root marks every press and release of
+  a key or button, taken or not; a release of one not down is taken, while
+  the grab holds, and goes to no window. With no grab it goes to the game
+  as any other. `IsKeyDown` (`0x1004c980`) reads those marks.
 - **Keys** go to the focus window, else the topmost modal window, then up its
   parents until one handles them: `RawKeyPressed`, then, for a press,
   `VirtualKeyPressed`. Typed characters go the same way as `KeyPressed`.
@@ -273,7 +282,13 @@ run in its tick, after its script's `Tick` and before its children
   | 3 | the root |
 
   A modal that is not the root's child logs "Modal window must be a child
-  of Root!" and stays 1. A modal and the root are tab groups too, so a
+  of Root!" and stays 1. Destroying one stops the game: its cleanup takes
+  it out of its own table of tab groups (`XModalWindow::CleanUp`,
+  `0x10036cf0`), its index left at -1, then, its type a tab group's, out of
+  the table of the modal it lies in too (`XTabGroupWindow::CleanUp`,
+  `0x10044ea0`), which never held it (`XTabGroupWindow::Init` passes over
+  a modal), and the index asserts (`XModalWindow::RemoveTabGroupFromTable`,
+  `0x100370c0`). A modal and the root are tab groups too, so a
   conversation window is its choices' group.
 - **The tables.** A tab group lists its selectable windows twice
   (`ResortWindowTables`, `0x10045140`) by where each lies on the screen (its
