@@ -1916,6 +1916,20 @@ it would.
 
   Its line meets a mover filed in the BSP, its boxes a mover as an actor
   ([traces](#traces)).
+- **`PostEditChange`**, which a `SET` of a class and its `ResetConfig` call
+  on each of its objects ([`Core.dll`](core-dll.md#configuration)), does
+  something in play for two: a mover's (`AMover::PostEditChange`,
+  `0x103afbd0`) holds its key to 7, makes its base again from where it is
+  less where its last move started (`OldPos`, a place in the world), puts
+  it at its key's place and that base, no move made, and then its
+  `PostEditMove` (`0x103af920`) makes a key past the first again from where
+  it stands, so a door at rest at its second key lands by the world's
+  origin (Liberty Island's `DeusExMover16`, a `SET` of `DeusExMover`, to
+  −112, 0, 0); a client's (`UClient::PostEditChange`, `0x10374ef0`) holds
+  `Brightness` to 0 to 1 and `MipFactor` to −3 to 3 on the object, the class
+  default, which `GET` answers and the ini keeps, set after it unheld. The
+  zone's and the actor's act only in the editor; Galaxy's holds its settings
+  ([settings](galaxy-dll.md#settings)).
 - **`ResetKeyboard()`** (`0x103b96d0`): `UObject::ResetConfig` of the class of
   the viewport's input; `DeusExPlayer.TravelPostAccept` calls it on every level.
   What that does in Deus Ex: [configuration](core-dll.md#configuration).
