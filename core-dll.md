@@ -592,7 +592,10 @@ How the original runs UnrealScript.
 
 The rest are UE1's own. The details:
 
-- **To a string:** a float is `%f`, a vector `%f,%f,%f`, a rotator
+- **To a string:** a float is `%f`, a vector `%f,%f,%f` -- the MSVC
+  runtime's `%f`: every digit exact to six decimals, a tie at the sixth
+  rounding up (813.1953125 is `813.195313`), 2 to the 70th written whole,
+  infinity `1.#INF00` --, a rotator
   `%i,%i,%i` of its parts each wrapped to 0..65535 (`0x10137550`: a pitch of
   −5691 prints as 59845), a bool the localized `True` or `False`, an object
   its path name or `None` (`0x10131f00`).
