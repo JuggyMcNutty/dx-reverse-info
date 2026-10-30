@@ -565,8 +565,11 @@ yaw, its pitch left out.
   touched (the DLL imports no clipboard function).
 - **A log window** (`XTextLogWindow::Init`, `0x100474b0`): left and top
   aligned, each line kept 5 s. Its tick (`0x10047c30`) counts every line's
-  time down and drops the lines whose time is out, so a timeout of 0 drops a
-  line at the tick after it was added.
+  time down and drops the lines at its start whose time is out, up to the
+  first whose time is not, so a line with a shorter timeout waits behind an
+  older one; a timeout of 0 drops a line at the tick after it was added when
+  every line before it has gone.
+
 ## Buttons
 
 - **Defaults** (`XButtonWindow::Init`, `0x10007640`): no repeat, a press
