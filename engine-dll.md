@@ -1908,7 +1908,15 @@ it would.
   the scripted texture's; else a line in the log, `ReplaceTexture: Missing
   Texture` or `ReplaceTexture: Dimensions are different`.
 - **The canvas's text** (`DrawText`, `UCanvas::WrappedPrint`, `0x10376790`;
-  `DrawTextClipped`, `0x10378890`): each character a tile, with the style's
+  `DrawTextClipped`, `0x10378890`): a line from whole pixels, `WrappedPrint`'s
+  X the canvas's `CurX`, centred plus half of `ClipX` less the line's width,
+  and its Y `CurY`, each truncated (`_ftol`); each glyph's step its width
+  plus `SpaceX`, truncated, its height plus `SpaceY` truncated; the line
+  wraps where `CurX`'s whole pixels and its glyphs pass `ClipX`, and `CurX` is
+  then the line's X plus its width. `DrawTextClipped` draws one line from
+  `CurX` and `CurY` truncated and never centres: its line drawer
+  (`0x10376d20`) takes the place it is given and reads no `bCenter`. Each
+  character a tile, with the style's
   flag (`STY_None` invisible, `STY_Translucent` translucent, `STY_Modulated`
   modulated, any other none), masked and unsmoothed
   ([`D3DDrv`'s tiles](d3ddrv-dll.md#tiles)). `DrawTextClipped` first makes

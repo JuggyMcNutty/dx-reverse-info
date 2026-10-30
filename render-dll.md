@@ -752,7 +752,9 @@ palette's last entry never shows (`0x10b05d40`).
 
   The sum is scaled by `1.4 × ScaleGlow`. Added to it: the zone's ambient
   light in `FGetHSV`'s colour, and the actor's `AmbientGlow` ÷ 255 (255
-  pulses, `0.25 + 0.2 sin(8 t)` of the viewport's time). Each channel is at
+  pulses, `0.25 + 0.2 sin(8 t)`, t the level's time: with its `TimeDilation`
+  at 0.01 a glowing crate barely changes over five shots 1.5 s apart, at 1 it
+  pulses -- DXEngine's `GlowConsole`, run on the original). Each channel is at
   most 1. An unlit draw (`PF_Unlit`, the actor's or a material's) is
   `AmbientGlow` / 256 + `ScaleGlow` / 2, held to 0-1: mid-grey for most
   (`0x10b0f6e0`).
