@@ -187,7 +187,9 @@ turn:
   name, and no travel info, and the level keeps its file's URL, `Index.dx`
   ([the level's URL](network.md#addresses)); with no `DeusExLevelInfo`, the
   last URL as it is.
-- **`?loadgame=N`** (-1 for the quick save): reads the slot's `SaveInfo`,
+- **`?loadgame=N`** (-1 for the quick save; asked for as `loadgame=`, so a bare
+  `?loadgame` is no load but a map's browse, the URL's map the default one,
+  `Index.dx`, when it names none): reads the slot's `SaveInfo`,
   empties `Current`, copies the slot into it, and loads
   `<SavePath>\Current\<MapName>.<ext>?load?loadonly?loadgame`, an absolute
   URL on the browse's, so the browse's player options after its own
