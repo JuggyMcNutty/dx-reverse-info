@@ -1115,8 +1115,14 @@ drawn:
 
 - with the GC's style, the glow and unlit given, its draw scale multiplied,
   and with a skin every skin replaced, as if not hidden;
-- with `bConstrain`, clipped to the window; with `bClearZ`, over whatever
-  the depth buffer holds;
+- with `bConstrain`, through the scene's frame narrowed to where it meets
+  the window's clip rectangle (the GC's multipliers taking it to the
+  screen's pixels), the frame's projection made again for that size
+  (`FSceneNode::ComputeRenderSize`): the same angle over the narrower
+  width, so the actor comes out smaller, about the window's middle, and
+  within it. No stock call passes it: the vision augmentation's three and
+  the actor display's one draw over the whole view;
+- with `bClearZ`, over whatever the depth buffer holds;
 - all of it put back afterwards.
 
 `AugmentationDisplayWindow` uses it for the vision augmentation:
