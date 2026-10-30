@@ -1045,6 +1045,15 @@ as the window is made.
 `XFlagBase`: the player's flags, what missions and conversations set and
 test.
 
+- **The player's flag base** (`APlayerPawnExt`'s constructor, `0x10037ba0`):
+  a pawn that holds none makes its own, its outer the pawn and its name the
+  class's count -- the menu map's player's `FlagBase0`, the next map's
+  `FlagBase1` --, at a spawn and at a load alike, a load's saved base then
+  taking its place. A pawn pruned into `Current` is saved with none, a value
+  the save leaves out, so back there it keeps the new one. A travel that
+  brings the player's travel properties makes another for the flags it
+  carries: Liberty Island's player reached by a map exit holds `FlagBase2`,
+  its constructor's `FlagBase1` left unheld.
 - **Storage** (`FindName`, `0x10024e60`): 64 buckets, by the low six bits of
   the flag's name hashed with UE1's `appStrihash`
   ([names](core-dll.md#names-hashed-and-compared)). Each bucket is a chain
