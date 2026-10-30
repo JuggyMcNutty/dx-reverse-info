@@ -1793,6 +1793,13 @@ What the audio subsystem then does with it:
   1,600.
 - **`StopSound(Id)`** (`0x103e27d0`) hands the ID to the audio subsystem (its
   virtual at +0x78), which stops that sound.
+- **`GetSoundDuration(Sound)`** (`execGetSoundDuration`, `0x103e2f00`, no
+  check for None) is the sound's `GetDuration` (`0x1034ce50`), worked out
+  once: its data's period (`FSoundData::GetPeriod`, `0x1036f7a0`), read from
+  a WAV's header, the data chunk's size × 8 over the bits a sample × the
+  channels × the rate; 0 for data that is no WAV, an MP3 among them, and for
+  a header whose product is 0. Measured: `Beep4` 0.045215 s, a mission 1 line
+  (an MP3) 0. No script of the game calls it.
 - **Low sound quality** (`FSoundData::Load`, `0x1036f040`): with the audio
   subsystem's `LowSoundQuality` on, outside the editor, a sound's WAV is made
   smaller as it loads, its data taken as one channel whatever the header says:
