@@ -1458,7 +1458,7 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
 ## Starting the game engine
 
 - **`UGameEngine::Init`** (`0x103891c0`): after the client, the renderer and the
-  Entry level (`entry.dx`), the start URL. It is the command line's first token
+  Entry level (`entry.dx`, with no option), the start URL. It is the command line's first token
   (its second if the first is `SERVER`), but only when the command line has
   `-hax0r` or `-server` and the token does not start with `-`; otherwise, and
   with no token, `FURL::DefaultLocalMap`, which Deus Ex sets to `DX.dx` here. So

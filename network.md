@@ -307,7 +307,11 @@ Built on a base, as a travel builds it: a relative travel's URL takes the
 base's protocol, host, map, portal and port, a relative or partial one the
 base's options but `PUSH`, `POP`, `PEER` and a bare `LOAD` (any case), and the
 text's over them: a partial travel, the console's `open`, keeps the player's
-options and none of the server.
+options and none of the server. An absolute one of the game's protocol
+takes the base's player options it lacks or has empty -- `Name=`, `Team=`,
+`Class=`, `Skin=`, `Face=`, `Voice=`, `OverrideClass=` (any case) --, after its
+own, each logged (`URL: Adding default option Name=Player`): the console's
+`start`, a hosted game's, keeps the player's name.
 
 As text (`FURL::String`, `0x103f9210`): the protocol and `:` only when it is not
 the default (or the URL is asked whole), `//` after them with a host; the host
@@ -318,15 +322,24 @@ is one.
 The Join screens join with the console's `open` and the address typed or picked
 (Join LAN adds `?lan`).
 
-**A server's own URL.** `LoadMap` gives the level the URL it loads (the level's
-`URL`), and a server listens before its level begins play (`ULevel::Listen`,
-`0x1039e7c0`): the net driver writes the address and port it bound into that
-URL ([`IpDrv.dll`](ipdrv-dll.md#the-net-driver)). At the end `LoadMap` keeps
-the URL as it was given, with no host, as the game engine's last URL
+**The level's URL and the last URL.** `LoadMap` gives the level the URL it
+loads (the level's `URL`), but for a URL with an option starting `load` --
+`?loadonly`, `?loadgame`, `?load=`, as `FURL::GetOption` (`0x103f9ee0`)
+matches an option's start --, which leaves the level the URL it holds: a
+level's file keeps one (`ULevel::Serialize`), every stock map's the default
+protocol, `Index.dx` and port 7790, so a restarted level's reads `Index.dx`,
+and a save's the URL its level was entered by. A server listens before its
+level begins play (`ULevel::Listen`, `0x1039e7c0`): the net driver writes the
+address and port it bound into that URL
+([`IpDrv.dll`](ipdrv-dll.md#the-net-driver)). At the end `LoadMap` keeps the
+URL as it was given, with no host, as the game engine's last URL
 (`UGameEngine` + 0x74). The last URL is what a travel is relative to -- the
 server's (`?RESTART` too) and a client's (`Tick`, `0x1038fe90`) -- and what the
 console's `open` and `start` build on and `reconnect` opens again (`Exec`,
-`0x1038a030`). So a server never travels to its own address.
+`0x1038a030`). So a server never travels to its own address. Before a
+viewport's travel `Tick` takes every `loadonly` option (the whole option, any
+case) and the portal off the last URL, in place: the travel after a restart
+carries no `?loadonly`.
 
 The scripts' own addresses:
 

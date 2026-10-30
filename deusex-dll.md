@@ -184,15 +184,25 @@ turn:
   `DeusExLevelInfo`'s `MapName` names (`GetDeusExLevelInfo`, below: the
   current level's once the levels left are collected) with the last URL's
   portal, `?loadonly` and no other option, so the player logs in with no
-  name, and no travel info; with no `DeusExLevelInfo`, the last URL as it
-  is.
+  name, and no travel info, and the level keeps its file's URL, `Index.dx`
+  ([the level's URL](network.md#addresses)); with no `DeusExLevelInfo`, the
+  last URL as it is.
 - **`?loadgame=N`** (-1 for the quick save): reads the slot's `SaveInfo`,
   empties `Current`, copies the slot into it, and loads
-  `Current\<MapName>.<ext>?load?loadonly?loadgame`.
+  `<SavePath>\Current\<MapName>.<ext>?load?loadonly?loadgame`, an absolute
+  URL on the browse's, so the browse's player options after its own
+  ([addresses](network.md#addresses)); the level keeps the URL the save
+  holds, which then becomes the last URL.
 - **Any other map:** it compares the mission numbers.
   - Within one mission, unless `?loadonly`: `PruneTravelActors`, then
     `SaveCurrentLevel` into `Current`; the destination loads from `Current`
-    if it was saved there, else from `Maps`. The screen shows `SAVING`, then
+    if it was saved there, else from `Maps`. From `Current` the URL is made
+    on the browse's as a relative travel's is
+    ([addresses](network.md#addresses)): its map
+    `<SavePath>\Current\<map>.<ext>`, the map named cut at its first `.dx`
+    -- `..\Save\Current\01_NYC_UNATCOIsland.dxs` --, its options
+    the browse's, its portal the browse's; the level takes that URL, which
+    then becomes the last URL. The screen shows `SAVING`, then
     `LOADING` ([the loading screen](engine-dll.md#the-loading-screen)).
   - A new mission, a map outside any, or a player with `bStartingNewGame` set
     (which it then clears): `Current` is emptied first, and the destination
