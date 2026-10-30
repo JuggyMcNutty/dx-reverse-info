@@ -1087,9 +1087,9 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   given short of the surface: a line's by 0.5 units, a box's by a tenth of the
   trace's length, or by 0.1 units for a trace shorter than one; its time held to
   0..1, the rest of the move not taken. A line's hit lies on the line. A box's
-  time starts at 2, so a hull the box enters within twice the trace's length is
-  found; a hit the backoff brings under 1 counts (one up to a tenth of the trace
-  past its end), one still at 1 is none. A script's `Trace` straight down finds
+  time starts at 2, so a hull the walk tries (below) that the box enters within
+  twice the trace's length is found; a hit the backoff brings under 1 counts
+  (one up to a tenth of the trace past its end), one still at 1 is none. A script's `Trace` straight down finds
   the floor half a unit above it.
 - **The box check's hulls** (`0x103f42f0`, set up at `0x103f18e0`), in each
   solid leaf the box reaches: its convex hull's planes pushed out by the box
@@ -1099,8 +1099,15 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   the hull is stopped at once (time 0) when, traced back along its line, it
   entered less than a trace's length back (as when its centre is still in front
   of the plane it overlaps and it heads in); otherwise it passes (as when it
-  heads out of a floor it has sunk into). The walk down the tree tests both
-  ends' boxes, grown by a tenth, against each node's plane.
+  heads out of a floor it has sunk into). The walk down the tree
+  (`0x103f42f0`) goes down each side of a node that either end's box, grown
+  by a tenth of its size, reaches, the space kept as a line's walk keeps it
+  (the front of a solid boundary empty, its back solid); at a leaf in solid it
+  tries the hull its node bounds, and no other. So a hull whose solid the
+  box's ends do not reach is never tried: a box traced 8 units down from 8.78
+  over the floor meets nothing (a script's `Trace` from Liberty Island's
+  carcass crossbow, run on the original), where a try would have found it
+  entered at 1.0975 and the backoff brought it to 0.9975.
 - **An actor's cylinder** (`UPrimitive::LineCheck`, `0x103d8af0`), with the
   line's box added: hit where the line comes in, through a cap or the side,
   within the trace, a thousandth of the trace short (its time − 0.001, held to
