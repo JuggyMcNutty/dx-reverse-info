@@ -1488,11 +1488,22 @@ A key's binding is a line of commands with `|` between them (`[Engine.Input]`
 in `User.ini`). Where each goes depends on what the key did:
 
 - **`UInput::ExecInputCommands`** (`0x10393bf0`), while the engine runs: on a
-  press, and on a release when the command starts with `OnRelease` (then the
-  rest of it), the command goes to the viewport's `Exec`; on anything else (a
-  key held, an axis, a release without `OnRelease`) to the input's own `Exec`
-  (`0x10393e10`: `BUTTON`, `PULSE`, `TOGGLE`, `AXIS`, `KEYNAME`,
-  `KEYBINDING`).
+  press the command goes whole to the viewport's `Exec` (an `OnRelease` one
+  too, which nothing takes), and on a release when it starts with
+  `OnRelease` the rest of it; on anything else (a key held, an axis, a
+  release without `OnRelease`) to the input's own `Exec`.
+- **`UInput::Exec`** (`0x10393e10`), with the key's action: `BUTTON` sets its
+  `input` byte to 1 on a press and to 0 on a release, and leaves it
+  otherwise, so a byte a script clears while the key is held stays clear
+  until the next press; `PULSE` sets it to 1 on a press alone; `TOGGLE` flips
+  its top bit (`0x80`) on a press; `AXIS` adds its speed (`SPEED=`, 1
+  without one) × the time on a hold and × the move × 0.01 on an axis, and
+  nothing on a press or release. A property the player lacks is "Bad Button
+  command" (for `PULSE` too), "Bad Toggle command" or "Bad Axis command".
+  `KEYNAME` and `KEYBINDING` answer a key's name and binding. A first word
+  among the 40 aliases runs the alias's line through `ExecInputCommands`
+  with the same action, a flag held meanwhile so that an alias inside it
+  (`Fire`'s `Button bFire | Fire`) is not expanded again.
 - **`UViewport::Exec`** (`0x10373a60`), the first taker wins: the input's
   `Exec`, the render device's, the viewport's own words (`GETPING`, `INJECT`,
   `NETSPEED`, `LANSPEED`, `SHOWALL`, `REPORT`, `SHOT`, `SHOWACTORS`,
