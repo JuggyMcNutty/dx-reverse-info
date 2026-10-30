@@ -725,23 +725,33 @@ palette's last entry never shows (`0x10b05d40`).
 `SetupForActor` (`0x10b08c70`) picks an actor's lights once a draw, and
 `Light` (`0x10b027f0`) lights each vertex with them.
 
-- **The candidates:** the static lights that reach into the actor's leaf of
-  the BSP, the moving lights in it, and the lights it had last frame (kept
-  in the cache under the actor, up to 16). Each counts once a frame, and
-  only if its `bSpecialLit` is the actor's. Its strength at the actor's
-  centre is `(1 − distance / radius) × LightBrightness`, the byte. A
-  cylinder light counts with three quarters of its brightness and radius.
+- **The candidates:** the lights it had last frame (kept in the cache under
+  the actor, up to 16, each with its fade, below), the static lights that
+  reach into the actor's leaf of the BSP, and the moving lights in it. Each
+  counts once a frame, and only if it reaches the actor and its
+  `bSpecialLit` is the actor's: a kept light that no longer reaches it is
+  dropped at once. Its strength at the actor's centre is `(1 − distance /
+  radius) × LightBrightness`, the byte, in 1024ths. A cylinder light counts
+  with three quarters of its brightness and radius.
   The leaf's volumetric lights (`LeafVolumetricLighting`, the fog map's
   list) are the actor's fog, every one listed while the light infos have
   room (256 in all).
-- **The pick**, strongest first: static lights, up to 8; then the others
-  while fewer than 8 lights in all are taken; none below an eighth of the
-  strongest taken.
-- **Shadowed or not:** a line from the light to the actor through the
-  level's BSP, checked again for each light every 16 frames (by the frame
-  count and the light's object index). A `bMovable` light that is not static
-  is always taken. A light fades in when found, and out when shadowed or
-  dropped, over about a third of a second; it lights as it fades.
+- **The pick**, one pass over them, strongest first: a static light is lit
+  while fewer than 8 static ones are, any other while fewer than 8 in all
+  are, none under an eighth of the first one lit.
+- **Shadowed or not:** a `bMovable` light that is not static is lit. Another
+  is lit as a line from it to the actor through the level's BSP found it,
+  the line run again every 16 frames, by the viewport's frame count and the
+  light's object index; between, as it was. On the actor's first draw (no
+  cache under it) every light's line is run, and one found open is lit full
+  at once.
+- **The fade**, a byte each light keeps under the actor: a static light new
+  to the actor starts at 0 and unlit until its line is next run, a moving
+  one at 255. Each draw it steps by the viewport's time since its last frame
+  × 768, at most 255 (a third of a second): lit, up and odd, at most 255;
+  else down and even, at least 0. A light lights as it fades, its colour ×
+  the byte ÷ 255; up to 16 whose byte is over 1 are kept, strongest
+  first.
 - **Per vertex**, for each light:
   - a diffuse term, `(cos + 1)² − 1.5` of the angle to the light (nothing
     beyond about 77°, 2.5 facing it);
@@ -752,12 +762,31 @@ palette's last entry never shows (`0x10b05d40`).
 
   The sum is scaled by `1.4 × ScaleGlow`. Added to it: the zone's ambient
   light in `FGetHSV`'s colour, and the actor's `AmbientGlow` ÷ 255 (255
-  pulses, `0.25 + 0.2 sin(8 t)`, t the level's time: with its `TimeDilation`
-  at 0.01 a glowing crate barely changes over five shots 1.5 s apart, at 1 it
-  pulses -- DXEngine's `GlowConsole`, run on the original). Each channel is at
-  most 1. An unlit draw (`PF_Unlit`, the actor's or a material's) is
+  pulses, `0.25 + 0.2 sin(8 t)`, t the viewport's clock, `CurrentTime`, the
+  real time at each lock, whatever the level's `TimeDilation`: at 0.01 a
+  glowing crate's twelve shots 1.5 s apart run through the pulse's range --
+  DXEngine's `GlowConsole`, run on the original). Each channel is at most
+  1. An unlit draw (`PF_Unlit`, the actor's or a material's) is
   `AmbientGlow` / 256 + `ScaleGlow` / 2, held to 0-1: mid-grey for most
   (`0x10b0f6e0`).
+- **Fog** (`Fog`, `0x10b02c00`), for a draw that `SetupForActor` flags
+  `PF_RenderFog`, the actor's leaf having volumetric lights. One of them
+  that also lights the actor stays a light; the rest are the fog's alone.
+  Per vertex, each in turn:
+  - its sphere, radius R = (`VolumeRadius` + 1) × 25 units about the light,
+    is dense 1 − r²/R² at r from its middle; that density's integral along
+    the line from the eye to the vertex, × 3/R, × `VolumeBrightness` × the
+    light's brightness (its `LightBrightness` ÷ 255, pulsed as its light
+    maps' is) ÷ 64, held to 0-1, then doubled, is the light's fog f. A
+    sphere behind the eye, the eye outside it, gives none.
+  - The fog's alpha gains f × `VolumeFog` ÷ 255, at most 1, and its colour
+    is f × the light's colour plus the colour so far × 1 − that gain, each
+    channel at most 1.
+
+  The vertex goes to the render device with its fog beside its light;
+  `D3DDrv` draws it only with `UseVertexFog`, which the game's ini has off
+  ([`D3DDrv`'s fog](d3ddrv-dll.md#fog)), so the game's meshes are drawn
+  unfogged.
 - **Which faces are drawn.**
   - `DrawLodMesh` keeps a face whose corners are not all beyond one side of
     the view, and that faces the eye: `((A − B) × (C − A)) · A`, in view

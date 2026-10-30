@@ -196,9 +196,13 @@ Two kinds, as the engine hands them over:
 - **Vertex fog** (`UseVertexFog`, for meshes): a draw flagged
   `PF_RenderFog` that is neither translucent nor modulated puts the vertex's
   fog colour in the D3D specular channel and turns specular on. So the
-  hardware adds the fog after the texture is modulated. The fog values come
-  from the renderer's lighting ([meshes](render-dll.md#meshes)). A tile, a
-  sprite among them, gets none: `DrawTile` writes no specular colour.
+  hardware adds the fog after the texture is modulated, dimming nothing.
+  The fog values come from the renderer's lighting
+  ([meshes](render-dll.md#meshes)). A tile, a sprite among them, gets none:
+  `DrawTile` writes no specular colour. It is on only with `UseVertexFog`,
+  which the game's ini has `False`, and a driver that does specular Gouraud
+  shading, not on a Voodoo3 (`SetRes`); off, `SetBlending` drops
+  `PF_RenderFog` and the mesh is drawn as without it.
 
 ## Detail textures
 
