@@ -102,6 +102,12 @@ it, the music's: channel n starts its sound on voice n + 1.
   than its own (on a tie, the last such channel). What played there stops at
   once. So a sound beyond its radius, whose priority is below 0, is dropped
   even when a channel is free.
+- **An MP3 plays 8 KB of silence first**, 4,096 frames of a mono one
+  (92.9 ms at 44,100 Hz): a compressed sample's voice plays a ring of 64 KB,
+  zeroed as it starts (`0x10612049`), that its decoder fills as it plays
+  (`0x1060e340`), the first fill from 8 KB past the voice's place
+  (`0x1060e4c9`). Measured: a mission 1 line starts 4,083 to 4,096 frames
+  after a beep (a WAV) started on the same tick, 4,607 once as a run's first.
 - **`StopSoundId(Id)`** (`0x10607ef0`) stops the channel with that ID
   (`Actor.StopSound`, [`Engine.dll`](engine-dll.md#sounds)).
 - **`NoteDestroy(Actor)`** (`0x106083a0`), when an actor goes: its ambient
@@ -233,21 +239,35 @@ timer:
 
 ## Lip sync
 
-The mouths in conversations. Every 0.1 s of a channel's playing time, if it
-is speech from a pawn whose script has set `bIsSpeaking`, Galaxy works out a
-mouth shape and writes it to the pawn's `nextPhoneme`, which the script's
-`LipSynch` animates.
+The mouths in conversations. `Update` (`0x1060a09a`) works out a channel's
+mouth shape when it is speech (the talk slot) from a pawn whose script has
+set `bIsSpeaking`, its voice playing, and its time played has reached the
+next shape's time: the first at once, at the update after the voice starts,
+the next a tenth of a second on each time one is worked out, so one held back
+(`bIsSpeaking` set late) works one out an update until it catches up. It
+writes it to the pawn's `nextPhoneme`, which the script's `LipSynch`
+animates.
 
-- **What it hears:** 1,024 samples at the play position, through a triangle
-  window and an FFT (`0x10609180`, `0x10609310`). For a compressed sample
-  (Deus Ex's speech is MP3), the voice's decoded buffer where it plays; for
-  another, 0.1 s ahead of the time played.
-- **The shape** (`0x10608d70`), from the strongest frequency: `X` (mouth
-  closed) when even that is weak; otherwise `T` above 2,000 Hz, `F` to 2,000,
-  `A` to 1,500, `O` to 600, `U` to 400, and `E` at 250 Hz or below.
+- **What it hears** (`0x10609180`): 1,024 frames, each sample over 32,768
+  times its place over 1,024, the rising half of a triangle. For a
+  compressed sample (Deus Ex's speech is MP3), the voice's ring
+  ([playing a sound](#playing-a-sound)) from where the voice plays, cut at
+  the ring's end; for another, the sample from 0.1 s past the time played,
+  cut at its end. An 8-bit sample is read from its start, wherever it plays.
+- **The spectrum** (`0x10609310`): a 1,024-point FFT, of whose bins only the
+  size of the real part is kept.
+- **The shape** (`0x10608d70`), from the largest of the first 512 bins, DC's
+  among them, the first of equals: `X` (mouth closed) at 5 or less;
+  otherwise, at its frequency (the bin × the sample's rate ÷ 1,024), `T`
+  above 2,000 Hz, `F` above 1,500, `A` above 600, `O` above 400, `U` above
+  250, and `E` at 250 Hz or below.
 - `M` never comes: its test (above 1,000 Hz) sits inside the branch for
-  250 Hz or below. A second test, of the loudness below 300 Hz, always
-  passes.
+  250 Hz or below. A second test, of the loudness below 300 Hz (the bins to
+  300 Hz averaged, plus 1, above 0.2), always passes.
+- Measured on three of mission 1's lines: the shapes the game wrote, worked
+  out again from each line's samples with the window 4,096 frames behind
+  the time played (the MP3's silence first), are 27 of 30, 5 of 6 and 24 of
+  30 alike, one after another.
 
 ## Music
 
