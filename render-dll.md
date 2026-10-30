@@ -594,7 +594,11 @@ palette's last entry never shows (`0x10b05d40`).
   the global cache (`GCache`) under the model, the light map and the zone. It
   is built again only when it is not there, when one of its lights has
   `bLightChanged`, or, for a mover's surface, after the mover moves, turns or
-  changes leaf.
+  changes leaf. A mover's surface is lit where the brush tracker filed it
+  ([`Engine.dll`](engine-dll.md#traces)), its static lights through the
+  shadow bits raytraced at its `BrushRaytraceKey`. Measured: a door moved
+  100 units off its place is lit there, by its own lights' fall-off and by a
+  moving light 48 units before it that reaches no further.
 - **The fog map** ([`D3DDrv`'s fog](d3ddrv-dll.md#fog)), only when the render
   device takes fog maps and does volumetric lighting (`SupportsFogMaps`,
   `VolumetricLighting`) and the viewport's actor is in a fog zone
