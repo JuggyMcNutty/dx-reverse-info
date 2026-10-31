@@ -33,11 +33,15 @@ The natives are the links': eight of `InternetLink`, nine of `TcpLink`, five of 
 - **The socket** (`UTcpNetDriver::InitBase`, `0x1070abb0`): one UDP socket, non-blocking,
   with broadcast and address reuse on; send and receive buffers of 32 KB for a client,
   128 KB for a server. A client binds any port. A server binds its URL's port (7790 in
-  `DeusEx.ini`), or the next free one of the 20 from it; only that one when the command line
-  gives `PORT=`.
-- **Its address**, which it binds (`getlocalhostaddr`, `0x10703eb0`): every one of the
-  machine's (`0.0.0.0`), unless the command line names one (`MULTIHOME=a.b.c.d`) or gives
-  `-PRIMARYNET`, which takes the first address of the machine's own name. A server's
+  `DeusEx.ini`), or the next free one of the 20 from it; with `PORT=` on the command line
+  that port alone, its number read into the URL's port before the bind (Core's `Parse`,
+  `0x10147730`: `appAtoi` of what follows, true whenever it finds the name).
+- **Its address**, which it binds (`getlocalbindaddr`, `0x10708e40`, by
+  `getlocalhostaddr`, `0x10703eb0`): every one of the machine's (`0.0.0.0`), unless the
+  command line names one, `MULTIHOME=a.b.c.d` -- four parts by their dots, each part's
+  number as a byte; any other text logs `Invalid multihome IP address <text>` and binds
+  every address -- or gives `-PRIMARYNET`, which takes the first address of the
+  machine's own name. Without `MULTIHOME=` it logs `WinSock: I am <name> (<address>)` once. A server's
   `InitListen` (`0x1070a1d0`) writes it, as `a.b.c.d`, and the port it bound into the
   level's URL ([a server's own URL](network.md#addresses)), and logs
   `TcpNetDriver on port <port>`.
