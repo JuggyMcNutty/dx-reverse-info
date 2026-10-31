@@ -131,12 +131,17 @@ it, the music's: channel n starts its sound on voice n + 1.
   channel's (`0x10612310`, which `Update` calls with the channel + 1), the
   first its left side and the second its right, linked: a stop of the first
   stops the second (`0x10618410`), whatever the game has since started on
-  that channel. A compressed one's two rings are filled by the same call.
-  Measured, with the stock stereo line `ConAudioMission01_450`: its
-  voice starts 4,107 and 4,608 frames after a beep, as a mono one's, then
-  plays its ring's first 32,768 frames over and over, the ring never filled
-  again, with its lip sync, until a sound on its slot stops it; a beep the
-  speaker played with each later line went unheard.
+  that channel. A stereo sample plays from rings, as a compressed one does,
+  a WAV's two rings filled from its data by the same call that would decode
+  (`0x10619800`); an 8-bit one's ring holds 65,536 frames, but the voice's
+  loop turns at 32,767 as a 16-bit one's. Measured, with the stock stereo line
+  `ConAudioMission01_450`: the voice starts 4,107 and 4,608 frames after a
+  beep, as a mono MP3's, and a stereo WAV of 16-bit samples at 22,050 Hz
+  8,192 output frames after, its 4,096; each then plays its ring's first
+  32,768 frames over and over, the ring never filled again, with its lip
+  sync, until a sound on its slot stops it; a beep the speaker played with
+  each later line went unheard, and at its exit the game crashed unloading a
+  sound (`glxUnloadSample`), every run that played a stereo one.
 - **`StopSoundId(Id)`** (`0x10607ef0`) stops the channel with that ID
   (`Actor.StopSound`, [`Engine.dll`](engine-dll.md#sounds)).
 - **`NoteDestroy(Actor)`** (`0x106083a0`), when an actor goes: its ambient
@@ -265,10 +270,24 @@ timer:
 - **The tick** is the music's (`0x10615710`): with a module playing, every
   5/2 of `OutputRate` over its tempo, 50 a second at 125; with none, at 120
   beats of 48 ticks a minute (its reset, `0x1060e850`), 96 a second.
-- **Loops** come from a WAV's `smpl` chunk (`0x10619940`): its first loop's
-  start and end, the end being the first sample not played again. The
-  ping-pong type plays back and forth. A sample ends when the voice passes
-  its last frame, reading zeros beyond it.
+- **A WAV's data** is loaded as it is (`0x10619d20`; from a file,
+  `0x10619940`), but 8-bit samples, each made signed (+0x80).
+- **Loops** come from a WAV's `smpl` chunk: its first loop's start and end,
+  and only from a chunk after the data chunk, where the loader sets the sample
+  up afresh, an earlier loop lost. Measured: a sound so made plays once.
+- **A voice's limit.** The mixer mixes a voice in blocks up to its limit --
+  the loop's end, a stopping one its data's end --, a frame that falls on the
+  limit too, then acts on the place past it (`0x10614920`): a loop goes back
+  by its length, as often as a step longer than the loop needs, keeping the
+  fraction; a voice past its data's end stops, the frame at the end reading
+  the zeros the loader puts after the data. A compressed voice's ring loops
+  from its first frame to its last, 32,767, so each turn after the first
+  passes over the ring's first frame.
+- **The ping-pong type** (the loop's type 1) turns the voice where it is at
+  the loop's end, swapping the loop's ends and negating the step, and turns
+  it again at the start, mirrored about it (`0x10614920`). Measured: the game
+  crashes at the first turn, the sound played to its loop's end; its process
+  is gone, with nothing logged.
 
 ## Lip sync
 
@@ -286,7 +305,12 @@ animates.
   compressed sample (Deus Ex's speech is MP3), the voice's ring
   ([playing a sound](#playing-a-sound)) from where the voice plays, cut at
   the ring's end; for another, the sample from 0.1 s past the time played,
-  cut at its end. An 8-bit sample is read from its start, wherever it plays.
+  cut at its end. An 8-bit sample is read from its start, wherever it plays,
+  its bytes two to a slot, the second kept: its first 1,024 bytes fill the
+  input's first 512 slots, each 0 where the place read from and the byte
+  pass the data's end, and the other 512 keep what the read before left, the
+  input being one buffer for every voice (`0x1067588c`), which the FFT copies
+  out and leaves.
 - **The spectrum** (`0x10609310`): a 1,024-point FFT, of whose bins only the
   size of the real part is kept.
 - **The shape** (`0x10608d70`), from the largest of the first 512 bins, DC's
