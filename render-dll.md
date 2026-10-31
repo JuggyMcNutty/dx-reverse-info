@@ -488,6 +488,34 @@ So a trooper (`GM_Jumpsuit`, 370 vertices) at the default 75° is whole to
 about 2,700 units deep at 853 pixels wide (3,700 at 1280). It has about 200
 vertices at 5,000 and 100 at 10,000.
 
+## Wire meshes
+
+With the viewer's `RendMap` at wire (1, as `Canvas.DrawActor`'s `WireFrame`
+sets it), or an orthogonal view's (13 to 15), `DrawLodMesh` (`0x10b0ea80`)
+asks `GetFrame` for the mesh's vertices in the world's axes, not the view's,
+and after their outcodes and the weapon triangle draws lines in place of
+faces, nothing culled or lit:
+
+- each face within the detail budget, whatever its material, its corners
+  down their collapse lists and slid as ever ([mesh detail](#mesh-detail)),
+  as three lines: its last corner to its first, then each to the next;
+- then each special face, the weapon triangle's, between its special
+  vertices;
+- through the render device's `Draw3DLine`, depth cued (2), in (0.6, 0.4,
+  0.1), or (0.2, 0.8, 0.1) for a selected actor.
+
+`DrawMesh` (`0x10b0d1a0`) draws a plain mesh's triangles the same, but a line
+only from the corner of the greater X, so an edge two triangles share is
+drawn once, and every line of a two-sided triangle. The outcodes are worked
+out on those world-axis vertices against the view's sides, so a corner is
+out by where it lies from the world's origin: the weapon triangle is nearly
+always wholly out past one side, and what the pawn holds is not drawn
+([a pawn's attachments](#a-pawns-attachments)). `URenderDevice::Draw3DLine`
+(`Engine.dll` `0x10371c90`) takes a line into the view's axes, clips it to
+the near plane and projects it, and `Draw2DClippedLine` (`0x10371700`) clips
+it to the frame; `D3DDrv` draws it with its `Draw2DLine`
+([the rest of a frame](d3ddrv-dll.md#the-rest-of-a-frame)).
+
 ## Mesh textures
 
 Which texture each face of a mesh draws:

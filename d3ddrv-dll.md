@@ -278,6 +278,12 @@ the static pointer it is read through is set.
   `UsePrecache` (`0x10002ec9`), and the game engine's next frame shows
   `PRECACHING` and precaches the level
   ([the loading screen](engine-dll.md#the-loading-screen)).
+- **Lines and points** (`Draw2DLine`, `0x1000116d`; `Draw2DPoint`): at the
+  depth of a point one unit before the eye, so over the whole scene, the
+  line flags read for nothing; the colour times 256 into the vertex, under
+  the gamma ramp with the rest of the frame. A 3D line is `Engine.dll`'s
+  `URenderDevice::Draw3DLine`, projected to a 2D one
+  ([wire meshes](render-dll.md#wire-meshes)).
 - **Meshes** (`DrawGouraudPolygon`): the vertex's light colour becomes the
   diffuse (times the modulation compensation); a modulated draw is untinted
   white. Tiles ([tiles](#tiles)), sprites among them, carry one colour the
