@@ -104,6 +104,13 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   wave of 8 and 4 units on the level's time for `PF_SmallWavy`. Its detail and
   macro textures go as `UTexture::Lock` leaves them: not panned, at their own
   scale (`DrawScale`, times the mip's shrink).
+- **The viewer's `Sprite`**, when a player views with one set (the Matrix
+  cheat's), stands in for every surface's texture current frame, the
+  Sprite's own current frame then giving the detail and macro textures; for
+  every decal's; and for every corona drawn, which `DrawFrame` writes into
+  the light's `Skin` before drawing it, so it stays there once the Sprite
+  is gone. With [meshes](#mesh-textures) and
+  [sprites](#sprites), every texture of the frame is the Sprite.
 - **The depth buffer** is cleared (the render device's `ClearZ`) twice in
   `DrawFrame`: after the frame's children, when its first list holds a
   surface (a mirror or a portal), so what was drawn beyond hides none of
