@@ -1951,10 +1951,14 @@ it would.
   its outputs as they were.
 - **`ScriptedTexture.ReplaceTexture(Tex)`** (`execReplaceTexture`,
   `0x103eb1e0`): with a texture whose USize and VSize are the scripted
-  texture's, that texture's current animation frame is updated to the
-  scripted texture's LocalTime, locked, and its top mip's bytes copied over
-  the scripted texture's; else a line in the log, `ReplaceTexture: Missing
-  Texture` or `ReplaceTexture: Dimensions are different`.
+  texture's, that texture is updated to the scripted texture's LocalTime,
+  which steps its animation, then its current frame (`AnimCurrent`, else
+  itself) locked and its top mip's bytes, USize × VSize of them, copied over
+  the scripted texture's; else a script warning, `ReplaceTexture: Missing
+  Texture` or `ReplaceTexture: Dimensions are different`. The scripted
+  texture's own tick (`0x103ea5b0`) copies over that mip only a source
+  texture's pixels, which its load scaled once (`0x103ea3d0`), then calls its
+  notify actor's `RenderTexture`: with neither, what was copied stays.
 - **The canvas's text** (`DrawText`, `UCanvas::WrappedPrint`, `0x10376790`;
   `DrawTextClipped`, `0x10378890`): a line from whole pixels, `WrappedPrint`'s
   X the canvas's `CurX`, centred plus half of `ClipX` less the line's width,
