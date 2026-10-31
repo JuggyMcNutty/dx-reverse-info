@@ -969,6 +969,35 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   `bCanDoSpecial` and `bIsPlayer` (the pawn word's bits 13, 15, 14, 12, 16, 17
   and 1).
 
+**The best inventory.** `FindBestInventoryPath(out MinWeight,
+bPredictRespawns)` (`execFindBestInventoryPath`, `0x103b97c0`) runs
+`findPathTowardBestInventory` (`0x103dbe40`) with the paths cleared: a weight
+past `MinWeight` becomes `MinWeight`, with `bShootSpecial` and `SpecialPause`
+cleared, a route that probes `SpecialHandling` handed to `HandleSpecial` and
+`SpecialGoal` dropped when the route is it; else None, `MinWeight` left. The
+search gathers the pawn's own list as `findPathToward` does, with no goal,
+and, unanchored, finds its end point; placed so but not anchored, it answers
+the pawn's nearest node at once, at a weight of 0.00005. Anchored, the
+anchor's neighbours made end points, it runs `breadthPathToInventory`
+(`0x103dd310`) from the anchor at its distance, at least 10, and a weight past
+`MinWeight` answers its route's start:
+
+- best first over the reach specs as they run (`Paths`), the open list kept
+  as `breadthPathFrom` keeps it, a node's cost the spec's distance and the
+  node's own on top of its predecessor's, with no end point's weight added
+  and no player-only node passed over;
+- each end point starts a route of its own (`startPath` itself), each node
+  reached carrying its predecessor's;
+- at an `InventorySpot` whose item probes `Touch` -- or, predicting
+  respawns, has under 5 s of its `LatentFloat` left -- and whose
+  `MaxDesireability` over the node's cost beats the best, the item's
+  `BotDesireability` over the cost is the weight, the best kept;
+- after 250 nodes it stops if the best weight is above 0, else goes on 50
+  more at a time; a list walk past 500 nodes gives 0;
+- the best spot's route turned around (`ReverseRouteFor`).
+
+No stock map has an `InventorySpot`.
+
 ### Teleporting an actor
 
 `SetLocation` is `ULevel::FarMoveActor(actor, spot, test, noCheck)`
@@ -1452,6 +1481,12 @@ A latent function's native starts the wait and puts in the state frame's
 `FinishAnim` 385 and `FinishInterpolation` 302 (registered from `0x103e0070`
 on); `APawn`'s `MoveTo` 501, `MoveToward` 503, `StrafeTo` 505, `StrafeFacing`
 507, `TurnTo` 509, `TurnToward` 511 and `WaitForLanding` 528.
+
+- **`Sleep(Seconds)`** (`0x103dfef0`) keeps its time in the actor's
+  `LatentFloat`, a property a save keeps with it; its poll (`PollSleep`,
+  `0x103e0020`) takes the tick's time off it and ends the sleep once under
+  half the tick is left. `Pawn.StopWaiting` (`0x103ba590`) sets a sleeping
+  pawn's `LatentFloat` to -1, so the next poll ends it.
 
 ## A saved level
 
