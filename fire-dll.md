@@ -29,7 +29,13 @@ A fractal texture moves on only when it is drawn (`Engine.dll`):
 
 - **`UTexture::Update`** (`0x103ecb70`), from whatever locks the texture to
   draw it, calls `Tick` with the time since the texture's own last update
-  (`InternalTime`): once for each new time, however often it is drawn.
+  (`InternalTime`): once for each new time, however often it is drawn. The
+  time is the viewport's `CurrentTime`, the real seconds `UViewport::Lock`
+  takes each frame (`0x103737e4`), which the canvas's `DrawTile` passes the
+  texture's lock as the renderer does: the level's `TimeDilation` and pause
+  play no part. `InternalTime` starts at the real time the texture is made
+  or loaded (`UBitmap`'s constructor, `0x103ec74e`; `UTexture::PostLoad`,
+  `0x103eda3a`), so the first draw counts the time since its load.
 - **`UTexture::Tick`** (`0x103ed0d0`) first runs `PrimeCount` steps, once
   (counted in `PrimeCurrent`), so a fire is already burning when first seen.
   Then never more than one step a call:
