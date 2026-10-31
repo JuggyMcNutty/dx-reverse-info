@@ -79,7 +79,7 @@ code them: `VK_INSERT`, `VK_END`, `VK_DOWN` and the rest, `VK_CLEAR` for 5 (`Unk
 `VK_DELETE`. The ISO key beside the left Shift is `VK_OEM_102`, `EInputKey`'s `JoyZ`. Under Wine
 a key's code is the one Wine's X11 keyboard driver gives it: from what the keys type it finds the
 layout's family and takes the typing keys' codes from that family's table
-(`dlls/winex11.drv/keyboard.c`, `main_key_vkey_*`) -- a QWERTY's by their places, as most
+(Wine's `keyboard.c` in `winex11.drv`, `main_key_vkey_*`) -- a QWERTY's by their places, as most
 layouts', a QWERTZ's with Y and Z swapped, an AZERTY's, a Dvorak's and a Swedish's as Windows'
 French, Dvorak and Swedish layouts code them, a Brazilian ABNT's and a Japanese 106's by tables of
 their own.
