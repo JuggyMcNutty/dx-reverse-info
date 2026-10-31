@@ -16,7 +16,7 @@ against. Read with:
 | Source | `D:\prj\Clean\D3DDrv\Src\Direct3D7.cpp` (March 2001, with the game's other DLLs) |
 | API | DirectDraw 7 + Direct3D 7, one class: `UD3DRenderDevice` over `URenderDevice` |
 | Image | base `0x10000000`, 337 functions, all exports C++-mangled methods |
-| Options | `UseMipmapping`, `UseTrilinear`, `UseMultitexture`, `UsePalettes`, `UseGammaCorrection`, `Use3dfx`, `UseTripleBuffering`, `UseVSync`, `UsePrecache`, `UseVideoMemoryVB`, `UseAGPTextures`, `UseVertexFog` (`StaticConstructor`, `0x10001880`); the game's ini also has `Use32BitTextures`, which nothing reads |
+| Options | `UseMipmapping`, `UseTrilinear`, `UseMultitexture`, `UsePalettes`, `UseGammaCorrection`, `Use3dfx`, `UseTripleBuffering`, `UseVSync`, `UsePrecache`, `UseVideoMemoryVB`, `UseAGPTextures`, `UseVertexFog` (`StaticConstructor`, `0x10001880`); the game's ini also has `Use32BitTextures`, which nothing reads, and `Translucency`, no property of this device's nor of `Engine.dll`'s render device: of the game's DLLs only `SoftDrv.dll` names one (and `Extension.dll`, for its own natives), so `D3DDrv` and `OpenGLDrv` draw every translucent surface whatever it says |
 
 The fixed state it draws with (`SetRes`): no culling, Z at less-equal,
 dithering on, and the masked alpha test at reference 127 with GREATER, so a
