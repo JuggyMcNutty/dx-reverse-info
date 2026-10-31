@@ -287,7 +287,11 @@ A server moves its game to another map, and its clients follow:
    listens again, the handshake's first packets sent again meanwhile. When the
    old level's connection closes, the client browses `?failed` and goes to its
    Entry level (`Failed; returning to Entry`), showing no failure while the join
-   is pending; the join then loads the next map.
+   is pending; the join then loads the next map. The `?failed` is the
+   viewport's next travel, absolute (`ULevel::TickNetClient`, `0x103a2f10`),
+   so it takes the last URL's player options --
+   `Index.dx?failed?Name=Player?Class=DeusEx.JCDentonMale` -- and the player
+   logs in on Entry with them.
 
 ## Addresses
 
