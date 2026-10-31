@@ -126,6 +126,18 @@ sizes it about a client area of `WindowedViewportX` by `WindowedViewportY`
 and frame round the client area), the menu bar the editor's alone. A viewport
 already open is moved and sized with `SetWindowPos` instead.
 
+## Drawing a frame
+
+The game engine's tick ends with the client's (`UWindowsClient::Tick`,
+`0x11102c60`), unless it took a travel
+([the game engine's frame](engine-dll.md#a-levels-tick)). It draws one
+viewport: of those whose player shows real time (its `ShowFlags` with 0x800
+or 0x4000 set) and whose window has a width and a height, the one drawn
+longest ago (its `LastUpdateTime`). A viewport whose window is gone is
+destroyed instead, and the tick ends there. The viewport's `Repaint`
+(`0x111082e0`) is the engine's `Draw` of it
+([`Engine.dll`](engine-dll.md#the-loading-screen)).
+
 ## Choosing the render device
 
 `OpenWindow` gives a viewport with no device the first of these that opens:

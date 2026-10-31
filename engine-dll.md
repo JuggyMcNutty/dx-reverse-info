@@ -1617,6 +1617,28 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
 - **The game** is spawned only for a level whose `LevelInfo.Game` is None, on a
   server or standalone: a level returned to keeps the game it was saved with,
   its mutators and all.
+- **The game engine's frame** (`XGameEngineExt::Tick`, then
+  `UGameEngine::Tick`, `0x1038fe90`), in order: the windows' tick
+  ([`Extension.dll`](extension-dll.md#the-engine-and-the-input)); the levels'
+  tick by the frame's time: the game's level, then the Entry level when it
+  is another, then the first viewport's player's level when it is not the
+  game's, so the Entry level a second time while a net client's player waits
+  there for its pawn ([a map's load](#the-loading-screen)); then a server's
+  next map, when the level's `NextURL` is set and its `NextSwitchCountdown`,
+  run down by the frame's own time and not the level's, has run out
+  ([server travel](network.md#server-travel)), or else a client's travel,
+  when the first viewport holds one
+  ([a client's travel](#starting-the-game-engine)). A frame that browses for
+  either ends with the browse, a level loaded or not: no join ticked, nothing
+  drawn, the frame not counted (`GTicks`). The load paints its own frame
+  ([the loading screen](#the-loading-screen)), and the next frame's time
+  takes in the load. So a travel asked for during the levels' tick is taken
+  before anything is drawn, and one asked for during a draw -- a console's
+  tick, which runs inside it -- waits for the next frame, the old level
+  ticking once more. A frame that takes no travel ticks the pending join
+  ([joining](network.md#joining)), then the client draws a viewport
+  ([`WinDrv.dll`](windrv-dll.md#drawing-a-frame)); then the frame is
+  counted.
 - **Detail by frame rate**: the game engine's tick (`UGameEngine::Tick`,
   `0x1038fe90`) clears the level's `bDropDetail` and `bAggressiveLOD` before
   each level tick when there is a client, and nothing in this build sets
