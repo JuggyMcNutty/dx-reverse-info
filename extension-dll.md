@@ -299,8 +299,21 @@ run in its tick, after its script's `Tick` and before its children
   `0x10045350`).
 - **A modal's tab groups.** A modal keeps a table of its tab groups: itself
   (`XModalWindow::Init`) and each tab group made under it. It is sorted top
-  to bottom, then left to right, by each group's place: that of its first
-  traversable window (`ComputeTabGroupLocation`, `0x10045000`).
+  to bottom, then left to right, by each group's place: the corner of what
+  shows of the first window in its row list that shows any of itself (its
+  clip rectangle's width and height above 0) and is traversable without
+  the modal check, or 0, 0 when none shows (`ComputeTabGroupLocation`,
+  `0x10045000`); `MoveTabGroup` (`0x1004f440`) works the places out and
+  sorts the table again before each move. The window that then takes the
+  focus is the group's first traversable one, shown or not, and
+  `SetFocusWindow` scrolls its clip window to it.
+- **A window's clip rectangle** (`XWindow::ClipTree`, `0x10051160`, from
+  `ConfigureChild`, `0x1004ec50`, for the window and all in it, shown or
+  not): its origin the window's corner in the root's coordinates, and the
+  part of it its parent's clip leaves, from that origin, its width or
+  height 0 or less where none shows; the root's its whole size. A new window
+  is all of its 10 by 10 at its parent's corner until it is placed
+  (`XWindow::Init`, `0x1004bb30`).
 - **`SetSensitivity`** (`0x1004c890`): the flag set, and only when that
   changes what the window has in effect (its own flag and every parent's)
   the focus and a grab are checked (below), the accelerator table marked,
