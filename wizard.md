@@ -322,12 +322,14 @@ it is cancelled), SafeMode's one prompt (for `-safe` too), SafeOptions' defaults
 frame's buttons, the CD prompt (title, text, OK and Cancel, no icon; Cancel leaves
 `Running.ini`). Beyond that:
 
-- **The log window needs a virtual desktop.** Outside one, `WLog::OpenWindow` fails at its
-  child `EDIT` control: `CreateWindowEx` returns none and sets no error (`GetLastError` 0)
+- **The log window needs a virtual desktop** in the capture's prefix (`umu-default`).
+  Outside one, `WLog::OpenWindow` fails at its child `EDIT` control: `CreateWindowEx`
+  returns none and sets no error (`GetLastError` 0)
   (`PerformCreateWindowEx / WEdit::OpenWindow / WTerminal::OnCreate`). The log window is
   created on every launch, so the game cannot start. Inside one (`explorer /desktop=…`, as
-  in `explorer /desktop=dxtest,1024x768 DeusEx.exe -firstrun`) it opens. A wine quirk, not
-  launcher behaviour.
+  in `explorer /desktop=dxtest,1024x768 DeusEx.exe -firstrun`) it opens. The same wine on
+  DXEngine's harness's prefix, made by `wineboot` alone, opens it on the desktop. A wine
+  quirk, not launcher behaviour.
 - **The log.** `DeusEx.exe -testrendev=D3DDrv.D3DRenderDevice` writes to `DeusEx.log`
   `Init: Version: 1100` (the engine version `FirstRun` is clamped to),
   `Init: Character set: Unicode` (the `GUnicodeOS` branches), `Bound to` lines for
@@ -363,5 +365,15 @@ frame's buttons, the CD prompt (title, text, OK and Cancel, no icon; Cancel leav
   [`launch-flow.md`](launch-flow.md#2-engine-bootstrap-0x10908cdb0x10908e92) has it, with
   the error icon and OK alone; the process ends with 1.
 
-Not verified: the forwarding receiver (a second launch handing a running game its command
-line); the splash staying up through a real start of the engine.
+Run by DXEngine's harness instead, its prefix on the desktop with no virtual desktop, the
+game started past the wizard
+([`ForwardConsole`](https://github.com/JuggyMcNutty/DXEngine/blob/main/docs/DEVELOPMENT.md#the-console-classes)):
+
+- **A second launch** with a map, `DeusEx.exe 01_NYC_UNATCOIsland` and the run's `INI=` and
+  `USERINI=`, ends within 0.13 s, starting no engine; the running game logs
+  `WM_COPYDATA: 01_NYC_UNATCOIsland INI=… USERINI=…` and opens the island
+  ([the receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+- **The splash through a real start**: up at the desktop's centre, 512×410, while the log
+  window's title reads `Deus Ex (Starting)`, and gone by the time the game's window shows
+  and the title reads `Deus Ex (Running)`
+  ([§9](launch-flow.md#9-main-loop-and-shutdown-0x10909443-onward)).
