@@ -1174,9 +1174,15 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   - **A destroyed mover stays filed.** `ULevel::DestroyActor` does not tell
     the tracker (only the editor's `AMover::SetWorldRaytraceKey` takes a mover
     out without filing it again), so its polygons stay in the BSP until the
-    tracker is made again. Deus Ex's scripts destroy no mover they break:
-    `DeusExMover.BlowItUp` moves it 20,000 units up and makes it not collide,
-    so the next frame drawn files it up there.
+    tracker is made again. Their surfaces keep naming it (a surface's `Actor`,
+    which the model's serialisation writes, `0x103aa3a0`), and nothing takes it
+    from them: once the cleanup deletes it, with 128 destroyed actors waiting
+    ([destroyed actors](#destroyed-actors)), the filed surfaces name the
+    deleted mover until the tracker is made again, as a decal's surfaces name
+    a deleted decal. A save deletes the tracker before its own cleanup. Deus
+    Ex's scripts destroy no mover they break: `DeusExMover.BlowItUp` moves it
+    20,000 units up and makes it not collide, so the next frame drawn files it
+    up there.
   - **What meets them: a line, not a box.** The line walk of
     `UModel::LineCheck` with no extent (`0x103f3560`) takes a polygon node's
     plane for a solid boundary, as `FastLineCheck`'s does, but for an
