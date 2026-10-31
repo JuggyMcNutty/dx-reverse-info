@@ -1179,19 +1179,39 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     each filing moves the base, normal and texture axes of: the polygon's
     texture, pans and flags, without `PF_NoAddToBSP` (the editor's processed,
     cut, selected and memorized bits), with `PF_SpecialLit` for a
-    `bSpecialLit` mover, the mover its actor. Each polygon is filed at the
-    mover's place, split down the tree, each fragment that lands in empty
-    space a node of its own and one that lands in solid dropped (`FilterPoly`,
-    `0x1037c0c0`; `AddPolyFragment`, `0x1037bb00`).
-    A polygon's node blocks a line but for a `PF_NotSolid` polygon
-    (`NF_NotCsg`); `PF_Invisible` or `PF_Portal` makes it a node that does not
-    block visibility, `PF_Masked` a shoot-through one. It has no collision hull.
-    A polygon in a node's plane is filtered down that node's front and filed as
-    a node of its own there, so a line meets it as the node whose plane it lies
-    in: the first of them, where two share the plane. A new node carries
-    `NF_IsNew` until the mover's filing is done (`Update`, `0x1037a400`, clears
-    it); a node taken out (`0x1037c4f0`) is flagged `NF_IsNew` for good, and the
-    line walks pass it as no boundary.
+    `bSpecialLit` mover, the mover its actor.
+  - **The filing** (`0x1037a400`): the mover's polygons in the world through
+    its brush's coordinates, and the level's nodes sorted beforehand against
+    the sphere round them (`PrecomputeSphereFilter`: a node the sphere lies
+    wholly in front of or behind takes each polygon that way untested). Each
+    polygon goes down from the root (`FilterPoly`, `0x1037c0c0`), one of 14
+    corners or more first halved, each half on its own way: in front of a
+    node's plane down its front, behind it down its back, across it split,
+    each part on its way; one in the plane down the front, and when it faces
+    as the node does, that node's plane is its own. The front of a solid
+    node (a polygon's, neither `NF_NotCsg` nor `NF_IsNew`) is empty space and
+    its back solid; any other node leaves the side as it was, the root's
+    empty. Where a way ends at no child, a fragment in empty space becomes a
+    node (`AddPolyFragment`, `0x1037bb00`), and one in solid is dropped. The
+    node takes the polygon's plane (its W the base's dot with the normal, y
+    and z first), its corners as new points, and its parent's zones and
+    leaves; it hangs from the parent as that child, or, in a node's plane, at
+    the end of that plane's chain (`iPlane`), so a line meets the level's
+    node of the plane first. It carries `NF_IsNew`, `NF_NotCsg` too for a
+    `PF_NotSolid` polygon, `NF_NotVisBlocking` for a `PF_Invisible` or
+    `PF_Portal` one, `NF_ShootThrough` for a `PF_Masked` one; once all the
+    mover's polygons are filed its nodes lose `NF_IsNew`.
+  - **Room**: the nodes, their vertices and their points are the level
+    model's, past the map's own (the tracker's start, `0x1037ac40`): room for
+    twice the map's nodes and 512 more, at most 65,536 nodes in all, and as
+    many vertices again. A freed slot is used again; a fragment with no room
+    left is dropped.
+  - **Filed again**: a mover's nodes are taken out first (`0x1037c4f0`), each
+    and every node below it -- fronts, backs and planes -- flagged `NF_IsNew`,
+    and each one's mover queued with it, so the movers filed under it are
+    filed again too; then each queued mover's nodes are unhooked from their
+    parents and freed with their vertices and points (`0x1037c6d0`), and
+    each is filed afresh.
   - A filing is recorded in the mover's `SavedPos` and `SavedRot`, its
     `Location` and `Rotation` as filed: it has moved or turned since when
     either differs.
