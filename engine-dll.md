@@ -1292,9 +1292,12 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   (`UModel::LineCheck`, `0x103f3c20`; `PointCheck`, `0x103f1570`).
 - **The multi-hit line check** under `Trace`, the two iterators and
   `TraceActors` (`ULevel::MultiLineCheck`, `0x1039b220`): the level's BSP
-  first, a hit there (its actor the `LevelInfo`) cutting the line to 5 units
-  past it; then the actors along the cut line, their times given on the whole
-  line again, up to 64 hits in all, sorted by time alone (`appQsort`; equal
+  first, a hit there (its actor the `LevelInfo`) cutting the line at (its
+  distance + 5) × its time / (its distance + 0.0001) of the line's length,
+  5 units past it, and at the start for a hit there, the start in solid;
+  then the actors along the cut line, a brush whose solid holds the start
+  meeting even one cut to nothing, their times given on the whole line
+  again, up to 64 hits in all, sorted by time alone (`appQsort`; equal
   times fall as it leaves them). With the level met within a hundredth of the
   line and 30 units of its start, every actor's hit but a mover's is dropped.
   A mover's hit whose normal is the level hit's to the bit, within 2 units of
