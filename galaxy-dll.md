@@ -108,6 +108,15 @@ it, the music's: channel n starts its sound on voice n + 1.
   (`0x1060e340`), the first fill from 8 KB past the voice's place
   (`0x1060e4c9`). Measured: a mission 1 line starts 4,083 to 4,096 frames
   after a beep (a WAV) started on the same tick, 4,607 once as a run's first.
+- **The ring's end.** The mixer hands the decoder thread each compressed
+  voice's place at each of its updates (`PostThreadMessageA` 0x400,
+  `0x106151f5`), and the decoder fills the ring up to 32 KB ahead of it.
+  Once the sample's data has run out, each call zeroes the ring as far, and
+  sets the voice's end at its fill's place only while the voice's place lies
+  before that in the ring: when the fill's place has wrapped past the ring's
+  end and the voice's has not, the end waits for a later call and is set at
+  the fill's place then, past the zeros written meanwhile. So the voice can
+  play on, silent, up to 32 KB past its sound, with its lip sync.
 - **`StopSoundId(Id)`** (`0x10607ef0`) stops the channel with that ID
   (`Actor.StopSound`, [`Engine.dll`](engine-dll.md#sounds)).
 - **`NoteDestroy(Actor)`** (`0x106083a0`), when an actor goes: its ambient
