@@ -1124,6 +1124,21 @@ test.
   masked bit of the texture's frame, so a masked texture draws masked in any
   style. A character goes to the render device's `DrawTile` itself, with
   the text's flags ([`D3DDrv`'s tiles](d3ddrv-dll.md#tiles)).
+- **A tile's place** (`XGC::DrawTile`, `0x1002a820`; `ClipTile`,
+  `0x1002a4f0`): the window's origin added, the tile is clipped to the GC's
+  clip rectangle in the window's units, each axis apart. Along an axis it
+  tiles, the source moves one for one with a cut at the start and is as
+  long as the place. Along one it stretches, a cut moves and shortens the
+  source in proportion, then the source is held to the texture (from 0, to
+  its size), the place cut to match. Only then are the place, the size and
+  the source truncated (each plus 0.1), the place and the size times the
+  multipliers, and the canvas draws the tile. Nothing is drawn with no size
+  or no source left. Which axes tile: `DrawPattern` (`0x10028a60`) both;
+  `DrawIconPattern` (`0x10028770`) an axis given a source size of 0;
+  `DrawTexture` (`0x10028b00`) through `DrawIconPattern` with the source
+  the box's size; `DrawIcon` (`0x100289c0`) the texture stretched over its
+  own size (`DrawStretchedIcon`, `0x10028850`); `DrawStretchedTexture`
+  (`0x10028ba0`) and its native neither.
 - **Text** keeps its own flags, which only `EnableTranslucentText`
   (`0x10027610`) sets: masked, or translucent when it is on, never
   modulated, whatever the style.
