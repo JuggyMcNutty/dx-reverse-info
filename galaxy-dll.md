@@ -102,21 +102,41 @@ it, the music's: channel n starts its sound on voice n + 1.
   than its own (on a tie, the last such channel). What played there stops at
   once. So a sound beyond its radius, whose priority is below 0, is dropped
   even when a channel is free.
-- **An MP3 plays 8 KB of silence first**, 4,096 frames of a mono one
-  (92.9 ms at 44,100 Hz): a compressed sample's voice plays a ring of 64 KB,
-  zeroed as it starts (`0x10612049`), that its decoder fills as it plays
-  (`0x1060e340`), the first fill from 8 KB past the voice's place
-  (`0x1060e4c9`). Measured: a mission 1 line starts 4,083 to 4,096 frames
-  after a beep (a WAV) started on the same tick, 4,607 once as a run's first.
-- **The ring's end.** The mixer hands the decoder thread each compressed
-  voice's place at each of its updates (`PostThreadMessageA` 0x400,
-  `0x106151f5`), and the decoder fills the ring up to 32 KB ahead of it.
-  Once the sample's data has run out, each call zeroes the ring as far, and
-  sets the voice's end at its fill's place only while the voice's place lies
-  before that in the ring: when the fill's place has wrapped past the ring's
-  end and the voice's has not, the end waits for a later call and is set at
-  the fill's place then, past the zeros written meanwhile. So the voice can
-  play on, silent, up to 32 KB past its sound, with its lip sync.
+- **An MP3 plays 8 KB of silence first**, 4,096 frames of its 16-bit
+  samples (92.9 ms at 44,100 Hz): a compressed sample's voice plays a ring of
+  64 KB, 32,768 frames, zeroed as it starts (`0x10612310`), that its decoder
+  fills as it plays (`0x1060e340`), the first fill from 8 KB past the voice's
+  place (`0x1060e4c9`). Measured: a mission 1 line starts 4,083 to 4,096
+  frames after a beep (a WAV) started on the same tick, 4,607 once as a run's
+  first: the voice's place at the decoder's first call, 0 or a mixer call's
+  512 frames ([the mixer](#the-mixer)).
+- **The ring's fill.** The mixer hands the decoder thread each compressed
+  voice's place at each tick of its music (`PostThreadMessageA` 0x400,
+  `0x106151f5`), before it mixes the frames up to the tick. The decoder fills
+  the ring on from where it filled it to as far as the voice's place, at most
+  32 KB a call, so the ring is held full.
+- **The ring's end.** Once the sample's data has run out, the rest of a
+  call's fill is zeros, and the voice's end is set at the fill's place before
+  them only while the voice's place lies before it in the ring. When the
+  fill has wrapped past the ring's end and the voice has not, a later call
+  sets it, past the zeros, at the fill's place then: a whole ring ahead of the
+  voice's place at the call before it. So a voice whose data, the 4,096
+  frames of silence counted, ends within the first fill, 20,480 frames, plays
+  to that fill's end, its end set again at the next call; one whose data ends
+  within the ring's first turn, 32,768 frames, ends with its data; and a
+  longer one plays on, silent, with its lip sync, to within a tick of the
+  ring's turn after its data's end, unless its place turned the ring in the
+  tick whose call ran out of data.
+- **A stereo sample** plays as two voices, its channel's and the next
+  channel's (`0x10612310`, which `Update` calls with the channel + 1), the
+  first its left side and the second its right, linked: a stop of the first
+  stops the second (`0x10618410`), whatever the game has since started on
+  that channel. A compressed one's two rings are filled by the same call.
+  Measured, with the stock stereo line `ConAudioMission01_450`: its
+  voice starts 4,107 and 4,608 frames after a beep, as a mono one's, then
+  plays its ring's first 32,768 frames over and over, the ring never filled
+  again, with its lip sync, until a sound on its slot stops it; a beep the
+  speaker played with each later line went unheard.
 - **`StopSoundId(Id)`** (`0x10607ef0`) stops the channel with that ID
   (`Actor.StopSound`, [`Engine.dll`](engine-dll.md#sounds)).
 - **`NoteDestroy(Actor)`** (`0x106083a0`), when an actor goes: its ambient
@@ -218,9 +238,10 @@ balance of the sliders, at most full (32,767) and at least 1/256 of it.
 The library's own (`0x10614920`), run every `Latency` ÷ 2 by the output's
 timer:
 
-1. The voices are mixed at `OutputRate` into a dry and a reverb buffer. Their
-   gains are worked out again every millisecond or so from what `Update` last
-   set.
+1. The voices are mixed at `OutputRate` into a dry and a reverb buffer, at
+   most 512 frames a call, in blocks that end at each tick. Their gains are
+   worked out again every millisecond from what `Update` last set, or with a
+   module playing at each of its ticks.
 2. The reverb runs over its buffer into the dry one.
 3. The result is saturated to 16 bits and added, saturating, to the music's.
 
@@ -241,6 +262,9 @@ timer:
   copied in by `0x106231d1`), interpolates linearly between a sample and the
   next, with 15-bit weights, whatever `UseFilter` asks. The cosine table of
   16 steps at `0x1063da5c` is built for the other routines' 8-bit samples.
+- **The tick** is the music's (`0x10615710`): with a module playing, every
+  5/2 of `OutputRate` over its tempo, 50 a second at 125; with none, at 120
+  beats of 48 ticks a minute (its reset, `0x1060e850`), 96 a second.
 - **Loops** come from a WAV's `smpl` chunk (`0x10619940`): its first loop's
   start and end, the end being the first sample not played again. The
   ping-pong type plays back and forth. A sample ends when the voice passes
