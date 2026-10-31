@@ -1053,7 +1053,8 @@ test with `noCheck`; Deus Ex's particle iterator moves its proxy with neither
 
 `SetActorZone(actor, test, forceRefresh)` (`0x1039b940`):
 
-- A deleted actor is skipped; the level's own info is always in its own zone.
+- A deleted actor is skipped; the level's own info is always in its own zone,
+  in no leaf (-1) and zone 0, wherever it stands.
   `forceRefresh` first puts the actor (and a pawn's feet and head) in the
   level's zone, with no events.
 - The zone at its location replaces the old. When they differ, unless a test, in
