@@ -786,9 +786,33 @@ yaw, its pitch left out.
   (`execBaseMarginsFromBorder`, `0x100024f0`; `execEnableResizing`,
   `0x10002560`). Each setter lays the window out again, but `EnableResizing`
   and `SetMoveCursors` (`0x10001480`, `0x100014a0`).
-- **Resizing** by dragging the border (`bResizeable`; `CursorRequested`,
-  `MouseButtonPressed` and the rest) was not read: no script of the game
-  turns it on.
+- **Resizing** by dragging the border, once `EnableResizing` turns it on,
+  which no script of the game does. Each of the window's handlers sends the
+  script its event first. A left press (`MouseButtonPressed`,
+  `0x10001e00`) drags each side it falls on: within the left border's
+  thickness of the left edge, the right border's of the right edge, and so
+  on, so a corner drags two sides and the middle none. A right press drags
+  all four, which moves the window. Either keeps the window's place and
+  size and the pointer's place in root coordinates, raises the window, and
+  is taken, whatever it falls on.
+- **Each move** while a side is dragged (`MouseMoved`, `0x100020e0`) adds
+  how far the pointer went, in root coordinates, to the sides dragged: a
+  left or top side moves the window and changes its size the other way.
+  It asks for that place and size as the script's `SetConfiguration` does
+  (`Configure`, `0x1004cd40`): left- and top-aligned at that place, the size
+  held at 0 or more, the parent asked to lay it out again when any of it
+  changed. A release of either button (`MouseButtonReleased`,
+  `0x10001ff0`) ends the drag, and is taken while resizing is on.
+- **The cursor** while resizing is on (`CursorRequested`, `0x100016c0`):
+  during a drag, its sides'. Both of a pair, as a move drags, give the move
+  cursor; left and top, or right and bottom, the top-left diagonal; left
+  and bottom, or right and top, the top-right one; one side alone, the
+  horizontal or the vertical. With no drag, the border under the pointer
+  chooses: the top left and bottom right corners the top-left diagonal,
+  the other two the top-right one, a side its axis's. Each cursor is the
+  window's own (`SetMoveCursors`), else the root's default.
+  With neither, or the pointer within the border, the script is asked, as
+  it always is with resizing off.
 - **The game's** border windows are its cheat screens' tool windows'
   (`ToolWindow.CreateToolWindowContainer`, and `ToolBorderWindow` around
   their lists and edit fields), DeusEx.u's only ones.
