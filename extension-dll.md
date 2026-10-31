@@ -470,8 +470,16 @@ yaw, its pitch left out.
   width (the width with word wrap on, 0 with it off) only to line breaking,
   and places the lines in the width and height it was given: centred by the
   whole half the room left, right-aligned, or (full) left. A character
-  (`DrawChar`, `0x10029e40`) lands on whole pixels; a font's character is
-  found on its page alone, none from another.
+  (`DrawChar`, `0x10029e40`) is clipped to the GC's clip rectangle in the
+  window's units first, its place and its rectangle on the font's page cut
+  together, and only then put on whole units: the place, the size and the
+  page's rectangle each truncated (each plus 0.1), times the multipliers,
+  drawn by the render device unclipped. So a character a fraction of a unit
+  inside the clip's edge, as in a window at half a unit, is drawn whole on
+  the unit before it. An accelerator's underline is clipped and placed the
+  same way, after a character that was drawn. Other tiles go the same way
+  (`DrawTile`, `0x1002a820`, with `ClipTile`, `0x1002a4f0`). A font's
+  character is found on its page alone, none from another.
 - **`|n`** becomes a line break as a script sets text (`ConvertScriptString`,
   `0x10050710`, by `SetText`, `AppendText` and `InsertText` alone), so
   `GetText` gives the break.
