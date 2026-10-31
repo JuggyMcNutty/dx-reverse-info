@@ -1137,7 +1137,48 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   box's ends do not reach is never tried: a box traced 8 units down from 8.78
   over the floor meets nothing (a script's `Trace` from Liberty Island's
   carcass crossbow, run on the original), where a try would have found it
-  entered at 1.0975 and the backoff brought it to 0.9975.
+  entered at 1.0975 and the backoff brought it to 0.9975. With an owner (an
+  actor's brush, a mover's), the walk turns every plane it reads, its
+  nodes' and its hulls', into the world by the owner's `ToWorld` coordinates
+  (`ABrush::ToWorld`, `0x1030f310`): the normal dotted with each of their
+  axes, its distance moved with their origin. The box stays along the
+  world's axes, as the trace gives it, so a brush pitched on its side meets
+  the same box as one standing.
+- **The point check** (`UModel::PointCheck`, `0x103f1570`; its walk
+  `0x103f19b0`): whether a box at a place overlaps a model's solid. Two
+  callers: `FindSpot`'s fit (`SinglePointCheck` `0x1039aac0`, then
+  `MultiPointCheck` `0x1039acc0`), on the level's model with no owner and no
+  node flags; and a mover's encroachment
+  (`FCollisionHash::ActorEncroachmentCheck`, `0x10358d50`), on the mover's
+  brush with the mover its owner, set to its new place and rotation, asked
+  about each actor in the hash's cells near it but a brush that is not
+  static (so never another mover), that actor's box (radius, radius,
+  height) at its place, along the world's axes. Neither reads more of the
+  hit than whether there is one.
+  - With no extent, the point goes down its side of each plane (on the plane
+    counts as behind), the front of a solid boundary empty and its back
+    solid; it is in solid where it ends.
+  - With one, the walk goes down a node's front when the box, grown by a
+    tenth on each axis, reaches in front of its plane, then on down its back
+    unless the box lies wholly in front of it; the space kept as the line
+    walk keeps it. Where a way ends in solid, the hull of the node it hangs
+    from is tried, and no other.
+  - A hull's planes, at most 64, each flipped where its index carries
+    `0x40000000`; for the level's hulls alone, the six faces of the hull's
+    stored box, a tenth of a unit out at both ends in Z and toward −X and −Y,
+    as much in at +X and +Y; then a bevel for each pair of the hull's planes
+    whose normals point opposite ways along an axis and turn the same way
+    round it (their crosses with the axis dotted over 0.001), through the
+    line where they meet (`FIntersectPlanes2`, `0x103f6600`), axes X, Y, Z in
+    turn.
+  - A plane separates the box when the box's middle lies as far in front of
+    it as the box reaches along its normal, or further (|nx·ex| + |ny·ey| +
+    |nz·ez|, the extent not grown): a box resting on a plane is clear of it.
+    A hull none of whose planes separates the box is a hit.
+  - With an owner, every plane, the walk's and the hulls', is turned into the
+    world by the owner's `ToWorld` (`FPlane::TransformPlaneByOrtho`, Core.dll
+    `0x1011a000`), the box kept along the world's axes; a brush's hull gets no
+    box faces. The arithmetic is float, in a fixed order.
 - **An actor's cylinder** (`UPrimitive::LineCheck`, `0x103d8af0`), with the
   line's box added: hit where the line comes in, through a cap or the side,
   within the trace, a thousandth of the trace short (its time − 0.001, held to
