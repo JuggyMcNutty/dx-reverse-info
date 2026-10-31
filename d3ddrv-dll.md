@@ -125,6 +125,16 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
   not, and every later draw takes it so until it is made again (a realtime
   texture's change): a texture drawn both masked and not shows its colour 0
   in every draw as the first had it.
+- **A texture already on its stage is passed over.** `SetTexture` looks no
+  further at a texture whose cache ID is the one its stage last took, its
+  realtime change (`Flags` 0x10, which `Render.dll` sets on a light map it
+  builds again) with it; only `Flush` clears the stages' IDs
+  (`0x10002e09`). So a changing light map that stays on its stage from one
+  frame's draw to the next keeps the copy it first had, until a draw between
+  takes another texture there. Measured: a spawned lamp with an interference
+  shape, or pulsing, over Liberty Island's dock, the dock alone in the view,
+  holds the frame it was first lit in under `D3DDrv`; through `OpenGLDrv` it
+  changes as `Render.dll` builds it.
 - **The modulation.** In 16 bits the stage's colour is `MaxColor` over 255,
   multiplied into the vertex colour of every draw that is not modulated. A
   one-pass surface's diffuse is trunc(256 × both stages' colours − 0.5). So
