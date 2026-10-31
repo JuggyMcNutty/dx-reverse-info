@@ -95,7 +95,10 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
   `Use32BitTextures` plays no part.
 - **The handlers.** Each texture format has a handler, a setup and a per-mip
   conversion (constructor, `0x10001ee0`): palettized (`TEXF_P8`),
-  `TEXF_RGBA7` (light and fog maps), and DXT1 as it is.
+  `TEXF_RGBA7` (light and fog maps), and DXT1 as it is. Any other format,
+  `Engine.dll`'s `TEXF_RGB16`, `TEXF_RGB8` and `TEXF_RGBA8` among them, stops
+  the game: `Unknown Unreal Texture Format` to `GError` (`SetTexture`,
+  `0x10008b79`).
 - **32-bit.** A palette's colours as they are, alpha whole, but colour 0
   cleared for a masked draw (`0x10002320`); a light map's bytes doubled
   (`0x10002120`); the stage's modulation colour 1. So the colours drawn are
