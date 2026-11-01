@@ -1346,15 +1346,22 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   5 units past it, and at the start for a hit there, the start in solid;
   then the actors along the cut line, a brush whose solid holds the start
   meeting even one cut to nothing, their times given on the whole line
-  again, up to 64 hits in all, sorted by time alone (`appQsort`; equal
-  times fall as it leaves them). With the level met within a hundredth of the
-  line and 30 units of its start, every actor's hit but a mover's is dropped.
-  A mover's hit whose normal is the level hit's to the bit, within 2 units of
-  it, is set 2 units before the level's along the line, its time redone from
-  there: a door flush with its wall is met before the wall, where its brush's
-  plane comes out the wall's exactly; a door turned a quarter turn, its
-  normal a bit off the wall's through the sine table, ties with the wall
-  instead. Nothing beyond the first wall is listed.
+  again, up to 64 hits in all, sorted by time alone (`appQsort`, Core.dll
+  `0x10123640`, the CRT's `qsort` with a float compare, `0x1039c060`; of two
+  equal times it puts the later first, so a mover's ties before the level's).
+  The times are floats: the level's, `UModel::LineCheck`'s from the float
+  point where its walk crosses the plane; the cut a float, its end point
+  rounded to floats (`0x1039b35a`, `0x1039b386`); a mover's brush walked on
+  the cut line, its planes turned into the world by its `ToWorld`, its time
+  times the cut a float (`0x1039b6a2`). So a door flush with its wall falls
+  before or after the wall as the two round: a wall's plane a float step
+  nearer than the door's face, or the cut line's end rounded long, puts the
+  wall first. With the level met within a hundredth of the line and 30
+  units of its start, every actor's hit but a mover's is dropped. A mover's
+  hit whose normal equals the level hit's (a float compare, so -0 and 0 are
+  equal), within 2 units of it (its squared distance under 4), is set 2
+  units before the level's along the line, its time redone from there
+  (`0x1039b521` to `0x1039b69f`). Nothing beyond the first wall is listed.
 - **`Trace(HitLocation, HitNormal, TraceEnd, TraceStart, bTraceActors, Extent)`**
   (`0x103e3330`): the first hit of the multi-hit check (`SingleLineCheck`,
   `0x1039aed0`, flags 55 with `bTraceActors`, else 6) whose kind the flags
