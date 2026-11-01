@@ -1321,19 +1321,22 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
 - **The line walk** (`UModel::LineCheck` with no extent, `0x103f3560`) follows
   the BSP's solid space, not its polygons. The segment is classified plane by
   plane, both ends within a thousandth of a unit of the plane counting as in
-  front of it, its near part walked first. A node is a boundary when it has a
-  polygon and none of `NF_NotCsg`, `NF_IsNew` and the flags the caller passes
-  (`FBspNode::IsCsg`, `0x103f68b0`): the front of a boundary is empty space
-  and its back solid, a node that is no boundary leaves the space as it was.
-  A leaf in solid stops the line where its part began -- at the line's start
-  when that lies in solid, a hit at time 0 --, its item the node whose plane
-  that part crossed to get there (the root, with none crossed), the first of
-  its plane's coplanar nodes whichever of their polygons the line crossed, and
-  its normal that node's plane. A polygon with empty space on both sides stops
-  nothing. Bit 0x10 of the flags passed lets a start in solid pass until the
-  line has been in empty space; the natives pass none. The level's hit has its
-  normal turned to face the start; an actor's brush hit keeps the node's plane
-  turned by the actor's `ToWorld` (`0x103f3c20`).
+  front of it, its near part walked first. The point where it crosses a plane
+  is the start moved toward the end by the start's distance over the two ends'
+  difference, worked in floats, each step rounded: from a start off the float
+  grid it can lie a float step off the exact crossing. A node is a boundary
+  when it has a polygon and none of `NF_NotCsg`, `NF_IsNew` and the flags the
+  caller passes (`FBspNode::IsCsg`, `0x103f68b0`): the front of a boundary is
+  empty space and its back solid, a node that is no boundary leaves the space
+  as it was. A leaf in solid stops the line where its part began -- at the
+  line's start when that lies in solid, a hit at time 0 --, its item the node
+  whose plane that part crossed to get there (the root, with none crossed),
+  the first of its plane's coplanar nodes whichever of their polygons the line
+  crossed, and its normal that node's plane. A polygon with empty space on
+  both sides stops nothing. Bit 0x10 of the flags passed lets a start in solid
+  pass until the line has been in empty space; the natives pass none. The
+  level's hit has its normal turned to face the start; an actor's brush hit
+  keeps the node's plane turned by the actor's `ToWorld` (`0x103f3c20`).
 - **What an actor collides as** (`AActor::GetPrimitive`, `0x1034c9a0`): its
   brush, else its mesh, else the engine's cylinder of its collision size; so a
   mover with no brush (`09_NYC_ShipBelow` has one) collides as a cylinder. A
