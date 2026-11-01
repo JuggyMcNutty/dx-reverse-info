@@ -1137,7 +1137,15 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   box's ends do not reach is never tried: a box traced 8 units down from 8.78
   over the floor meets nothing (a script's `Trace` from Liberty Island's
   carcass crossbow, run on the original), where a try would have found it
-  entered at 1.0975 and the backoff brought it to 0.9975. With an owner (an
+  entered at 1.0975 and the backoff brought it to 0.9975. The walk goes down
+  the side of a node the start lies toward first (the front when the
+  start's distance from the plane is no less than the end's), and a hull's
+  exit starts at the nearest hit's time so far (2 for the first hull tried),
+  so a hull met nearer bounds those tried after it. A plane the box heads
+  into gives an entry of 0, not less, when the box's middle lies on or in
+  front of it while the box reaches behind it; that is the start inside. The
+  sums are floats (the x87 at 24 bits) in a fixed order, so a box's middle
+  exactly on a plane is 0 from it. With an owner (an
   actor's brush, a mover's), the walk turns every plane it reads, its
   nodes' and its hulls', into the world by the owner's `ToWorld` coordinates
   (`ABrush::ToWorld`, `0x1030f310`): the normal dotted with each of their
