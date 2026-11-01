@@ -4,7 +4,7 @@ Deus Ex's original binaries, reverse-engineered: what `DeusEx.exe` and the game'
 as behaviour in our own words with the addresses, offsets and names behind it. It is the
 record [Port Ex Machina](https://github.com/JuggyMcNutty/port-ex-machina) works from.
 None of the game's files are here, and no decompiled code
-([what goes in](#working-on-the-binaries)). Two efforts:
+([what goes in](#working-on-the-binaries)). Made with AI assistance. Two efforts:
 
 - **The launcher.** `System/DeusEx.exe`, read in full: [`launcher.md`](launcher.md).
   [deusex-launcher](https://github.com/JuggyMcNutty/deusex-launcher)'s `main` recreates it
@@ -202,3 +202,8 @@ names), no comments, and:
 | `gamefiles/System/Galaxy.dll.i64` | by hand: `glxInit` |
 | `gamefiles/System/Fire.dll.i64` | |
 | `gamefiles/System/WinDrv.dll.i64` | no layouts for its two classes, which have no script (the header has them) |
+
+## License
+
+[zlib](LICENSE). Deus Ex belongs to its owners; this project is not affiliated with or
+endorsed by them.
