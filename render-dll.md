@@ -588,9 +588,9 @@ table counts its shape as changing.
 |---|---|
 | pulse | `0.6 + 0.39 sin` |
 | subtle pulse | `0.9 + 0.09 sin` |
-| blink | out when its turn count, in 65536ths, is odd: by the frame, at any frame rate |
-| flicker | a random number each frame: out below one half, else that fraction |
-| strobe | out every other frame |
+| blink | out when its turn count is odd: the level's time × 35 × 65536 ÷ (`LightPeriod` + 1), plus `LightPhase` × 256, truncated (`0x10b05a90`); in effect a fresh state each frame, at any frame rate, until the count reaches 2^24 (below) |
+| flicker | the frame's random number at the low byte of the light's address, one of the 256 fresh draws of the [random tables](#light-maps) (`0x10b05af0`): out below one half, else that fraction; lights whose addresses end in the same byte flicker as one |
+| strobe | out every other frame: one switch for every strobe, turned over whenever a strobe is lit at a level's time other than the last one seen (`0x10b05b30`; the time and the switch at `0x10b49ea4` and `0x10b49ea8`, 0 at the start); its period and phase play no part |
 | palette | through its palette once over its life (`1 − LifeSpan ÷` the default's, times 255), or at 35 turns a second over the period; times `(2 red + 3 green + blue) ÷ 1536 × 2.8` of the entry |
 
 Both pulses' sines run at 35 turns a second over `LightPeriod` (at
@@ -598,6 +598,28 @@ least 1), from `LightPhase`'s 256ths of a turn. The palette loop runs at
 that rate too, but adds `LightPhase` in whole turns, which its entry, the
 turn's 256ths modulo 255, drops: the phase changes nothing, and the
 palette's last entry never shows (`0x10b05d40`).
+
+- **By the frame.** The level's time goes on while the game is paused
+  ([a level's tick](engine-dll.md#a-levels-tick)) and the random tables are
+  drawn at every frame's `PreRender`: a blink, a strobe and a flicker change
+  with each frame drawn, paused or not, faster at a higher frame rate.
+  `GlobalLighting`'s first argument, bit 0x800 of the viewport's actor's
+  `ShowFlags`, makes every light steady when it is off. A lamp of each made
+  over Liberty Island's dock, held to 60 frames and sampled frame by frame
+  (DXEngine's `LightConsole` with `Burst`): a strobe turned over at every
+  frame; a flicker's state changed at half of them, its brightness at 0.72;
+  a torch's and a fire's waver at 0.95 and 0.94.
+- **In floats.** `URender::PreRender` (`0x10b14560`) holds the x87 to 24 bits
+  for the frame (Core's `appEnableFastMath`, `0x1016e050`: `_controlfp`'s
+  `_PC_24`; Core's start sets 64), and `PostRender` (`0x10b14700`) gives it
+  its 64 back. So each step of a turn count drawn in the frame is rounded to
+  a float: from 2^24 every float the count can be is even, and a blink stays
+  lit from some 7.3 s × (`LightPeriod` + 1) of the level's time on (sooner by
+  the phase, at most 0.4%). No stock map's light is a blink, as saved or by
+  its class's default. Run the same way: a blink of period 32 in the state
+  its count worked out in floats gives at 0.998 of 569 frames, in doubles at
+  0.946; one of period 1 last out at 14.62 s of the level's time, and lit
+  at every frame after, to 24 s.
 
 ### Light maps
 
@@ -660,7 +682,7 @@ palette's last entry never shows (`0x10b05d40`).
     from 0 over the texels of the light's rectangle on the map, row by row,
     round a table of 256.
 - **The random tables** (`TickRandoms`, `0x10b13080`, each frame from the
-  level's time):
+  level's time, at the end of `PreRender`):
   - 256 fresh draws: the torch's and fire's;
   - the watery shimmer's own, each entry easing toward a draw. At each of 35
     ticks a second, the 16 entries the tick moves past take the fresh

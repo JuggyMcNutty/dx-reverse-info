@@ -169,7 +169,12 @@ it, the music's: channel n starts its sound on voice n + 1.
   pitch again, and twice the starting volume. **An actor with a light** has
   its sound follow the light: the volume × `LightBrightness` ÷ 255 × the
   light's pulse or flicker at the moment (the renderer's `GlobalLighting`,
-  1 for a steady light), then at most 1.
+  1 for a steady light), then at most 1. This comes before the frame's
+  `PreRender`: a flicker takes the frame before's draws, and a strobe's
+  switch, turned over here first, holds for the frame's picture. The x87
+  is then at the precision the frame before's `PostRender` left it, 64 bits
+  (read, not measured), so a blink's count here keeps its last bit past
+  2^24, where the picture's is even.
 - **Every channel,** unless its voice has finished (then it is cleared):
   - its place becomes its actor's, and its priority is worked out again;
   - its **fall-off** is 1 − distance ÷ radius from the listener (the view's
