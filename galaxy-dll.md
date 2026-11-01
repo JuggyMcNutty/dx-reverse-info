@@ -173,8 +173,8 @@ it, the music's: channel n starts its sound on voice n + 1.
 - **Every channel,** unless its voice has finished (then it is cleared):
   - its place becomes its actor's, and its priority is worked out again;
   - its **fall-off** is 1 − distance ÷ radius from the listener (the view's
-    own place, the coordinates `Update` is handed): linear, silent at the
-    radius;
+    own place, the coordinates `Update` is handed): linear, 0 at the radius,
+    where the voice plays at its [floor](#volume);
   - its **pan** is the sound's angle from straight ahead, left or right,
     front and back alike, as Galaxy's pan of 0 (left) to 32,767 (right):
     - angle = atan2(distance to the right, |distance ahead|), in the view's
@@ -222,7 +222,15 @@ Each channel keeps an obstruction time:
 ### Volume
 
 A voice's volume is the sound's volume × its fall-off × its obstruction × the
-balance of the sliders, at most full (32,767) and at least 1/256 of it.
+balance of the sliders, at most full (32,767) and at least 1/256 of it: 128,
+put on after the cap (`0x10609ee3`), whatever the factors, on every voice
+`Update` starts or updates, the 3D hardware's too. So a sound that leaves its
+radius as it plays (an ambient sound stops there instead), one played at a
+volume of 0 -- a window's at its unset volume among them
+([window sounds](extension-dll.md#window-sounds)) -- and one whose own slider
+is at 0 while the other is not play on at 1/256, never silent. Only both
+sliders at 0 silence a voice, through the mixer's sample volume (below). The
+music has no floor.
 
 - **The sliders.** Galaxy's sample volume is 127 × the louder of
   `SoundVolume` and `SpeechVolume`, each over 255 (`SetVolumes`,

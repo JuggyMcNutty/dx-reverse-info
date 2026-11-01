@@ -400,7 +400,8 @@ yaw, its pitch left out.
 - The point defaults to the window's centre, the pitch to 1, and the volume
   to −1, which stands for the window's own (`soundVolume`). Only
   `SetSoundVolume` sets that, never a window's `Init`, so a window that does
-  not set it plays at its class's 0, unheard.
+  not set it plays at its class's 0, which Galaxy raises to its floor, 1/256
+  of full ([volume](galaxy-dll.md#volume)).
 - It goes to the audio device with no actor and slot 0 -- a channel of its
   own each time --, a radius of 100 and the volume × 100 ÷ 99, whole one unit
   off. The listener is the view, some 40 units up at the player's eyes, so
