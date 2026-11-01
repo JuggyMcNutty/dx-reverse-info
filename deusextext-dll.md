@@ -76,6 +76,9 @@ the text is used up, on the call after the last token.
   `P`, `B`, `/B`, `U`, `/U`, `I`, `/I`, `G`, `F`, `L`, `/<`, `/>`. So
   `<LOG ERROR>` is an `L`. Content that starts with none of them is passed
   over, and the token has no tag (`TT_None`).
+- **A tag's text**, which `GetText` gives at its token, is the tag's own:
+  the player's name at `PLAYERNAME` and `PLAYERFIRSTNAME`, the bracket at
+  `/<` and `/>`, and nothing at the others, not the text before the tag.
 
 ### What each tag does
 
@@ -89,10 +92,15 @@ the text is used up, on the call after the last token.
   so an `EMAIL` with no `=` would crash; the game has none.
 - **`NOTE`**, **`GOAL`** and **`COMMENT`** read on to their end tag
   (`FindEndTag`, `0x10002ba0`) and give no text: all three hide what they
-  hold, and the token's tag is then the end tag's. With no end tag, the rest
-  of the text is hidden. The tags inside are parsed, and the character after
-  each is skipped, so an end tag straight after another tag is missed; no
-  comment in the game holds a tag.
+  hold. The tags inside are parsed with their effects -- an `EMAIL`'s
+  fields, a colour, a comment of their own reading on to its end tag -- and
+  the character after each is skipped, so an end tag straight after another
+  tag is missed; no closed comment in the game holds a tag. The token's tag
+  is the last a name matched: the end tag's when one is found; with none,
+  that of the last tag inside, or the opening tag's. With no end tag the
+  rest of the text is hidden, and the reading steps past the NUL of its
+  copy of the text, a step for each comment open (`0x10002cd2`), and reads
+  on to the first NUL after it, a tag there parsed as any.
 - **`PLAYERNAME`** and **`PLAYERFIRSTNAME`**: the name given to
   `SetPlayerName` (`0x10001460`), and the part of it before its first space.
 - **`DC`**, **`C`** and **`/C`** (`ParseColor`, `0x100028c0`): the three
@@ -134,8 +142,16 @@ the text is used up, on the call after the last token.
 - **Lists:** at most 5 emails in an account's list and 8 bulletins on a
   board. 15 `EMAIL` tags have no cc field. `09_EmailMenu_ShipOps` holds one
   empty `EMAIL`, after a comment it never closes (its end is a second
-  `<COMMENT>`). The reading runs past the end of the text, so what that
-  account lists depends on the memory after it.
+  `<COMMENT>`), and ends at that tag, with no line break. Its one token is
+  that `EMAIL`'s, the last tag inside the comment, so the account lists one
+  email, its fields empty. The reading runs past the end of the copy, so a
+  tag in the memory after it would change that, but in play none does: the
+  ship's computer logged in to as ShipOps, and the text read three to four
+  times a round on three maps, from the menu map and after another map's
+  load, give that one token every time, the reading stopping 98 to 111
+  characters in. A string holding `<B>` at its character 97, freed just
+  before the text is opened, is read as the token's tag (DXEngine's
+  `ShipOpsConsole`, its `Provoke`).
 
 ## The importer
 
