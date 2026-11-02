@@ -1328,10 +1328,13 @@ the spy drone, the targeting augmentation's zoom.
   its classes extends `ViewportWindow`.
 - **The frame** is a master frame of the canvas's viewport, the player's, at
   the window's clip rectangle, the part of it its parents leave in view:
-  times the root's multipliers, its corner and its size each truncated, the
-  corner moved by that of the canvas's own frame, the scene's, which a render
-  viewport moves (`0x1004ac3c`). Its projection is made about the middle of
-  that rectangle, the field of view across its width. For the draw only, put
+  times the root's multipliers, its corner and its size each truncated
+  (`0x1004ac3c`), the corner moved by that of the canvas's own frame
+  (`0x1004acad`): the whole view's while the windows draw, the root's
+  `PostRender` putting back the frame its `PreRender` gave a render viewport
+  before they draw (`0x1003aa11`), so it moves nothing. Its projection is
+  made about the middle of that rectangle, the field of view across its
+  width. For the draw only, put
   back after:
   - the player is in behind view (`bBehindView`), so the renderer draws it
     and what it owns as in third person
