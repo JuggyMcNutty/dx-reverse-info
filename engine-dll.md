@@ -1372,29 +1372,47 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   units before the level's along the line, its time redone from there
   (`0x1039b521` to `0x1039b69f`), a box's hit as a line's, the pull reading
   no extent. Nothing beyond the first wall is listed.
+  - **Each hit keeps the place its check left in it** (the `FCheckResult`'s
+    `Location`), and nothing works a place out again from a time: the
+    level's and a mover's brush's `UModel::LineCheck`'s -- a line's the
+    start moved along the line by its time before that time is stored
+    (`0x103f3de7`), a box's by the stored time (`0x103f408d`) --, an
+    actor's on the line it was checked along, the cut line; a pulled hit's
+    the level's place less twice the cut line's unit vector, stored as
+    floats (`0x1039b5ff` to `0x1039b647`), so on a line along an axis
+    exactly 2 units before the level's. The time given on the whole line
+    (the cut times the cut line's time) moves the start to a place a float
+    step off it now and then: DXMP_Silo's `BreakableGlass8` pulled to x
+    178.500015, its wall's 180.500015 less 2, where the start moved by the
+    time lands on 178.5; UNATCO HQ's `DeusExMover21` from above at z -61.5,
+    not -61.499996; a 16-unit box on 02_NYC_BatteryPark's `DeusExMover35`
+    at y -1943.540039 on its cut line, not -1943.539917.
 - **`Trace(HitLocation, HitNormal, TraceEnd, TraceStart, bTraceActors, Extent)`**
   (`0x103e3330`): the first hit of the multi-hit check (`SingleLineCheck`,
   `0x1039aed0`, flags 55 with `bTraceActors`, else 6) whose kind the flags
   take -- the level 4, pawns 1, movers 2, zone infos 8, other actors 16, which
   32 narrows to projectile targets and what blocks actors and players alike --
   and that is neither the tracing actor nor one of its owners, up its `Owner`
-  chain (a weapon's trace passes over its pawn); with nothing hit the
-  location and normal are zero.
+  chain (a weapon's trace passes over its pawn): its place and normal as the
+  check left them (`0x103e3507`); with nothing hit the location and normal
+  are zero.
 - **`TraceActors(BaseClass, Actor, HitLoc, HitNorm, End, Start, Extent)`**
   (`0x103e4bc0`): every hit of the multi-hit check, in turn, the level's
-  among them; `BaseClass` (by default `Actor`) is not tested.
+  among them, each at the place its check left (`0x103e4dfc`); `BaseClass`
+  (by default `Actor`) is not tested.
 - **`TraceTexture(BaseClass, Actor, texName, texGroup, flags, HitLoc, HitNorm, End, Start, Extent)`**
-  (`0x1036e450`; from the actor, with no extent, by default): every hit, in turn
-  (`BaseClass` read and not used). A hit on the level gives the surface's
-  texture, its group (the texture's outer) and the surface's `PolyFlags`; an
-  actor, no texture and flags 0. The scripts use it for the floor under a pawn
-  (its footsteps), a laser beam (where it stops, and whether it reflects:
-  `PF_Mirrored`), the player, weapons and turrets.
+  (`0x1036e450`; from the actor, with no extent, by default): every hit, in
+  turn, at the place its check left (`0x1036e746`; `BaseClass` read and not
+  used). A hit on the level gives the surface's texture, its group (the
+  texture's outer) and the surface's `PolyFlags`; an actor, no texture and
+  flags 0. The scripts use it for the floor under a pawn (its footsteps), a
+  laser beam (where it stops, and whether it reflects: `PF_Mirrored`), the
+  player, weapons and turrets.
 - **`TraceVisibleActors(BaseClass, Actor, HitLoc, HitNorm, End, Start, Extent)`**
-  (`0x1036ec50`): the same, `BaseClass` again unused, except that the line
-  passes BSP nodes that do not block visibility (node flag 4). An NPC seeking a
-  spot uses it for its line of sight: the level blocks it, and an actor with
-  `bBlockSight`.
+  (`0x1036ec50`): the same (its places `0x1036ee8d`), `BaseClass` again
+  unused, except that the line passes BSP nodes that do not block visibility
+  (node flag 4). An NPC seeking a spot uses it for its line of sight: the
+  level blocks it, and an actor with `bBlockSight`.
 - **`ParabolicTrace(finalLocation, startVelocity, startLocation, bCheckActors, cylinder, maxTime, elasticity, bBounce, landingSpeed, granularity)`**
   (`0x1036e190`, the work at `0x1036c0a0`): a thrown thing's flight, in steps.
   Defaults: the actor's velocity, location, `bCollideActors`, collision cylinder
