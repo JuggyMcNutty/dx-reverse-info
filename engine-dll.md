@@ -1292,7 +1292,9 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     has: a filed mover stops no box. Nor do the node flags a caller passes
     reach a box: the box check keeps them (`0x103f18e0`) and never reads them
     (`0x103f42f0`), so an `NF_NotVisBlocking` surface stops a box as any
-    other.
+    other. A box swept along no length enters no hull: a plane whose two
+    distances differ by 1e-5 or less only misses (`0x103f4915`), and a hit
+    needs an entry past the start (`0x103f561d`).
 - **Every actor iterator** (`AllActors` `0x103e43f0`, `BasedActors`,
   `ChildActors`, `TouchingActors`, `RadiusActors`, `VisibleActors`,
   `ZoneActors` `0x103e5960`, `CycleActors`): a None class is Actor, and the
@@ -1347,8 +1349,12 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   first, a hit there (its actor the `LevelInfo`) cutting the line at (its
   distance + 5) × its time / (its distance + 0.0001) of the line's length,
   5 units past it, and at the start for a hit there, the start in solid;
-  then the actors along the cut line, a brush whose solid holds the start
-  meeting even one cut to nothing, their times given on the whole line
+  then the actors in the collision hash's cells along the cut line, each
+  checked on the cut line itself (`FCollisionHash::ActorLineCheck`,
+  `0x10359160`), so a box's hit on a mover's brush is backed off a tenth of
+  the cut line and a cylinder's a thousandth of it. A line meets a brush
+  whose solid holds its start even on a line cut to nothing; a box there
+  meets nothing, swept no way. Their times are given on the whole line
   again, up to 64 hits in all, sorted by time alone (`appQsort`, Core.dll
   `0x10123640`, the CRT's `qsort` with a float compare, `0x1039c060`; of two
   equal times it puts the later first, so a mover's ties before the level's).
@@ -1364,7 +1370,8 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   hit whose normal equals the level hit's (a float compare, so -0 and 0 are
   equal), within 2 units of it (its squared distance under 4), is set 2
   units before the level's along the line, its time redone from there
-  (`0x1039b521` to `0x1039b69f`). Nothing beyond the first wall is listed.
+  (`0x1039b521` to `0x1039b69f`), a box's hit as a line's, the pull reading
+  no extent. Nothing beyond the first wall is listed.
 - **`Trace(HitLocation, HitNormal, TraceEnd, TraceStart, bTraceActors, Extent)`**
   (`0x103e3330`): the first hit of the multi-hit check (`SingleLineCheck`,
   `0x1039aed0`, flags 55 with `bTraceActors`, else 6) whose kind the flags
