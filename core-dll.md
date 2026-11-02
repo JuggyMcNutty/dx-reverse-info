@@ -502,6 +502,8 @@ How the original runs UnrealScript.
 - **`Let`** (`0x1012fe40`) evaluates its left side with no buffer, for the
   address alone, and its right side straight into the variable: no
   temporary. Through `None` it writes to a scratch variable, with a warning.
+  It takes every type but bool. **`LetBool`** (`0x1012ff30`) evaluates the
+  value into a zeroed int of its own and sets or clears the bit by it.
 - **Calls** (`CallFunction`, `0x1013f4e0`):
   - a native is called directly and reads its own arguments from the
     caller's code, each with a `Step`;
@@ -509,21 +511,35 @@ How the original runs UnrealScript.
     parameters and locals, zeroed). Each argument is evaluated from the
     caller's code straight into its parameter, up to `EndFunctionParms`. An
     `out` argument's address is kept and its value copied back after the
-    call. Strings and arrays among the locals are freed.
+    call, after the return value is written: an `out` argument that is also
+    the variable assigned ends with the parameter's value. Strings and
+    arrays among the locals are freed.
 - **Virtual calls** (`VirtualFunction`, `0x101301e0`) look the function up by
   name in a hash of 256 buckets, keyed on the low byte of the name's index:
   the current state's first (its own, then the state it extends or
   overrides, up that chain), then the class's (`FindObjectField`,
   `0x10150b50`). A final call carries the function itself.
 - **Running a function** (`ProcessInternal`, `0x1013f690`): tokens up to
-  `Return`, then the return value evaluated into the caller's buffer. A
-  `singular` function does not run while any singular function of its
-  object does: the object holds one flag, bit `0x20` of its `ObjectFlags`
+  `Return`, then the return value evaluated into the caller's buffer. Every
+  function's code ends in a `Return` with `Nothing`, which writes nothing
+  (`execNothing`, `0x10102095`), so a function with a return value that
+  runs off its end leaves the caller's buffer as it was. A `singular`
+  function does not run while any singular function of its object does:
+  the object holds one flag, bit `0x20` of its `ObjectFlags`
   (`FUNC_Singular`'s own value; the SDK's `RF_InSingularFunc`, `0x800`, goes
-  unused). A call held off writes nothing: a variable assigned from it keeps
-  its value. A 251st nested script function stops the game ("Infinite
-  script recursion (250 calls) detected"), the events called from C++
-  counted with the rest.
+  unused). A call of a function named after a probe whose bit is clear, and
+  one sent to the other side of a net game, are held off too. A call held
+  off, or ended without a value, writes nothing: a variable assigned from
+  it keeps its value, but a bool, which `LetBool` clears. What else takes a
+  result has set its buffer first: a condition, a context's object, a
+  cast, a conversion, a struct's member and a script function's parameter
+  to zero, so they read zero; a native's optional parameter to its
+  default, so it takes that as though left out (`Spawn`'s place the
+  spawner's, `Trace`'s start the tracer's); a native's vector or struct
+  parameter not at all, so it reads what the stack held. A `return f()`
+  hands the caller's buffer on. A 251st nested script function stops the
+  game ("Infinite script recursion (250 calls) detected"), the events
+  called from C++ counted with the rest.
 - **`a.b` with `a` `None`** (`Context`, `0x101300d0`): a warning ("Accessed
   None"), `b` skipped by a size stored inline, and a zero result.
 - **`switch`** (`execSwitch`, `0x1012f850`): the condition kept, then each
