@@ -620,6 +620,19 @@ palette's last entry never shows (`0x10b05d40`).
   its count worked out in floats gives at 0.998 of 569 frames, in doubles at
   0.946; one of period 1 last out at 14.62 s of the level's time, and lit
   at every frame after, to 24 s.
+  - **The console's tick inside it.** `UGameEngine::Draw` (Engine.dll
+    `0x1038f110`) calls `PreRender` (`0x1038f66c`) before the console's own
+    `PreRender` (`0x1038f685`), which sends the console's `Tick`
+    (`UConsole::PreRender`, `0x10379d10`), and `PostRender` (`0x1038f79b`)
+    after the console's `PostRender` (`0x1038f74b`). So the console's tick
+    and every script event of the frame -- the player's and the console's
+    `PreRender` and `PostRender` -- work at 24 bits, and so does every
+    native they call: OpsConsole's `7 *= 3e9` in its tick gives the 24-bit
+    product, and a trace's sums there are the 24-bit ones
+    ([traces](engine-dll.md#traces)). The level's tick runs outside it, at
+    the 64 bits the frame before's `PostRender` left (read, not measured);
+    DeusEx.dll's own CRT sets 53 as it loads (`0x1001c4d8`, called at
+    `0x1001b1aa`), until the first frame's `PostRender`.
 
 ### Light maps
 

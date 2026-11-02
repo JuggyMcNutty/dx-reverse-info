@@ -642,17 +642,20 @@ The rest are UE1's own. The details:
     none favoured;
   - `Normal` (`0x10138de0`, `FVector::SafeNormal` `0x10144be0`) is zero
     under a squared length of 1e-8, a length of 0.0001; otherwise the vector
-    times one over the root, in double.
+    times one over the root, at the x87's precision (24 bits in a console's
+    tick: [render-dll.md](render-dll.md#lighting), in floats), each axis
+    stored as a float.
 - **A float made an int** -- `int(f)` (`0x10131b40`), `byte(f)`
   (`0x10131aa0`, the int's low 8 bits) and a rotator scaled by a float
   (`0x101395e0`, each angle times the float rounded to a float first) -- by
   MSVCRT's `_ftol`: truncated to 64 bits and the low 32 kept, so past an
   int's range it wraps (3e9 is −1,294,967,296); NaN, or past 64 bits, 0. An
   int scaled in place by a float, `*=` 159 (`0x10134280`) and `/=` 160
-  (`0x10134370`), is `_ftol` of the product or quotient, which the x87, at
-  the game's 24-bit precision, rounds to a float first (7 *= 3e9 is
-  −474,836,992, 512 under the exact product's low bits); `/=` by 0.0 makes
-  it 0.
+  (`0x10134370`), is `_ftol` of the product or quotient as the x87 holds
+  it: at 24 bits, in a console's tick ([render-dll.md](render-dll.md#lighting),
+  in floats), rounded to a float first (7 *= 3e9 is −474,836,992, 512 under
+  the exact product's low bits: OpsConsole); in the level's tick, at 64
+  (read), exact; `/=` by 0.0 makes it 0.
 - **`IsInState(S)`** (`0x1013ece0`): true for the object's state or any
   state it extends.
 - **Rotators:**

@@ -1144,8 +1144,10 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   so a hull met nearer bounds those tried after it. A plane the box heads
   into gives an entry of 0, not less, when the box's middle lies on or in
   front of it while the box reaches behind it; that is the start inside. The
-  sums are floats (the x87 at 24 bits) in a fixed order, so a box's middle
-  exactly on a plane is 0 from it. With an owner (an
+  sums are floats (the x87 at 24 bits, as in a console's tick, where
+  GrateConsole's boxes are swept: [render-dll.md](render-dll.md#lighting),
+  in floats) in a fixed order, so a box's middle exactly on a plane is 0
+  from it. With an owner (an
   actor's brush, a mover's), the walk turns every plane it reads, its
   nodes' and its hulls', into the world by the owner's `ToWorld` coordinates
   (`ABrush::ToWorld`, `0x1030f310`): the normal dotted with each of their
@@ -1196,6 +1198,31 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   · the start's offset from the axis < −0.1), and passes out freely otherwise: a
   trace straight down from inside a pawn does not hit it. An actor with a mesh
   collides the same way (`UMesh::LineCheck`, `0x103a6d10`, passes it on).
+  - **Its arithmetic**, in a fixed order: the box's extent plus the actor's
+    radius and height, and the caps' heights, stored as floats; the line
+    clipped to the caps first, a cap it comes in through giving the entry
+    (a float) and a normal straight up or down (`0x103d8cd2`); then the
+    side, from the line's level run and the start's level offset from the
+    axis: the run's squared length (a), twice the run dotted with the
+    offset (b), the offset's squared length less the radius squared, and
+    the discriminant, each stored as a float (`0x103d8e47`). The entry is
+    -(the discriminant's root + b) x 0.5 / a; later than a cap's, it gives
+    the normal: the place the line reaches there (each axis's run times the
+    entry, stored, plus the start, stored) less the actor's place, made
+    level and a unit in floats (`0x103d9089`). A start inside, heading in,
+    takes Core's `FVector::SafeNormal` of its level offset (Core.dll
+    `0x10144be0`), its place the start. The hit's place is the start moved
+    along the line by its time (`0x103d918f`), on the line it was given:
+    the cut line, in the multi-hit check.
+  - **At the x87's precision**: a trace in a console's tick works it out
+    at 24 bits ([render-dll.md](render-dll.md#lighting), in floats).
+    VisibleConsole and GrateConsole show it: UNATCO HQ's
+    `SkillAwardTrigger0` met at y -9.699432, Liberty Island's
+    `DataLinkTrigger21`'s normal at x -0.957480 from inside it,
+    02_NYC_BatteryPark's `CageLight12`'s at y -0.310714 and -0.999926 from
+    inside it, where the same sums at 53 or 64 bits give -9.699429,
+    -0.957479, -0.310715 and -0.999927; its side normal of 0.146314 comes
+    out at any of them.
 - **`FastTrace(TraceEnd, TraceStart)`** (`0x103e35e0`): whether the line is
   clear of the level's BSP, the segment itself and nothing past it
   (`UModel::FastLineCheck`, `0x103f3280`; its walk `0x103f33a0` lets a line
