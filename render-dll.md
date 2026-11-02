@@ -630,7 +630,9 @@ palette's last entry never shows (`0x10b05d40`).
     native they call: OpsConsole's `7 *= 3e9` in its tick gives the 24-bit
     product, and a trace's sums there are the 24-bit ones
     ([traces](engine-dll.md#traces)). The level's tick runs outside it, at
-    the 64 bits the frame before's `PostRender` left (read, not measured);
+    the 64 bits the frame before's `PostRender` left: an actor's own tick
+    gives `7 *= 3e9` as -474,836,480, the whole product's, where the
+    console's gives -474,836,992 (DXEngine's `PrecisionConsole`);
     DeusEx.dll's own CRT sets 53 as it loads (`0x1001c4d8`, called at
     `0x1001b1aa`), until the first frame's `PostRender`.
 

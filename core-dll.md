@@ -654,8 +654,9 @@ The rest are UE1's own. The details:
   (`0x10134370`), is `_ftol` of the product or quotient as the x87 holds
   it: at 24 bits, in a console's tick ([render-dll.md](render-dll.md#lighting),
   in floats), rounded to a float first (7 *= 3e9 is −474,836,992, 512 under
-  the exact product's low bits: OpsConsole); in the level's tick, at 64
-  (read), exact; `/=` by 0.0 makes it 0.
+  the exact product's low bits: OpsConsole); in the level's tick, at 64,
+  exact (−474,836,480: DXEngine's `PrecisionConsole`, an actor's own tick);
+  `/=` by 0.0 makes it 0.
 - **`IsInState(S)`** (`0x1013ece0`): true for the object's state or any
   state it extends.
 - **Rotators:**
