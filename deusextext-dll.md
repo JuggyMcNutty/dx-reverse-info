@@ -51,7 +51,8 @@ calls `ProcessText` until it returns false.
   `<mission>_EmailMenu_<user>`, and each of its `EMAIL` tags a row, ten at
   most, naming the email's own text. A public computer's `bulletinTag` names
   a list of `FILE` tags the same way. An email or bulletin is its text, and a
-  line break for each paragraph, in one window; other tags do nothing.
+  line break for each paragraph, in one window; other tags, and a token with
+  no tag, do nothing.
 - **`CreditsScrollWindow`** and **`QuotesWindow`**: a line for each token of
   text, a header for the one after a `B`; a quote's speaker set apart at its
   colon.
@@ -59,15 +60,20 @@ calls `ProcessText` until it returns false.
 ## Parsing
 
 `ProcessText` (`0x10001780`) parses one token (`ParseTextBlock`,
-`0x10001a20`), which `GetTag` and `GetText` then give. It returns false once
-the text is used up, on the call after the last token.
+`0x10001a20`), which `GetTag` and `GetText` then give. Each call starts with
+no tag (`TT_None`), and the text's end ends a token as a tag does. It returns
+false once the text is used up, on the call after the last token, whose token
+is empty with no tag; `IsEOF` is true from then on.
 
 - **A token** is one tag, or the text up to the next tag, with each CR and LF
   made a space. Nothing is trimmed: the line break before a tag ends the text
   before it in two spaces, and a line break alone between two tags is a token
   of two spaces.
 - **The first `<P>`** of a text is swallowed: the token is whatever follows
-  it. Text before it is dropped; tags before it come through.
+  it. Text before it is dropped; tags before it come through. So a text whose
+  first paragraph never starts and that ends after its last tag gives a last
+  token, empty with no tag, as 15 email lists and `03_BulletinMenu` end, in a
+  line break (DXEngine's `ShipOpsConsole`, `04_EmailMenu_klloyd`).
 - **A tag** runs from `<` to the first `>` (`ParseTag`, `0x10001cc0`). It is
   the first of 30 names, in the order of `EDeusExTextTags`, that its content
   starts with, case sensitive (`GDeusExTextTagNames`, `0x1000a070`): `TEXT`,
@@ -121,7 +127,7 @@ the text is used up, on the call after the last token.
   package is `DeusExText`. It starts a text with no paragraph yet; the last
   tag, name, colour, file and email stay from before.
 - **`CloseText`** (`0x10001430`) frees the copy. **`IsEOF`** (`0x100018c0`)
-  is whether the text is used up.
+  is whether there is no text, or a call has found it used up.
 - **`GotoLabel`** (`0x10001960`) does nothing and returns false.
 
 ## In the game's texts
