@@ -47,9 +47,15 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
     light for each light in view.
   - `OccludeBsp` walks the BSP front to back and keeps each sprite with some
     part left visible ([which actors are drawn](#which-actors-are-drawn)).
-    It passes over a surface seen from behind, but for a zone portal or a
-    two-sided one. A portal passes what shows through it to the span buffer
-    of the zone beyond.
+    It passes over a surface seen from more than a unit behind
+    (`0x10b17fb9`) unless the surface's flags with the viewport's
+    `ExtraPolyFlags` hold `PF_TwoSided` or `PF_Portal` (`0x10b17fc9`),
+    before anything else; the texture's flags are ORed in only after
+    (`0x10b181b2`), so a texture's `PF_TwoSided` shows no surface from
+    behind. One within a unit behind is passed on, and no frame shows it
+    (observed: a chain-link sheet and a door's face from 0.9 units behind).
+    A portal passes what shows through it to the span buffer of the zone
+    beyond.
   - **A node's box** (its `iRenderBound`) is tested only while the node is
     flagged hidden (`NF_BoxOccluded`, 0x10 of its flags at +55), and
     otherwise one frame in 16: when its index and a counter `DrawWorld`
