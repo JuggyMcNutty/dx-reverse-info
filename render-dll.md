@@ -182,11 +182,11 @@ the world: no wall hides any part of it.
   ([the loading screen](engine-dll.md#the-loading-screen)).
   `Canvas.DrawActor` (`UCanvas::execDrawActor`, `Engine.dll` `0x10377ed0`)
   draws its actor through `DrawActor` on that frame: the world's view and
-  field of view, no span buffer, and the polygon flags any mesh has
-  ([meshes](#meshes)), none for depth. Its `ClearZ`, when true, clears the
-  depth buffer first; its `WireFrame` draws with the player's `RendMap` at 1
-  (`REN_Wire`) for the call. The game sets neither: `Weapon`'s and
-  `Inventory`'s `RenderOverlays` (`Engine.u`) call
+  field of view, no span buffer, no moving lights, and the polygon flags any
+  mesh has ([meshes](#meshes)), none for depth. Its `ClearZ`, when true,
+  clears the depth buffer first; its `WireFrame` draws with the player's
+  `RendMap` at 1 (`REN_Wire`) for the call. The game sets neither:
+  `Weapon`'s and `Inventory`'s `RenderOverlays` (`Engine.u`) call
   `Canvas.DrawActor(self, false)`.
   Both natives clear the actor's `bHidden` for the draw and set it
   afterwards, whatever it was. `Canvas.DrawClippedActor`
@@ -805,18 +805,27 @@ palette's last entry never shows (`0x10b05d40`).
 
 - **The candidates:** the lights it had last frame (kept in the cache under
   the actor, up to 16, each with its fade, below), the static lights that
-  reach into the actor's leaf of the BSP, and the moving lights in it. Each
-  counts once a frame, and only if it reaches the actor and its
-  `bSpecialLit` is the actor's: a kept light that no longer reaches it is
-  dropped at once. Its strength at the actor's centre is `(1 − distance /
-  radius) × LightBrightness`, the byte, in 1024ths. A cylinder light counts
-  with three quarters of its brightness and radius.
+  reach into the actor's leaf of the BSP, and the moving lights in it (its
+  sprite's leaf lights, [which actors are drawn](#which-actors-are-drawn)).
+  An actor drawn on its own has no moving lights there: `URender::DrawActor`
+  (`0x10b262c0`), which `Canvas.DrawActor`, `Canvas.DrawClippedActor` and
+  `GC.DrawActor` draw through, makes it a sprite with no leaf lights, so a
+  first-person weapon is lit by the static lights and those it kept. Each
+  counts once, and only if it reaches the actor and its `bSpecialLit` is
+  the actor's: a kept light that no longer reaches it is dropped at once.
+  Its strength at the actor's centre is `(1 − distance / radius) ×
+  LightBrightness`, the byte, in 1024ths. A cylinder light counts with
+  three quarters of its brightness and radius.
   The leaf's volumetric lights (`LeafVolumetricLighting`, the fog map's
   list) are the actor's fog, every one listed while the light infos have
   room (256 in all).
 - **The pick**, one pass over them, strongest first: a static light is lit
   while fewer than 8 static ones are, any other while fewer than 8 in all
-  are, none under an eighth of the first one lit.
+  are, none under an eighth of the first one lit. The actor's own light,
+  among them, counts as any other, its place among the 8 and its eighth,
+  but lights nothing of it: `AddLight` (`0x10b08b30`) takes no light that is
+  the actor lit. So a lamp or a sword that glows is lit only by lights an
+  eighth as strong at its centre as its own.
 - **Shadowed or not:** a `bMovable` light that is not static is lit. Another
   is lit as a line from it to the actor through the level's BSP found it,
   the line run again every 16 frames, by the viewport's frame count and the
