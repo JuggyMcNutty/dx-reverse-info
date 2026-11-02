@@ -1685,11 +1685,25 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   actor's `bDeleteMe` ending them, and a state change counted (the frame's
   node changed by a `GotoState`), the fifth ending the tick's.
 
+- **The travel's export** (`0x10391740`, from `UGameEngine::Tick` for a
+  travel that takes the items): a list from the player, each entry's travel
+  properties read the class's own first, then each super's (its field
+  iterator, `0x10392830`), so `Actor`'s `Inventory` chain last; each object
+  a written entry names joins the list. An entry is written only when it is
+  no actor, or an actor with `bTravel` set (`0x103917fe`): one without is
+  neither written nor walked, a reference to it written but matching no
+  block at the arrival, which leaves the property as the spawn left it. A
+  value is written only where it differs from its class's default
+  (`0x10391894`). At the arrival the items are spawned in the order written
+  and given their events last to first, so an item only a property of the
+  player's names takes its turn after the chain's.
 - **The player's login** (`ULevel::SpawnPlayActor`, `0x10396bd0`), a save's
   load's too: the game's `Login`, its options the URL's (a save's
   `?load?loadonly?loadgame` and the default player's, so `GameInfo.Login`
   keeps the saved player, unoccupied, and Deus Ex's leaves it as saved); the
-  player's `TravelPreAccept`; its travelling items' `TravelPreAccept`, none
+  player's `Possess` (`APlayerPawn::SetPlayer`, `0x10368c90`), in which
+  Extension's `PlayerPawnExt` makes its root window, so the HUD and its belt
+  are there for what follows; the player's `TravelPreAccept`; its travelling items' `TravelPreAccept`, none
   for `?loadonly`, which takes nothing of the travel info, the player's own
   properties nor its items; the game's `AcceptInventory`; the items'
   `TravelPostAccept`, then the player's; the game's `PostLogin`. Deus Ex's

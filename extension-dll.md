@@ -67,8 +67,9 @@ are `exec` exports.
 - **`XGameEngineExt`**, the game engine's base:
   - `Init` (`0x100261b0`) registers the window events' names (`InitWindow`,
     `DrawWindow` and the rest; `Extension_RegisterNames`).
-  - `Browse` (`0x10026330`), after a level loads, makes the player's root
-    window.
+  - `Browse` (`0x10026330`), after a level loads, asks for the player's root
+    window, which the player's login has made already (its `Possess`,
+    `InitRootWindow`).
   - `Tick` (`0x100266a0`) ticks the windows, then the engine. The windows
     tick by the real time since they last ticked (`TickWindows`,
     `0x1003a4a0`, by `GetWindowsTickOffset`, `0x1003a3b0`), not the level's:
