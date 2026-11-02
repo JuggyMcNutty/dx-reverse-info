@@ -847,7 +847,14 @@ palette's last entry never shows (`0x10b05d40`).
   else down and even, at least 0. A light lights as it fades, its colour ×
   the byte ÷ 255; up to 16 whose byte is over 1 are kept, strongest
   first.
-- **Per vertex**, for each light:
+- **Per vertex** (`Light`, `0x10b027f0`), each vertex of a face kept lit
+  once, by its normal alone, whatever its faces' flags: so a two-sided
+  face shows on both sides the light its normal gets. Its normal is
+  the sum of its faces' unit normals in the frame's pose, from every face
+  within the detail budget, made a unit (a table's 1/√ of its square plus
+  0.001) just before; the vertex then moved out along it by the fatness
+  (`Fatness` ÷ 16 − 8). Its distance to a light is a table's √. For each
+  light:
   - a diffuse term, `(cos + 1)² − 1.5` of the angle to the light (nothing
     beyond about 77°, 2.5 facing it);
   - a highlight, `6 × cos²` of the angle between the eye and the light's
