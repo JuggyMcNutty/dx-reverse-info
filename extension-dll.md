@@ -398,7 +398,12 @@ yaw, its pitch left out.
   the root: its x × 2 ÷ the root's width − 1, held to −1..1, times a quarter
   turn. Otherwise the sound is straight ahead.
 - The point defaults to the window's centre, the pitch to 1, and the volume
-  to −1, which stands for the window's own (`soundVolume`). Only
+  to −1, which stands for the window's own (`soundVolume`). A list plays
+  its move and activate sounds, and the script's `PlayListSound`
+  (`0x10031370`), from the middle across of the part of it its clip
+  rectangle shows (all of it when none shows) and, down, its focus row's
+  top plus the row margin, else that part's middle; a list not shown, or
+  in a window not shown, from its centre. Only
   `SetSoundVolume` sets that, never a window's `Init`, so a window that does
   not set it plays at its class's 0, which Galaxy raises to its floor, 1/256
   of full ([volume](galaxy-dll.md#volume)).
@@ -1125,6 +1130,25 @@ test.
 
 ## Drawing
 
+### Drawing a window
+
+- **What is drawn** (`XWindow::DrawTree`, `0x10051490`, from the root's
+  `PaintWindows`, `0x1003aab0`, down): a window whose own shown flag is on
+  and whose clip rectangle's width and height are both above 0
+  ([the clip rectangle](#keyboard-focus)), with a canvas and its GC there.
+  Of any other, nothing: no background, no `Draw` (a plain window's is the
+  script's `DrawWindow`), none of its children, no `PostDraw`
+  (`PostDrawWindow`). So a window scrolled out of its clip window, of no
+  width or no height, or past its parent's edge gets neither event, nor
+  does any window in it, its clip rectangle lying within its parent's;
+  one that shows a part is drawn whole, its children each by what of it
+  shows.
+- **The order**, its GC pushed and given the canvas and the root's
+  multipliers: its background, unless its style is `DSTY_None` or it has
+  none (`DrawIconPattern` over the whole window, tiled from its corner, or
+  stretched over it with `bStretchBackground`); its `Draw`; each child in
+  turn from the bottom; then its `PostDraw`.
+
 ### Styles
 
 - **`GC.SetStyle`** (`0x10027170`) sets only how tiles draw. `DSTY_None`
@@ -1290,12 +1314,10 @@ the spy drone, the targeting augmentation's zoom.
   `bClearZ` clears the depth buffer first; the renderer draws the world
   (`DrawWorld`), then the window's own `DrawWindow` draws over it, and its
   `PostDraw` (`0x1004af20`) finishes the frame.
-- **The order.** A window's tree is drawn (`XWindow::DrawTree`,
-  `0x10051490`): its background, its `Draw` (the script's `DrawWindow`), its
-  children in turn, then its `PostDraw` (`PostDrawWindow`). So what the HUD
-  draws in `AugmentationDisplayWindow.PostDrawWindow` round the zoom and the
-  drone's windows, their box, labels and the target's text, goes over their
-  frames.
+- **The order.** A window's children are drawn before its `PostDraw`
+  ([drawing a window](#drawing-a-window)), so what the HUD draws in
+  `AugmentationDisplayWindow.PostDrawWindow` round the zoom and the drone's
+  windows, their box, labels and the target's text, goes over their frames.
 - **No frame** (disabled, no renderer, or an empty rectangle): the window is
   tiled with `defaultTexture` in `defaultColor`, normal style.
 - **An actor gone:** an origin actor no longer valid leaves the view at its
