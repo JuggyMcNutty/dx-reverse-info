@@ -73,8 +73,14 @@ are `exec` exports.
   - `Tick` (`0x100266a0`) ticks the windows, then the engine. The windows
     tick by the real time since they last ticked (`TickWindows`,
     `0x1003a4a0`, by `GetWindowsTickOffset`, `0x1003a3b0`), not the level's:
-    each window, shown or not, before its children (`TickTree`,
-    `0x1003bfc0`), its script's `Tick` only while `bTickEnabled`.
+    each window, shown or not, its own native tick, then its script's
+    `Tick` only while `bTickEnabled` and its timers, before its children
+    (`TickTree`, `0x1003bfc0`): the root's own first of all
+    ([the root's tick](#keyboard-focus)). Each frame's `PostRender`
+    (`0x1003a960`) sends `WindowReady` to each window that shows and has not
+    had it, its children first, bottom to top, before the windows are
+    painted (`InitializeWindows`, `0x1003bc80`; `InvokeWindowReady`,
+    `0x1003bd20`).
     `GetTickOffset` (`0x1004fda0`) is that time at any moment: a timer
     added, and a held button's or scale's first repeat, count what of the
     frame has gone.
@@ -197,9 +203,11 @@ are `exec` exports.
 - **`SetChildVisibility(bNewVisibility)`** (`0x1004ee20`) sets the window's
   flag. When that changes whether it can be seen, it:
   - moves focus and grabs away from what is hidden;
+  - marks the window to be laid out, before what follows;
   - sends `VisibilityChanged` to the window and to its descendants, each
     then playing its `visibleSound` or `invisibleSound`;
-  - lays the tree out again.
+  - lays the tree out again (`ReconfigureTree`, `0x1004e520`): the window,
+    and each window in it marked while it could not be seen, at once.
 - **`IsVisible(bRecurse)` and `IsSensitive(bRecurse)`** (`execIsVisible`,
   `0x10051a10`; `execIsSensitive`, `0x10051bd0`): the optional starts true,
   so a call without it recurses -- up the parents: true when the window and
@@ -209,7 +217,8 @@ are `exec` exports.
   hidden. Its parent gets `ChildAdded`, then the parent and each ancestor
   `DescendantAdded`, all before the window's `InitWindow`. Then, unless
   `NewChild` was asked not to, it is shown as `Show` shows it, so
-  `VisibilityChanged` reaches it and every window its `InitWindow` made.
+  `VisibilityChanged` reaches it and every window its `InitWindow` made, and
+  then asks once more to be laid out.
   No class gives None. The window is locked from its `InitWindow` to after
   its layout, so a destroy from inside (`SafeDestroy`) waits until the lock
   lifts, and such a window is None to its maker.
@@ -380,7 +389,8 @@ run in its tick, after its script's `Tick` and before its children
   its `preferredFocus` when that is traversable with the modal check, else as
   `MoveTabGroup` forward does from the table's first group. It does not when
   its `focusMode` is `MFOCUS_EnterLeave` (3). So a conversation's first
-  choice takes the focus as the choices appear.
+  choice takes the focus at the windows' tick after the choices are made:
+  the frame they are made is drawn with no focus.
 - **What takes no focus.** A scroll area makes its scales, its four buttons
   and itself unselectable (`XScrollAreaWindow::Init`, `0x10042d80`): the
   focus goes to what it holds, a list or a text. A list, an edit field, a
@@ -440,7 +450,11 @@ yaw, its pitch left out.
 - **Laying out again** (`AskParentForReconfigure`, `0x1004e060`) marks the
   window and, if it and every parent show, asks its parent
   (`ChildRequestedReconfiguration`); a parent that does not take it asks its
-  own, up to the root, which lays itself out. A window still marked then,
+  own, up to the root, which only runs its own `ConfigurationChanged`
+  (`0x1003a6d0` asks its script). Every native container but the root takes
+  no child's request (`ChildRequestedReconfiguration`, `0x100421d0`): a tab
+  group, a modal, a clip window, a scroll area, a scale manager and a radio
+  box pass it on, as a tile and a border do. A window still marked then,
   which no parent placed, places itself by its alignment at its preferred
   size (`ResizeChild`, `0x1004eab0`): centred (the half truncated) plus its
   first margin, right less it, else at it; full, the parent's size less
@@ -453,7 +467,9 @@ yaw, its pitch left out.
 - **`ConfigureChild(x, y, w, h)`** (`0x1004ec50`) sets just what it is given
   -- a size set on the window is only what it asks for -- and the window
   gets `ConfigurationChanged` when its size changed or it was marked. A
-  window that does not show is only counted as placed.
+  window that does not show is only counted as placed. At the outermost
+  placing, or for a window whose type is not 0, its tree's clip rectangles
+  are worked out again and its tab group's tables sorted again.
 - **Showing an area** (`AskParentToShowArea(x, y, w, h)`, `0x1004e230`;
   from a script, 0, 0 and the window's own size for a size of 0): of the
   area, the part inside the window; when the window's parents clip any of
