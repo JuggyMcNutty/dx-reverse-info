@@ -92,16 +92,24 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   surface it keeps at the head of one: a mirror's or a portal's in the
   first; one that is none of invisible, masked, translucent or modulated in
   the second; the rest in the third. The first is drawn in reverse, the
-  second sorted by its key (zone, then texture), the third as it stands:
-  back to front. `FDynamicSprite`'s leaf test puts each sprite at the head
-  of the frame's list as its first part shows, so the sprites too go back
-  to front. On a render device that is not span-based (`SpanBased` off,
-  every hardware one) the sprites whose actor is not `STY_Translucent`
-  follow the second list, and the translucent ones the third: glass blends
-  over a mesh behind it. A span-based one (the software renderer) draws
-  them all after the third. A surface's decals are drawn only while the
-  client's `Decals` is on and the render device is not span-based. A
-  surface goes to the device with a detail
+  second sorted by its key, the third as it stands: back to front. The
+  key (`0x10b1976b`) is an int: the zone actor's object index × 2^26, plus
+  the surface's own texture's (not its animation's frame), plus that
+  texture's palette's × 2^12. The sort (`0x10b1a45f`) is `Render.dll`'s own
+  copy of the C library's quicksort (`0x10b20570`: the middle element the
+  pivot, a run of 8 or fewer by selection), ascending, which keeps no order
+  among equal keys. So which of two opaque surfaces that overlap at one
+  depth shows, at the device's less-equal depth test
+  ([`D3DDrv`](d3ddrv-dll.md#the-binary)), follows the indices the game's
+  loads and frees gave its objects. `FDynamicSprite`'s leaf test puts each
+  sprite at the head of the frame's list as its first part shows, so the
+  sprites too go back to front. On a render device that is not span-based
+  (`SpanBased` off, every hardware one) the sprites whose actor is not
+  `STY_Translucent` follow the second list, and the translucent ones the
+  third: glass blends over a mesh behind it. A span-based one (the
+  software renderer) draws them all after the third. A surface's decals
+  are drawn only while the client's `Decals` is on and the render device is
+  not span-based. A surface goes to the device with a detail
   texture only when its texture's current frame (`AnimCurrent`) has one, it is
   no portal, and the client's `TextureDetail` is High, the client read through
   the static `UBitmap::__Client`, which a `UClient`'s constructor sets and its
