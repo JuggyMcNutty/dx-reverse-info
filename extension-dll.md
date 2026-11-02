@@ -1288,8 +1288,14 @@ window (`ActorDisplayWindow`) ask it, while the windows draw:
   its own place off the answer and returns the parent's; one with no parent
   gives its own middle, and false.
 - **A viewport window** (`XViewportWindow`'s, `0x1004afc0`) projects through
-  its own frame, the view it draws, in that frame's pixels, truncated; so,
-  through it, does every window inside one.
+  its own frame, the view it draws, in that frame's pixels from the frame's
+  corner, truncated: not over the root's multipliers, and from the corner of
+  its clip rectangle, not its own. A point at a depth of 1 or less gives the
+  frame's middle, and false. So, through it, does every window inside one.
+  The frame lasts from the window's `Draw` to the end of its `PostDraw`,
+  after its `PostDrawWindow` (`0x1004af20`): asked at any other time, or
+  while the window draws none (turned off), it fails an assertion, which
+  stops the game.
 
 `FrobDisplayWindow`'s box takes the target's middle and each corner of its
 collision box returned in front -- a mover's middle that of its box at its
@@ -1305,19 +1311,28 @@ the spy drone, the targeting augmentation's zoom.
 - **A new one** (`Init`, `0x10049f10`) is enabled, clears the depth buffer,
   uses a player's view rotation and both eye heights, has a field of view of
   90 and a black default colour, and looks from the player's eyes
-  (`SetViewportActor(player, true, true)`). The script gives the class no
-  defaults; its fields are `const`.
+  (`SetViewportActor(player, true, true)`). It is made with
+  `bDrawRawBackground` off ([the raw background](#the-raw-background)). The
+  script gives the class no defaults; its fields are `const`.
 - **Where from:** the origin actor's location, up its `EyeHeight` (not
   `BaseEyeHeight`) when it is a pawn and `bUseEyeHeight` is on; turned as the
   actor is, or by its `ViewRotation` when it is a player and
   `bUseViewRotation` is on. With no origin actor, the window's own location
   and rotation. `relLocation` moves the eye its length along the view turned
   by its own direction. A watch actor turns the view to its location, up its
-  `EyeHeight` for a pawn with `bWatchEyeHeight`; `relRotation` is added last,
-  and the script's `CalcView` event may change both.
+  `EyeHeight` for a pawn with `bWatchEyeHeight`; `relRotation` is added last.
+  Then the script's `CalcView` event (`0x1004b180`), given the origin and the
+  watch actor, may change the place and the turn, and what it leaves is kept
+  as the window's last place and turn (`lastLocation`, `lastRotation`,
+  `0x1004abb0`). The game's `ViewportWindow.CalcView` does nothing, and none of
+  its classes extends `ViewportWindow`.
 - **The frame** is a master frame of the canvas's viewport, the player's, at
-  the window's clip rectangle in the root's scale. For the draw only, put back
-  after:
+  the window's clip rectangle, the part of it its parents leave in view:
+  times the root's multipliers, its corner and its size each truncated, the
+  corner moved by that of the canvas's own frame, the scene's, which a render
+  viewport moves (`0x1004ac3c`). Its projection is made about the middle of
+  that rectangle, the field of view across its width. For the draw only, put
+  back after:
   - the player is in behind view (`bBehindView`), so the renderer draws it
     and what it owns as in third person
     ([which actors are drawn](render-dll.md#which-actors-are-drawn)) and
@@ -1326,7 +1341,12 @@ the spy drone, the targeting augmentation's zoom.
   - the player's `FovAngle` is the window's `fov`, which the frame's
     projection reads (`FSceneNode::ComputeRenderSize`, `Engine.dll`);
   - the origin actor is hidden unless `bShowActor`, shown with it even when
-    hidden.
+    hidden;
+  - the canvas's frame is the window's, and its size and clip the frame's
+    width and height (`0x1004ada3`), so the overlays the renderer sends the
+    player in the window's frame, the first-person weapon
+    `Canvas.DrawActor` draws, lie in the window
+    ([the overlays](render-dll.md#the-overlays)).
 
   `bClearZ` clears the depth buffer first; the renderer draws the world
   (`DrawWorld`), then the window's own `DrawWindow` draws over it, and its
@@ -1335,21 +1355,43 @@ the spy drone, the targeting augmentation's zoom.
   ([drawing a window](#drawing-a-window)), so what the HUD draws in
   `AugmentationDisplayWindow.PostDrawWindow` round the zoom and the drone's
   windows, their box, labels and the target's text, goes over their frames.
-- **No frame** (disabled, no renderer, or an empty rectangle): the window is
-  tiled with `defaultTexture` in `defaultColor`, normal style.
-- **An actor gone:** an origin actor no longer valid leaves the view at its
-  last place and turn; a watch actor, at its last turn.
+- **No frame** (turned off, no renderer, or not a pixel of the clip rectangle
+  across or down): the whole window is tiled with `defaultTexture` from its
+  corner, in `defaultColor` and the normal style, the GC pushed and popped
+  round it (`0x1004ae80`); with no texture nothing is drawn (`GC.DrawPattern`,
+  `0x10028a60`). Its `DrawWindow` follows, frame or not. The game's camera
+  windows with no camera are turned off with no texture, and draw nothing.
+- **An actor gone**, checked first in each draw, turned off or not
+  (`0x1004a7b6`, `0x1004a85e`): an origin actor no longer among the player's
+  actor references (`IsActorValid`, which a destroyed one drops out of) is
+  dropped, the window's location set to the last place, `relLocation`
+  cleared and the rotation set to the last turn less `relRotation`, so the
+  view stays where it last was; a watch actor gone is dropped, the rotation
+  set to the last turn and `relRotation` cleared. `bOriginActorDestroyed` is
+  set and cleared in the same draw (`0x1004a856`, `0x1004a8ad`), and nothing
+  reads it.
 - **The setters.** `SetViewportActor` (`0x1004a170`): eye level and enabled
-  unless told otherwise; it clears the window's location and `relLocation`,
-  and makes the actor one of the player's `AdditionalViews`
-  ([Deus Ex's additions](network.md#deus-exs-additions)).
-  `SetViewportLocation` (`0x1004a300`): enabled unless told otherwise; drops
-  the origin actor. `SetWatchActor` (`0x1004a400`): eye level unless told
-  otherwise; clears the rotation and `relRotation`. `SetRotation`
-  (`0x1004a570`) drops the watch actor. `SetFOVAngle` (`0x1004a660`): 90
-  unless given, held from 0.1 to 179. `ShowViewportActor`, `ShowWeapons`,
-  `EnableViewport` and `ClearZBuffer`: true unless given. `SetDefaultTexture`:
-  none and white unless given.
+  unless told otherwise; it clears the window's location and `relLocation`.
+  A new origin actor takes one of the player's actor references
+  (`AddActorRef`) and the old one's is let go; the old one stops being one of
+  the player's `AdditionalViews` and the new one becomes one unless it is the
+  player ([Deus Ex's additions](network.md#deus-exs-additions)). The last
+  place is the actor's location, or the window's. `SetViewportLocation`
+  (`0x1004a300`): enabled unless told otherwise; drops the origin actor and
+  its reference, not its additional view; the last place is the new one.
+  `SetWatchActor` (`0x1004a400`): eye level unless told otherwise; clears the
+  rotation and `relRotation`; a new watch actor takes a reference and the old
+  one's is let go; the last turn faces the watch actor from the last place.
+  `SetRotation` (`0x1004a570`): no turn unless given; clears `relRotation`
+  and drops the watch actor and its reference; the last turn is the new one.
+  `SetFOVAngle` (`0x1004a660`): 90 unless given, held from 0.1 to 179.
+  `ShowViewportActor`, `ShowWeapons`, `EnableViewport` and `ClearZBuffer`:
+  true unless given. `SetDefaultTexture` (`0x1004a730`, its native
+  `0x1004b930`) sets both, no texture and white unless given, the white's
+  fourth byte whatever the native's stack held.
+- **Destroyed** (`CleanUp`, `0x1004a070`), a window lets go of its origin
+  actor as `SetViewportActor(None)` does; its watch actor's reference is
+  never let go.
 - **The game:** a security computer's camera window (200 × 150) shows a camera,
   hidden in its own view, with the player in it; the arrow keys pan it by
   `fov / 90` of a step and `+`/`-` zoom it from 5 to 90. The spy drone's
@@ -1397,8 +1439,14 @@ What the game shows under a menu, by the player's UI background option
   (`DrawRawBackground`, `0x1003c720`), wherever the scene is not: over the
   whole root with rendering off, around the render viewport with one set,
   nowhere otherwise.
-  - Every window is made with `bDrawRawBackground` on (`XWindow::Init`) and
-    nothing clears it, so no window keeps it out.
+  - Every window is made with `bDrawRawBackground` on (`XWindow::Init`) but
+    a viewport window, whose `Init` clears it (`0x10049f10`): the clip list
+    takes out such a window's clip rectangle and goes no further into it
+    (`0x1003c68b`), so the raw background is never drawn behind a viewport
+    window. In the game none is up while a viewport window shows: the HUD,
+    which holds the zoom's and the drone's, is hidden under the menus and in
+    a conversation's letterbox, and a computer, which holds the cameras'
+    feeds, leaves rendering on.
   - Each piece left (above the viewport, below it, then left and right of
     it) is drawn in the colour, unsmoothed: stretched from the background's
     own size, or tiled from the piece's corner.

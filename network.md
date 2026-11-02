@@ -682,7 +682,16 @@ others differ:
 - **`Actor.RelevantRadius`:** a viewer with one takes every pawn inside it as
   relevant, seen or not.
 - **`PlayerPawn.AdditionalViews[3]`:** more viewpoints for relevancy, of which
-  only the first works.
+  only the first works. A viewport window's `SetViewportActor` fills them on
+  the pawn its root belongs to
+  ([a viewport window](extension-dll.md#a-viewport-window)):
+  `APlayerPawn::AddAdditionalView` (`Engine.dll` `0x103ba540`) puts the actor
+  in the first empty one, whether it is there already or not, and
+  `RemoveAdditionalView` (`0x103ba4c0`) empties the first that holds it and
+  moves those after it down a place, the last left as it was. The windows are
+  the client's, and a client's pawn sends none of its `PlayerPawn` values
+  ([replication](#replication), a client replicates too), so in the stock
+  game no server's copy of a pawn holds one.
 - **The client's classes checked** (the game's script, `DeusEx.u`): a joined
   player's pawn is called to check its console's class and its root window's
   (`VerifyConsole(Engine.Console)`, `VerifyRootWindow(DeusEx.DeusExRootWindow)`,
