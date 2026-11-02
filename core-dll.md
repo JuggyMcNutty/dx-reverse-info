@@ -511,9 +511,15 @@ How the original runs UnrealScript.
     parameters and locals, zeroed). Each argument is evaluated from the
     caller's code straight into its parameter, up to `EndFunctionParms`. An
     `out` argument's address is kept and its value copied back after the
-    call, after the return value is written: an `out` argument that is also
-    the variable assigned ends with the parameter's value. Strings and
-    arrays among the locals are freed.
+    call, after the return value is written, the last first: an `out`
+    argument that is also the variable assigned ends with the parameter's
+    value, through a `return` of the call too (the return steps the call
+    into its caller's buffer), and of two `out` arguments given one variable
+    the first's. A native writes its `out` arguments through their addresses
+    in its own order: the post-increment and post-decrement natives
+    (`0x101347e0`, `0x101348a0`, the byte ones `0x10133290`, `0x10133350`)
+    write their result before they step the variable, so `I = I++` ends
+    stepped. Strings and arrays among the locals are freed.
 - **Virtual calls** (`VirtualFunction`, `0x101301e0`) look the function up by
   name in a hash of 256 buckets, keyed on the low byte of the name's index:
   the current state's first (its own, then the state it extends or
