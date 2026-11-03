@@ -296,6 +296,11 @@ it walks every property instead and calls `Modify` before each change.
     big-endian, each unit a character and the byte-order mark dropped; any
     other file is read byte by byte, each byte a character (Latin-1). So an
     ini Notepad saved as "Unicode" reads as the 8-bit one does.
+  - A file written (`appSaveStringToFile`, `0x10148c40`): a byte a
+    character, as `ToAnsi` narrows one, when every character is below
+    0x100; else UTF-16 little-endian, the byte-order mark `FF FE` first. So
+    an ini or `.int` holding a character past Latin-1 is saved as UTF-16,
+    every other as 8-bit.
 - **`StaticSaveConfig()`** (`0x1013e7c0`): `SaveConfig` of the context's
   class's defaults (`UClass::Defaults`), from an object's call as from the
   class's; the object's own values are never written.
