@@ -135,6 +135,12 @@ Its only users are `DeusExPlayer`'s debug console commands.
   with `CLASS_Transient`: a reference to one reads as None. A level's mission
   script (`MissionScript` is transient) is in no save.
 
+- **A string's bytes** (`FString`'s `<<`, `0x101459b0`): a compact count
+  with the terminator, then the characters; on a save, negative and 16-bit
+  characters when one before the terminator is past 0xFF, else positive and
+  a byte each (Latin-1); on a load, the count's sign says which, and a string
+  of the terminator alone is made empty. So a note typed past Latin-1 is
+  saved wide and every other string of a save as 8-bit.
 - **A package's file** (`appFindPackageFile`, `0x10148ec0`). A name ending in
   `.dll` finds none. The search:
   1. the name as given, if a file of it exists in the working directory
