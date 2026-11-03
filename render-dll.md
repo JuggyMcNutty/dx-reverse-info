@@ -712,7 +712,7 @@ palette's last entry never shows (`0x10b05d40`).
     round a table of 256.
 - **The random tables** (`TickRandoms`, `0x10b13080`, each frame from the
   level's time, at the end of `PreRender`):
-  - 256 fresh draws: the torch's and fire's;
+  - 256 fresh draws: the flicker's, the torch's and fire's;
   - the watery shimmer's own, each entry easing toward a draw. At each of 35
     ticks a second, the 16 entries the tick moves past take the fresh
     table's draws as their targets, a sixteenth of the way a tick; the
