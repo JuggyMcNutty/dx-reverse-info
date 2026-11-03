@@ -80,8 +80,8 @@ In single player that is every tick. In order:
    - `MoveTimer` loses 4 s if the pawn was turning;
    - `ActorAvoiding`, `NextDirection` and `TurnDirection` are cleared;
    - `bClearedObstacle` is set and `ObstacleTimer` zeroed.
-7. **Burning.** While `bOnFire`, `burnTimer` grows; past `BurnPeriod`, the
-   script's `ExtinguishFire`.
+7. **Burning.** While `bOnFire`, `burnTimer` grows; once it reaches
+   `BurnPeriod` (`>=`, `0x10019c32`), the script's `ExtinguishFire`.
 8. **Bleeding.** With `bTickVisibleOnly`, only within 1,200 units of the
    player:
    - with `bCanBleed` and `BleedRate` above 0, a `SpurtBlood` event each time
@@ -134,9 +134,11 @@ and calls the function named here.
 
 - It finds the level's `DeusExLevelInfo`. With none, it logs that
   conversations cannot be bound; for a mission below 0, it does nothing.
-- It loads the conversation list `<package>Text.ConList_MissionNN`.
-  `<package>` is the level's `ConversationPackage`, with `DeusExConversations`
-  becoming `DeusExCon`: mission 2's is `DeusExConText.ConList_Mission02`.
+- It loads the conversation list `<package>Text.ConList_MissionNN`
+  (`LOAD_NoWarn`: one that does not load binds nothing, an empty
+  `ConversationPackage` too, as `Text.ConList_MissionNN` is none). `<package>`
+  is the level's `ConversationPackage`, with `DeusExConversations` becoming
+  `DeusExCon`: mission 2's is `DeusExConText.ConList_Mission02`.
 - The list binds the actor's conversations with ConSys's
   `DConversationList::BindConversations`
   ([how](consys-dll.md#an-actors-conversations)).

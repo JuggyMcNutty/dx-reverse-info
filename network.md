@@ -83,8 +83,10 @@ The control channel carries lines of text: the server's side is
      hex digits; `Checksum=NoChecksum` when the password is empty. Without
      stats, nothing (`0x1040a880`).
 4. **Server:** a wrong response gets `FAILURE CHALLENGE`. Then the game's
-   `PreLogin` (script) may refuse: `FAILURE` and its message, `FAILCODE` and its
-   code (the client's menu takes it: a password asked for), and the connection
+   `PreLogin` (script) may refuse, by its error alone (`0x1039f780`: a
+   `FailCode` with no error lets the login on): `FAILURE` and its message,
+   `FAILCODE` and its code (the client's menu takes it: a password asked for,
+   the join's error staying the FAILURE's, `0x1040a880`), and the connection
    closed. Otherwise `WelcomePlayer` (`0x1039f500`) sends:
    - a `USES GUID= PKG= FLAGS= SIZE= GEN=` line per package of the server's
      list, made as the map opened (`UGameEngine::BuildServerMasterMap`,
@@ -314,7 +316,9 @@ A URL names a server in what comes before its options (`?`) and portal (`#`)
   not followed by the map's or a save's extension (`dx`, `dxs`);
 - after a `:` in the host comes the port (`[URL]`'s `Port`, 7,790, without one,
   as any URL's port);
-- after the `/` comes the map (the default map without one).
+- after the `/` comes the map (the default map without one), then a `/` and the
+  portal; a second `/`, a space in an option or the portal, or an empty option
+  make no URL, and `HasOption` matches a whole option (`0x103f9df0`).
 
 Built on a base, as a travel builds it: a relative travel's URL takes the
 base's protocol, host, map, portal and port, a relative or partial one the

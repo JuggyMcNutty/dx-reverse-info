@@ -74,9 +74,9 @@ defaults: text link mode, receive by events, no socket (`0x10702480`).
     `IsDataPending`, and `Validate` ([below](#the-master-server)).
 - **`TcpLink`:** `BindPort` (any port when given none; with `bUseNextAvailable`, the first
   free of the 20 from the one given), `Listen`, `Open`, `Close`, `IsConnected`, `SendText`
-  (a line end added in line mode, everything queued in the send FIFO, the whole length
-  answered), `SendBinary`, `ReadText`, `ReadBinary`. Its tick (`0x10706fb0`) goes by its
-  state:
+  (a line end added in line mode, everything queued in the send FIFO, the whole length with
+  the line end answered, 0 with no socket, `0x10708870`), `SendBinary`, `ReadText`,
+  `ReadBinary`. Its tick (`0x10706fb0`) goes by its state:
   - listening: it accepts a queued connection (`CheckConnectionQueue`) into a new actor of
     its `AcceptClass`, connected and in the listener's link mode, or with none into itself
     (its `RemoteSocket`), and raises `Accepted` on the one that took it;

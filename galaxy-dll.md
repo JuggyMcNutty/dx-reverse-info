@@ -342,18 +342,25 @@ animates.
 ## Music
 
 - **Changing the music.** When the player's `Transition` is set, the music
-  playing fades out: over 1 s for `MTRAN_Fade`, 5 s for `MTRAN_SlowFade`,
-  1/3 s for `MTRAN_FastFade`, at once for the others, plus twice `Latency`.
-  Then the player's `Song` starts at full volume at the order `SongSection`
-  (a different song is loaded first; the same one only jumps), with CD audio
-  too if `UseCDMusic`. Section 255 is silence: the music stops.
+  playing fades out, the fade falling by the time step to 0 over 1 s for
+  `MTRAN_Fade` (x 0.2: 5 s for `MTRAN_SlowFade`; x 3: 1/3 s for
+  `MTRAN_FastFade`), at once for the others, then silent for twice `Latency`
+  (`Update`, `0x10609510`). Then the player's `Song` starts at full volume at
+  the order `SongSection` (a different song is loaded first; the same one
+  only jumps), with CD audio too if `UseCDMusic`. Section 255 is silence: the
+  music stops.
 - **Where it is.** While no transition is waiting, each frame writes the
   order playing back into the player's `SongSection`. Deus Ex's dynamic music
   keeps it to "save our place in the ambient track"
   (`DeusExPlayer.UpdateDynamicMusic`): combat and conversation music come in
   with `MTRAN_FastFade` and `MTRAN_Fade`, and the ambient music comes back
   where it was (after a fight, 5 s later and with `MTRAN_SlowFade`).
-- **The sliders.** Music plays at `MusicVolume` × the fade (`SetVolumes`).
+- **The sliders.** Music plays at 127 x the fade x `MusicVolume` / 255
+  (`SetVolumes`, `0x106061b0`), which the mixer squares, 2v^2 / 32,768
+  (`0x106152df`-`0x10615327`): 0.36 of full at the default 153. A song's IT
+  header gives the loader its global volume, speed and tempo alone, not its
+  mix volume or separation, nor a sample's global volume (`0x10628990`); the
+  channels pan by a square-root table (`0x106153d4`).
 
 ## Reverb
 

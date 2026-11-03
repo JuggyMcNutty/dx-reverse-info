@@ -552,23 +552,28 @@ fields, after their properties (none):
 
   The C++ function takes a third distance, which the `exec` passes as 15 and
   nothing reads.
-- **`AIPickRandomDestination(minDist, maxDist, centralYaw, yawDistribution, centralPitch, pitchDistribution, tries, multiplier, dest)`**
-  (`0x103c7fc0`): up to `tries` (at least 1) directions from
-  `RandomBiasedRotation` (pitch unless walking), each tried with
+- **`AIPickRandomDestination(minDist, maxDist, centralYaw, yawDistribution,
+  centralPitch, pitchDistribution, tries, multiplier, dest)`** (`0x103c7fc0`):
+  up to `tries` (at least 1) directions from `RandomBiasedRotation` (pitch
+  unless walking or swimming out of water, `0x103c8041`), each tried with
   `AIDirectionReachable` from the pawn, the range divided by `multiplier` (held
-  to 0.0001..1). With a multiplier below 1, a direction found is tried again to
-  `multiplier` of the distance reached, so the pawn stops short of what it can
-  reach. `dest`: the spot, else the pawn's location.
-- **`ReachablePathnodes(BaseClass, NavPoint, FromPoint, distance, bUsePrunedPaths)`**
-  (`0x103c8bb0`): an iterator over up to 32 navigation points and their
-  distances, nearest first, from `GetPathnodeList` (`0x103c6490`); `BaseClass`
-  is read and not used. The start node: `FromPoint` if a navigation point; else
-  the pawn's `MoveTarget` if one the pawn overlaps; else the first in the
-  level's list the pawn overlaps. From it, the far end of each of its `Paths`
-  (with `bUsePrunedPaths`, `PrunedPaths` too) whose reach spec the pawn fits
-  (collision radius and height) and may use (its move flags), at the spec's
-  distance. With no start node: the nearest 32 nodes within 1,000 units of
-  `FromPoint`, or of the pawn, that the pawn can reach (`actorReachable`), at
+  to 0.0001..1). With a multiplier below 1, a direction found is tried again
+  with `multiplier` of the distance reached as both its least and its most
+  distance, the spot the first step past it (`0x103c8141`-`0x103c8148`), so the
+  pawn stops short of what it can reach. `dest`: the spot, else the pawn's
+  location.
+- **`ReachablePathnodes(BaseClass, NavPoint, FromPoint, distance,
+  bUsePrunedPaths)`** (`0x103c8bb0`): an iterator over up to 32 navigation
+  points and their distances, nearest first, from `GetPathnodeList`
+  (`0x103c6490`); `BaseClass` is read and not used. The start node: `FromPoint`
+  if a navigation point; else the pawn's `MoveTarget` if one the pawn overlaps;
+  else the first in the level's list the pawn overlaps. From it, the far end of
+  each of its `Paths` (with `bUsePrunedPaths`, `PrunedPaths` too) whose reach
+  spec the pawn fits (collision radius and height) and may use (its move flags),
+  at the spec's distance. With no start node: 32 nodes within 1,000 units of
+  `FromPoint`, or of the pawn (its square under 1e6), taken in the level's
+  order, once 32 are held each new one replacing the nearest held one farther
+  than it, then those the pawn can reach (`actorReachable`; `0x103c6490`), at
   the straight distance.
 - **`ComputePathnodeDistances(startActor)`** (`0x103c8910`): clears the paths
   (`clearPaths`), then sets each node's `visitedWeight` to its shortest
@@ -789,6 +794,14 @@ shape, Deus Ex's numbers):
   its eye (`FastLineCheck`) unless the caller knows; the spot fitted for the
   pawn's size (`FarMoveActor` as a test, and back); then `Reachable` within 15
   units.
+- **`ActorReachable`'s exec** (`execactorReachable`, `0x103bc1a0`): asked of a
+  navigation point by a pawn of radius 115 or less in a level with reach
+  specs, standing at a node (its `MoveTarget` first, then the level's list:
+  within max(radius, 48) across and its height up or down), true only for
+  that node or one `CanMoveTo` reaches from it, else false unless the pawn
+  flies, before any walk; a pawn at no node is walked (`actorReachable`).
+  Partly read: one of `NavReachConsole`'s Liberty Island answers, Gunther
+  Hermann's, it does not explain.
 - **`actorReachable(Other, bKnowVisible)`** (`0x103c0630`): a non-pawn no
   further than 800 units and not in a pain zone the pawn does not resist, a pawn
   not with its feet in one; not in water unless the pawn can swim; a line from
@@ -825,24 +838,27 @@ shape, Deus Ex's numbers):
   `flyReachable` would, its flag `R_WALK`.
 - **`walkMove(Delta, Hit, GoalActor, Threshold, bAdjust)`** (`0x103c3290`):
   `ULevel::MoveActor` as a test that pawns and decorations do not stop
-  (`bIgnorePawns`, [moving](#moving)), across only. Blocked: up by
-  `MaxStepHeight`, across the rest, down again; a wall too steep to step (normal
-  < 0.7) puts it back: 0. Then down to the floor within `MaxStepHeight` + 2:
-  none, or one too steep, is -1 (put back to where it dropped from, or with
-  `bAdjust` to its start). Moving less than the threshold is 0, the goal bumped
-  5, else 1.
+  (`bIgnorePawns`, [moving](#moving)), its `bIgnoreBases` 0, as `flyMove`'s and
+  `swimMove`'s, so what the pawn stands on blocks it by `IsBlockedBy`
+  (`0x103995f1`), across only. Blocked: up by `MaxStepHeight`, across the rest,
+  down again; a wall too steep to step (normal < 0.7) puts it back: 0. Then down
+  to the floor within `MaxStepHeight` + 2: none, or one too steep, is -1 (put
+  back to where it dropped from, or with `bAdjust` to its start). Moving less
+  than the threshold is 0, the goal bumped 5, else 1.
 - **`flyMove`** (`0x103c3900`) moves along the whole delta, stepping up over
   what blocks it; **`swimMove`** (`0x103c3ca0`) as well, and a move that leaves
   the water is taken back to the water's edge (`findWaterLine`, `0x103d3b10`,
   halving between the two points to within a unit) and is 0.
 - **`FindBestJump(Dest, Vel, Landing, bMovePawn)`** (`0x103c2f50`): the jump
-  `SuggestJumpVelocity` (`0x103c2c80`) gives, landed (`jumpLanding`). That jump:
-  the time in the air for its own upward speed to come down to the destination's
-  height, in steps of 0.05 s under the zone's gravity (-100 where it points up),
-  and the speed across that covers the distance in it, at most `GroundSpeed`. It
-  counts where it lands more than 8 units nearer, less than 350 below its start,
-  out of a pain zone it does not resist and out of water unless it can swim
-  ("Failing FBJ" logged for a fall of 350 or more).
+  `SuggestJumpVelocity` (`0x103c2c80`) gives, landed (`jumpLanding`,
+  `0x103c2530`: three `MoveActor` test moves, held off 2 units, passing pawns
+  and decorations that are not static). That jump: the time in the air for its
+  own upward speed to come down to the destination's height, in steps of 0.05 s
+  under the zone's gravity (-100 where it points up), and the speed across that
+  covers the distance in it, at most `GroundSpeed`. It counts where it lands
+  more than 8 units nearer, less than 350 below its start, out of a pain zone it
+  does not resist and out of water unless it can swim ("Failing FBJ" logged for
+  a fall of 350 or more).
 - **`AIDirectionReachable`**'s steps (above) are these moves, threshold 4.1, no
   goal: a walk's fall retried at `MaxStepHeight`, its range classified nearer,
   inside or beyond (`ClassifyDistanceSq`, `0x103c7f80`). `jumpReachable`
@@ -888,7 +904,8 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
   - a navigation-point goal that is one of the anchor's own reach specs, which
     the pawn fits and nothing it cannot open blocks (`CanMoveTo`, `0x103dad20`);
   - any goal within 800 units of the anchor, in its line of sight and
-    `pointReachable` with the pawn moved onto the anchor (`0x103da880`);
+    `pointReachable` with the pawn moved onto the anchor (`0x103da880`; the line
+    traced from the goal to the anchor, `0x103da93e`);
   - otherwise **`definePathsFor`** (`0x103daaa0`) marks the anchor's forward
     neighbours as the end points. The anchor's `cost` goes to 1,000,000. Each of
     its `Paths` (`0x360`), and once those end at a -1 its `PrunedPaths`
@@ -945,14 +962,14 @@ out puts it back where it stood (`FarMoveActor` as a test, `noCheck`).
 - **The second way** (`findPathToward` only; no goal node reaching the goal, no
   `bHunting`): the lists are gathered again, into what the first pass left,
   nothing emptied, and none of the pawn's own once anchored (the pawn's around
-  wherever the goal-node tries last moved it), `definePathsFor` marks the
-  forward neighbours of the pawn's nearest node, `findEndPoint` runs, and the
-  search runs from the pawn's first node, its distance its weight. A route
-  ending no farther from the goal than the pawn is taken, reversed
-  (`ReverseRouteFor`, `0x103dd810`) to run from the pawn's node; where the next
-  node after it is within 120 units of the pawn's height (or the pawn is
-  anchored at the first), in sight and `pointReachable`, the route starts there
-  instead. A route that is only the anchor is no path.
+  wherever the goal-node tries last moved it), `definePathsFor` and
+  `findEndPoint` mark the end points on the goal's list (`0x103db938`,
+  `0x103db94d`), and the search runs from the pawn's list's first node, its
+  distance its weight. A route ending no farther from the goal than the pawn is
+  taken, reversed (`ReverseRouteFor`, `0x103dd810`) to run from the pawn's node;
+  where the next node after it is within 120 units of the pawn's height (or the
+  pawn is anchored at the first), in sight and `pointReachable`, the route
+  starts there instead. A route that is only the anchor is no path.
 - **`HandleSpecial`** (`0x103c5de0`): the node's `SpecialHandling` answers. The
   same node: the route stands. None: no path. Another actor: for a pawn with
   `bCanDoSpecial` it becomes `SpecialGoal`, and the route is that actor where
@@ -1542,10 +1559,15 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
 
 - **`PlayBlendAnim(Sequence, Rate, TweenTime, BlendSlot)`** (`0x103e0d80`; by
   default Rate 1, TweenTime −1, slot 0): `PlayAnim` for a slot (its rate, last
-  frame and tween, without the main channel's notifies or loop). A slot outside
-  0..3, no mesh or a sequence not in it logs and does nothing.
+  frame and tween, without the main channel's notifies or loop): a one-frame
+  sequence tweened whole from frame -1 (`0x103e0efa`), a slot with no sequence
+  yet started at 0.001 untweened (`0x103e0e58`), a tween time of -1 at
+  `OldBlendAnimRate`; `SimBlendAnim` packed, the frame x 10,000, the rate x
+  10,000, the tween x 1,000 and the last frame x 10,000 as X, Y, Z and W
+  (`BlendFieldsConsole`). A slot outside 0..3, no mesh or a sequence not in it
+  logs and does nothing.
 - **`TweenBlendAnim(Sequence, Time, BlendSlot)`** (`0x103e1300`): `TweenAnim`
-  for a slot.
+  for a slot, its `SimBlendAnim` packed so too.
 - **The main animation's tick** (`AActor::Tick`, `0x103a1aa0`), before the
   slots: up to four passes over the tick's time, each from the frame it is at.
   A tween (a negative frame) moves up by `TweenRate`; reaching 0 with time to
@@ -1660,11 +1682,11 @@ value (package versions 61 and 62 hold the keys and the values as two lists).
   that fails to start is logged ("Audio initialization failed.") and dropped.
   With `-nosound` there is no audio subsystem at all: no sound, no music.
 - **`OPEN` and `START`** (`UGameEngine::Exec`, `0x1038a030`): with a viewport,
-  the URL becomes its next travel (partial for `OPEN`, absolute for `START`);
-  without one, the engine browses to it at once. A failure logs "Open failed: "
-  or "Start failed: " and the reason. There is no cheat check: this is what a
-  line forwarded to the running game runs
-  ([the receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+  the URL, the rest of the line, becomes its next travel (partial for `OPEN`,
+  absolute for `START`); without one, the engine browses to it at once. A
+  failure logs "Open failed: " or "Start failed: " and the reason. There is no
+  cheat check: this is what a line forwarded to the running game runs ([the
+  receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
 
 - **A client's travel** (`UGameEngine::SetClientTravel`, `0x1038fa10`): the
   player's viewport keeps the URL, its type and whether items travel; then
@@ -1700,7 +1722,10 @@ in `User.ini`). Where each goes depends on what the key did:
   `UPlayer::Exec`.
 - **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`,
   the exec functions of the game, the HUD, the player pawn and each item of its
-  inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest).
+  inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest). An
+  exec function's parameters are each imported by its property's `ImportText`, a
+  failure logging Core's `BadProperty` and making no call (`ScriptConsoleExec`,
+  Core.dll `0x10150860`).
 
 So a key bound to `Shot` (`DefUser.ini`'s `GreyStar`) takes a screenshot, and a
 viewport word is taken before an exec function of its name.
@@ -1750,18 +1775,20 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   actor's `bDeleteMe` ending them, and a state change counted (the frame's
   node changed by a `GotoState`), the fifth ending the tick's.
 
-- **The travel's export** (`0x10391740`, from `UGameEngine::Tick` for a
-  travel that takes the items): a list from the player, each entry's travel
-  properties read the class's own first, then each super's (its field
-  iterator, `0x10392830`), so `Actor`'s `Inventory` chain last; each object
-  a written entry names joins the list. An entry is written only when it is
-  no actor, or an actor with `bTravel` set (`0x103917fe`): one without is
-  neither written nor walked, a reference to it written but matching no
-  block at the arrival, which leaves the property as the spawn left it. A
-  value is written only where it differs from its class's default
-  (`0x10391894`). At the arrival the items are spawned in the order written
-  and given their events last to first, so an item only a property of the
-  player's names takes its turn after the chain's.
+- **The travel's export** (`0x10391740`, from `UGameEngine::Tick` for a travel
+  that takes the items): a list from the player, each entry's travel properties
+  read the class's own first, then each super's (its field iterator,
+  `0x10392830`), so `Actor`'s `Inventory` chain last; each object a written
+  entry names joins the list. An entry is written only when it is no actor, or
+  an actor with `bTravel` set (`0x103917fe`): one without is neither written nor
+  walked, a reference to it written but matching no block at the arrival, which
+  leaves the property as the spawn left it. A value is written only where it
+  differs from its class's default by the property's `Identical` (`0x10391894`),
+  a string's without case (`appStricmp`, Core.dll `0x101676f0`), so a string
+  apart from it in case alone is not written (`CaseTravelConsole`). At the
+  arrival the items are spawned in the order written and given their events last
+  to first, so an item only a property of the player's names takes its turn
+  after the chain's.
 - **The player's login** (`ULevel::SpawnPlayActor`, `0x10396bd0`), a save's
   load's too: the game's `Login`, its options the URL's (a save's
   `?load?loadonly?loadgame` and the default player's, so `GameInfo.Login`

@@ -112,9 +112,13 @@ is empty with no tag; `IsEOF` is true from then on.
 - **`DC`**, **`C`** and **`/C`** (`ParseColor`, `0x100028c0`): the three
   numbers after `=`, or black without one. `GetColor` (`0x100019c0`) gives
   them after `DC` or `C`, and after `/C` the colour the parser was made with:
-  black, as nothing sets it. The alpha is whatever byte was left there.
+  black, as nothing sets it; after any other token, black. `DC` sets the
+  colour `GetColor` gives, not the parser's default. The alpha is whatever
+  byte was left there.
 - **`G=name`** and **`F=name`**: a name, which `GetName` (`0x10001980`) gives
-  after a `NOTE`, `G`, `F` or `L`; `L` sets none.
+  after a `NOTE`, `G`, `F` or `L`, and None after any other token; `L` sets
+  none. The name is what follows the tag's first `=`, anywhere in it, None
+  without one (`ParseName`, `0x10002880`), `GOAL`'s too (`0x10001f80`).
 - **`/<`** and **`/>`**: a `<` and a `>` as text.
 - The rest (`TEXT`, `NP`, `JC`, `JL`, `JR`, `P`, `B`, `/B`, `U`, `/U`, `I`,
   `/I`, `L`) are only their tag.

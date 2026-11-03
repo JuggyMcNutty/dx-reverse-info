@@ -83,8 +83,9 @@ Window.dll's `WWizardDialog`: a stack of pages over one dialog (104).
   `RecoveryMode`), set as it opens (`WStartupWizard__OnInitDialog`, `0x1090C780`). It
   replaces the template's own caption, `IDC_WizardDialog` ("Deus Ex Setup").
 - **Its logo** is `..\Help\LogoSmall.bmp`, loaded into the static at the top left without
-  checking it loaded. The GOG install has no such file, so the band above the page stays
-  empty there; the SDK's `Help/` has it, 500×77.
+  checking it loaded: 500×77, in the GOG install (dated 2021-11-26) and Steam's as in the
+  SDK's `Help/`, so the band above the page shows it, and stays empty only on an install
+  without it.
 - **Its icon** is `DeusEx.exe`'s icon group 128, the executable's only one: a 32×32 of 16
   and one of 256 colours, and a 16×16 of 16, plain DIBs with their masks, every pixel in.
 - **Four buttons** along the bottom, Back, Next, Finish and Cancel, each shown only while

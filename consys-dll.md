@@ -183,8 +183,9 @@ reaches it, it jumps to one of them.
 - **`GetRandomLabel()`** (`0x1000a270`):
   - with `bCycleEvents` off, a random label;
   - with it on, the labels in turn, from `cycleIndex`;
-  - with `bCycleOnce` too, the last label once it is reached, from then on;
-  - with `bCycleRandom` instead, random once every label has had its turn.
+  - with `bCycleOnce` too, the last label once it is reached, from then on, whether
+    `bCycleRandom` is set or not, `bLabelsCycled` never set (`0x1000a270`);
+  - with `bCycleRandom` alone, random once every label has had its turn.
 - **`GetLabel(i)`** (`0x1000a110`) is empty out of range.
   **`GetLabelCount()`** (`0x1000a0c0`) is the number of labels, which are
   serialized after the event's properties (`0x1000a090`).

@@ -189,10 +189,11 @@ are `exec` exports.
   under a still pointer waits for one. A script's `SetCursorPos(x, y)`
   (`0x1004cca0`), in its window's coordinates, moves the pointer as a move
   does.
-- **`LockMouse(bLockMove, bLockButton)`** (`0x1003a290`): with movement
-  locked the root takes moves and the pointer stays where it is, but for a
-  script's `SetCursorPos`; with buttons locked the UI takes and ignores
-  them. The Customize Keys screen locks movement while it waits for a key.
+- **`LockMouse(bLockMove, bLockButton)`** (`0x1003a290`; both true when left
+  out, `0x1003ce30`): with movement locked the root takes moves and the
+  pointer stays where it is, but for a script's `SetCursorPos`; with buttons
+  locked the UI takes and ignores them. The Customize Keys screen locks
+  movement while it waits for a key.
 
 ### Showing and hiding
 

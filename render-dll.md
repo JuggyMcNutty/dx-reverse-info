@@ -88,36 +88,37 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
     invisible, and besides an invisible zone portal (`PF_Portal` and
     `PF_Invisible`) and a mirror (`PF_Mirrored`).
 - **`DrawFrame`** draws the frame's three lists of surfaces, each surface
-  with its decals, in turn, then the coronas. `OccludeBsp` puts each
-  surface it keeps at the head of one: a mirror's or a portal's in the
-  first; one that is none of invisible, masked, translucent or modulated in
-  the second; the rest in the third. The first is drawn in reverse, the
-  second sorted by its key, the third as it stands: back to front. The
-  key (`0x10b1976b`) is an int: the zone actor's object index × 2^26, plus
-  the surface's own texture's (not its animation's frame), plus that
-  texture's palette's × 2^12. The sort (`0x10b1a45f`) is `Render.dll`'s own
-  copy of the C library's quicksort (`0x10b20570`: the middle element the
-  pivot, a run of 8 or fewer by selection), ascending, which keeps no order
-  among equal keys. So which of two opaque surfaces that overlap at one
-  depth shows, at the device's less-equal depth test
-  ([`D3DDrv`](d3ddrv-dll.md#the-binary)), follows the indices the game's
-  loads and frees gave its objects. `FDynamicSprite`'s leaf test puts each
-  sprite at the head of the frame's list as its first part shows, so the
-  sprites too go back to front. On a render device that is not span-based
-  (`SpanBased` off, every hardware one) the sprites whose actor is not
-  `STY_Translucent` follow the second list, and the translucent ones the
-  third: glass blends over a mesh behind it. A span-based one (the
-  software renderer) draws them all after the third. A surface's decals
-  are drawn only while the client's `Decals` is on and the render device is
-  not span-based. A surface goes to the device with a detail
-  texture only when its texture's current frame (`AnimCurrent`) has one, it is
-  no portal, and the client's `TextureDetail` is High, the client read through
-  the static `UBitmap::__Client`, which a `UClient`'s constructor sets and its
-  `Destroy` clears (`Engine.dll`). The texture goes with the surface's pan:
-  `PanU` and `PanV`, the zone's auto-pan for `PF_AutoUPan` and `PF_AutoVPan`, a
-  wave of 8 and 4 units on the level's time for `PF_SmallWavy`. Its detail and
-  macro textures go as `UTexture::Lock` leaves them: not panned, at their own
-  scale (`DrawScale`, times the mip's shrink).
+  with its decals, in turn, then the coronas. `OccludeBsp` puts each surface
+  it keeps at the head of one: a mirror's or a portal's in the first; one
+  that is none of invisible, masked, translucent or modulated in the second;
+  the rest in the third. The first is drawn in reverse, the second sorted by
+  its key, the third as it stands: back to front. The key (`0x10b1976b`) is
+  an int: the zone actor's object index × 2^26, plus the surface's own
+  texture's (not its animation's frame), plus that texture's palette's ×
+  2^12. The sort (`0x10b1a45f`) is `Render.dll`'s own copy of the C library's
+  quicksort (`0x10b20570`: the middle element the pivot, a run of 8 or fewer
+  by selection), ascending, which keeps no order among equal keys. So which
+  of two opaque surfaces that overlap at one depth shows, at the device's
+  less-equal depth test ([`D3DDrv`](d3ddrv-dll.md#the-binary)), follows the
+  indices the game's loads and frees gave its objects. `FDynamicSprite`'s
+  leaf test puts each sprite at the head of the frame's list as its first
+  part shows, so the sprites too go back to front. On a render device that is
+  not span-based (`SpanBased` off, every hardware one) the sprites whose
+  actor is not `STY_Translucent` follow the second list, and the translucent
+  ones the third: glass blends over a mesh behind it. A span-based one (the
+  software renderer) draws them all after the third. A surface's decals are
+  drawn only while the client's `Decals` is on and the render device is not
+  span-based. A surface goes to the device with a detail texture only when
+  its texture's current frame (`AnimCurrent`) has one, it is no portal, and
+  the client's `TextureDetail` is High, the client read through the static
+  `UBitmap::__Client`, which a `UClient`'s constructor sets and its `Destroy`
+  clears (`Engine.dll`). The texture goes with the surface's pan: `PanU` and
+  `PanV`, the zone's auto-pan for `PF_AutoUPan` and `PF_AutoVPan` (its pan
+  speed x the level's `TimeSeconds` x 35 texels, wrapping at 1,024: x 256
+  made an int, its low 18 bits, / 256, `0x10b1a628`-`0x10b1a652`, V
+  `0x10b1a6f6`), a wave of 8 and 4 units on the level's time for
+  `PF_SmallWavy`. Its detail and macro textures go as `UTexture::Lock` leaves
+  them: not panned, at their own scale (`DrawScale`, times the mip's shrink).
 - **The viewer's `Sprite`**, when a player views with one set (the Matrix
   cheat's), stands in for every surface's texture current frame, the
   Sprite's own current frame then giving the detail and macro textures; for
@@ -579,9 +580,10 @@ Each light it takes gets a record for the draw (`SetupLight`,
   shimmer).
 
 The plain shape, `LE_None`'s, is also that of the torch and fire wavers, the
-watery shimmer, warp, the omni bump map and the unused slot. The cloud cast
-has it too: its function (`0x10b04380`) only calls `SpatialPlain`, though the
-table counts its shape as changing.
+watery shimmer, warp and the unused slot; an `LE_OmniBumpMap` light lights no
+surface ([light maps](#light-maps)). The cloud cast has it too: its function
+(`0x10b04380`) only calls `SpatialPlain`, though the table counts its shape
+as changing.
 
 - **The colour** is Engine.dll's `FGetHSV` (`0x103ec8d0`) at full value:
   - the value makes a brightness `min(1, 0.7 b / (√b + 0.01))`,
@@ -665,10 +667,12 @@ palette's last entry never shows (`0x10b05d40`).
   | *animated* | any other `bStatic` or `bNoDelete` light |
 
   In that order: `bDynamicLight` (bit 0x800 of the actor's first flags) is
-  tested first, so a static light that has it is a moving one. A light with
-  no type or no brightness is none; lighting an actor (its owner given),
-  every light is a moving one, but the actor itself.
-  With the client's `NoDynamicLights` on (an ini setting, off by default),
+  tested first, so a static light that has it is a moving one, but for an
+  `LE_OmniBumpMap` light with no owner, tested before it, kind 3, which
+  `SetupForSurf` merges into no map (`0x10b08b7a`-`0x10b08b85`): it lights no
+  surface. A light with no type or no brightness is none; lighting an actor
+  (its owner given), every light is a moving one, but the actor itself. With
+  the client's `NoDynamicLights` on (an ini setting, off by default),
   animated lights count as static and moving ones are left out.
 - **The static map:** the zone's ambient light, and each static light through
   its shadow bits (smoothed as they are unpacked, `0x10b02650`). The zone is the
@@ -704,12 +708,16 @@ palette's last entry never shows (`0x10b05d40`).
   - One whose shape changes keeps its unpacked shadows there and has its
     shape run again.
   - A moving light is run without shadows.
-  - As a light is added (`MergeLight`, `0x10b03040`), a waver dims each
-    texel by a random amount of up to a: 5% for a torch waver, 20% for a
-    fire waver, 40% for a watery shimmer. Its illumination i becomes
-    `i × (1 − a + a × r) − 0.5`, cut down. The draws r are taken in turn
-    from 0 over the texels of the light's rectangle on the map, row by row,
-    round a table of 256.
+  - As a light is added (`MergeLight`, `0x10b03040`), a waver dims each texel
+    by a random amount of up to a: 5% for a torch waver, 20% for a fire
+    waver, 40% for a watery shimmer. Its illumination i becomes `i × (1 − a +
+    a × r) − 0.5`, cut down. The draws r are taken in turn from 0 over the
+    texels of the light's rectangle on the map, row by row, round a table of
+    256. **The light's rectangle** (`SetupLight`, `0x10b066a2`-`0x10b06865`):
+    the texels within |axis| x sqrt(max(0, 1.05 r^2 - h^2)) of the light's
+    foot on the surface's plane, h its height over it, held to the map; every
+    shape runs over those alone, so a cylinder light high over a surface
+    lights a square.
 - **The random tables** (`TickRandoms`, `0x10b13080`, each frame from the
   level's time, at the end of `PreRender`):
   - 256 fresh draws: the flicker's, the torch's and fire's;
@@ -745,16 +753,16 @@ palette's last entry never shows (`0x10b05d40`).
   - **The spotlight's** (`SpatialSpotlight`, `0x10b04f80`): the same times
     `((cos − c) ÷ (1 − c))²` inside its cone, `c = 1 − LightCone ÷ 256`,
     rounded down.
-  - **Each effect's** (a table of a function, whether the shape changes
-    each frame, and whether it wavers, at `0x10b2a0f0`): the plain shape for
-    `LE_None`, the wavers, `LE_Warp`, `LE_OmniBumpMap` and `LE_Unused`; the
-    spotlight's for `LE_StaticSpot` too; `LE_CloudCast` the plain shape
-    again (`0x10b04380`), but counted as changing. The others, each within
-    the light's radius (`d < r`) but the cylinder, rounded down (half a unit
-    taken off, then rounded) and the waves', shock's, searchlight's,
-    rotor's, disco's and interference's on the plain shape; (dx, dy, dz) the
-    texel less the light, `t` the level's `TimeSeconds`, the angles from the
-    sine table:
+  - **Each effect's** (a table of a function, whether the shape changes each
+    frame, and whether it wavers, at `0x10b2a0f0`): the plain shape for
+    `LE_None`, the wavers, `LE_Warp` and `LE_Unused` (`LE_OmniBumpMap`'s,
+    which no light map takes); the spotlight's for `LE_StaticSpot` too;
+    `LE_CloudCast` the plain shape again (`0x10b04380`), but counted as
+    changing. The others, each within the light's radius (`d < r`) but the
+    cylinder, rounded down (half a unit taken off, then rounded) and the
+    waves', shock's, searchlight's, rotor's, disco's and interference's on
+    the plain shape; (dx, dy, dz) the texel less the light, `t` the level's
+    `TimeSeconds`, the angles from the sine table:
     - **Cylinder** (`0x10b04a80`): the shadow byte ×
       `(1 − (dx² + dy²) ÷ r²)`, held at 0: a fall-off round the light's
       vertical axis, with no angle and no height.

@@ -174,17 +174,18 @@ Its only users are `DeusExPlayer`'s debug console commands.
 
 - **A tagged property the class cannot take**
   (`UStruct::SerializeTaggedProperties`, `0x10126730`) is logged and its bytes
-  skipped, the object loading on: a name no property has
-  (`Property %s of %s not found`), another type
-  (`Type mismatch in %s of %s: file %i, class %i`), an element past the static
-  array (`Array bounds in %s of %s: %i/%i`), another struct
-  (`Property %s of %s struct type mismatch %s/%s`), a native or, on a persistent
-  archive, transient property (`Property %s of %s is not serialiable`, sic);
-  each skip logs `Skipping %i bytes of type %i`, but for `XLevel`. A struct's
-  binary (`UStruct::SerializeBin`, `0x10126610`) is every member of it and the
-  structs it extends, native members left out and transient ones on a persistent
-  archive, every element of a static array member; a dynamic array's
-  (`UArrayProperty::SerializeItem`, `0x10168520`) its count then each element's.
+  skipped, the object loading on: a name no property has (`Property %s of %s not
+  found`), another type (`Type mismatch in %s of %s: file %i, class %i`), an
+  element past the static array (`Array bounds in %s of %s: %i/%i`), another
+  struct (`Property %s of %s struct type mismatch %s/%s`), a native or, on a
+  persistent archive, transient property (`Property %s of %s is not
+  serialiable`, sic); each skip logs `Skipping %i bytes of type %i`, but for
+  `XLevel`. A struct's binary (`UStruct::SerializeBin`, `0x10126610`) is every
+  member of it, its own first, then those of the structs it extends (no Plane
+  case in `SerializeItem`, `0x101691b0`: a Plane's W, X, Y, Z), native members
+  left out and transient ones on a persistent archive, every element of a static
+  array member; a dynamic array's (`UArrayProperty::SerializeItem`,
+  `0x10168520`) its count then each element's.
 
 ## Garbage collection
 
@@ -289,18 +290,20 @@ it walks every property instead and calls `Modify` before each change.
     the first character alone. A name's import (`UNameProperty::ImportText`)
     is its first token, dots not allowed: `-7` names `-`, `a b` names `a`,
     `"a b"` names `a b`.
-  - Of a key given twice in a section the last is read, even empty: a user
-    ini's second, empty `ngWorldSecret=` beats a first with a value.
+  - Of a key given twice in a section the last is read, even empty: a user ini's
+    second, empty `ngWorldSecret=` beats a first with a value. A line
+    (`FConfigFile::Read`, DeusEx.exe `0x10916780`) is its key up to the first
+    `=`, nothing trimmed, a value's quotes taken off as it is read.
   - The file's bytes (`appLoadFileToString`, `0x101488c0`): a file of even
     size beginning `FF FE` is UTF-16 little-endian, one beginning `FE FF`
     big-endian, each unit a character and the byte-order mark dropped; any
     other file is read byte by byte, each byte a character (Latin-1). So an
     ini Notepad saved as "Unicode" reads as the 8-bit one does.
-  - A file written (`appSaveStringToFile`, `0x10148c40`): a byte a
-    character, as `ToAnsi` narrows one, when every character is below
-    0x100; else UTF-16 little-endian, the byte-order mark `FF FE` first. So
-    an ini or `.int` holding a character past Latin-1 is saved as UTF-16,
-    every other as 8-bit.
+  - A file written (`appSaveStringToFile`, `0x10148c40`): a byte a character, as
+    `ToAnsi` narrows one, when every character is below 0x100; else UTF-16
+    little-endian, the byte-order mark `FF FE` first. So an ini or `.int`
+    holding a character past Latin-1 is saved as UTF-16, every other as 8-bit;
+    an ini is written whole, CR LF.
 - **`StaticSaveConfig()`** (`0x1013e7c0`): `SaveConfig` of the context's
   class's defaults (`UClass::Defaults`), from an object's call as from the
   class's; the object's own values are never written.
@@ -321,12 +324,13 @@ it walks every property instead and calls `Modify` before each change.
   copied: the input objects only read their bindings from `User.ini` again,
   and the player's bindings stay.
 - **`GetPropertyText(PropName)` and `SetPropertyText(PropName, Value)`**
-  (`0x1013e0b0`, `0x1013e320`): a property of the object's class by its
-  name, read only when it is public (a script's `private` one is not), its
-  first element as `GET` writes it, and set only when it is public and not
-  const; any other name reads empty and sets nothing. The server's query
-  answerer (`IpServer`'s `UdpServerQuery`) reads the level's, the game's
-  and the players' properties a remote names through it.
+  (`0x1013e0b0`, `0x1013e320`): a property of the object's class by its name,
+  the class's own before its base's, so one a subclass names again is the
+  subclass's (`0x10143fd0`), read only when it is public (a script's `private`
+  one is not), its first element as `GET` writes it, and set only when it is
+  public and not const; any other name reads empty and sets nothing. The
+  server's query answerer (`IpServer`'s `UdpServerQuery`) reads the level's, the
+  game's and the players' properties a remote names through it.
 - **The console's `GET` and `SET`** (`UObject::StaticExec`, `0x10153110`),
   with which the game's menus read and write their settings:
   - The class is found by its name in any package loaded (the menus name
@@ -379,7 +383,11 @@ by each property class's `ImportText` and `ExportTextItem`:
   **A class** (`UClassProperty::ImportText`, `0x10167110`): the object's import,
   then None unless a class deriving from the metaclass; out as an object's.
 - **A bool** (`0x10166380`): `1`, `True` or the localized true word; `0`,
-  `False` or the localized false; anything else fails, the value kept.
+  `False` or the localized false, as its first token (the token reader, above),
+  so `True,`, `1.0` and a quoted `"True"` are true; any other fails, the value
+  kept. **An enum** (`0x10165aa0`): its first token, by the enum's names alone,
+  never a number. **An int** (`0x10165f00`): from a `-` or a digit alone, so
+  `+5` sets nothing.
 - **`SaveConfig`** (`UObject::SaveConfig`, `0x10151540`): for each property with
   the flags asked, under the class's path as its section (the declaring class's
   for a `globalconfig` one, the object's name for a per-object config class): a
@@ -583,15 +591,17 @@ How the original runs UnrealScript.
   a 64-bit mask, `ProbeMask`, with a bit for each. An event of a probe, or a
   script call of a function named after one, runs only with its bit set.
   Nothing else is checked: any other call runs.
-- **The mask is set at every `UObject::GotoState`** (`0x1012e8f0`), even
-  into the state the object is in: the probes that the state or the class
-  has a function for, less those the state `ignores`. Into another state it
-  first sends `EndState` under `RF_InEndState` (`0x2000`; not from within
-  one), `RF_StateChanged` (`0x1000`) cleared before and tested after: a
-  `GotoState` finished during it sets the flag, and this one then returns
-  preempted (2), its state and label never taken. The state set, `BeginState`
-  the same way. A finished `GotoState` sets `RF_StateChanged` and returns 1;
-  the script's goes to its label only then.
+- **The mask is set at every `UObject::GotoState`** (`0x1012e8f0`), even into
+  the state the object is in: the probes that the state or the class has a
+  function for, less those the state `ignores`. Into another state it first
+  sends `EndState` under `RF_InEndState` (`0x2000`; not from within one),
+  `RF_StateChanged` (`0x1000`) cleared before and tested after: a `GotoState`
+  finished during it sets the flag, and this one then returns preempted (2), its
+  state and label never taken. The state set, `BeginState` the same way. A
+  finished `GotoState` sets `RF_StateChanged` and returns 1; the script's goes
+  to its label only then. One to no state, or to a state the class has not,
+  returns 0 without the flag (`0x1012e8f0`), so made during an `EndState` it
+  preempts nothing and the outer one goes on into its state.
 - **A script's `GotoState`** (`execGotoState`, `0x1013dd00`) calls it only
   for another state than the object's (one left out is the object's own),
   then goes to the label if the change was not preempted by a `GotoState` in
@@ -633,9 +643,9 @@ The rest are UE1's own. The details:
   −5691 prints as 59845), a bool the localized `True` or `False`, an object
   its path name or `None` (`0x10131f00`).
 - **From a string:**
-  - a bool is true for `True`, false for `False` (in any case, or the
-    localized word), and otherwise true for a number other than 0
-    (`0x10132490`);
+  - a bool is true for `True`, false for `False` (in any case, or the localized
+    word), and otherwise true for an int other than 0, by `appAtoi`
+    (`0x10132490`), so `0.5`, `-0.5` and `0x1` are false;
   - a vector or rotator reads a number at the start, after the first comma
     and after the second; a part that is missing is 0 (`0x10136940`,
     `0x10136b10`).

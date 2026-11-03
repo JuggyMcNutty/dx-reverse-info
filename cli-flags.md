@@ -8,7 +8,7 @@ Three parsers, **not** equivalent:
 | Helper | Form | Matching |
 |---|---|---|
 | `ParseParam(cmdline, "X")` | `-X` or `/X` | flag present: the name anywhere after the line's first character with `-` or `/` just before it (Core.dll `0x10146d4f`, `0x10146d55`); nothing after it is checked, so `-log` also matches `-LOG=<file>` |
-| `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found as `appStrfind` finds it (`0x10146bee`), no `-` needed, so `LOG=` is not found in `ABSLOG=`; a value in quotes keeps its spaces |
+| `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found as `appStrfind` finds it (`0x10146bee`), no `-` needed, so `LOG=` is not found in `ABSLOG=`; a value in quotes keeps its spaces, one not in quotes ends at a space, tab, CR, LF or comma, or at its buffer's length (`0x10146bc0`, `0x10146c96`) |
 | `appStrfind(cmdline, "X")` | anywhere | **a substring in any case, but not straight after an ASCII letter or digit (Core.dll `0x10145ca0`); no `-` required** |
 
 The `appStrfind` cases are the surprising ones: `readini` and the four single-instance
