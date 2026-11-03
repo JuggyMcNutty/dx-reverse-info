@@ -1223,13 +1223,19 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     inside it, where the same sums at 53 or 64 bits give -9.699429,
     -0.957479, -0.310715 and -0.999927; its side normal of 0.146314 comes
     out at any of them.
-- **`FastTrace(TraceEnd, TraceStart)`** (`0x103e35e0`): whether the line is
-  clear of the level's BSP, the segment itself and nothing past it
-  (`UModel::FastLineCheck`, `0x103f3280`; its walk `0x103f33a0` lets a line
-  through only a node flagged `NF_NotCsg`, not one flagged as not blocking
-  visibility, and takes a node's side from the sign of the distance, so the
-  line is blocked by any solid leaf it touches, its start's included); other
-  actors are not asked. With a client the BSP holds the movers' polygons
+- **`FastTrace(TraceEnd, TraceStart)`** (`0x103e35e0`): whether the line
+  from `TraceStart` to `TraceEnd` is clear of the level's BSP, the segment
+  itself and nothing past it (`UModel::FastLineCheck`, `0x103f3280`; its walk
+  `0x103f33a0` lets a line through only a node flagged `NF_NotCsg`, not one
+  flagged as not blocking visibility, and takes a node's side from the sign
+  of the distance, so the line is blocked by any solid leaf it touches, its
+  start's included). Each end's distance from a node's plane, summed z, y, x
+  less the plane's W, is stored as a float before its sign is read; a line
+  across a plane is walked on its end's side first, from the end back to the
+  crossing (the start moved toward the end by the start's distance over the
+  two distances' difference, each axis a float), then on its start's. A
+  model with no nodes answers its `RootOutside`. Other actors are not
+  asked. With a client the BSP holds the movers' polygons
   too (below), so a closed door stops it; a dedicated server's holds none.
   The same check answers
   `LineOfSightTo`, `CanHear`, `pointReachable`, the path searches, network
@@ -1326,10 +1332,17 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   `ChildActors`, `TouchingActors`, `RadiusActors`, `VisibleActors`,
   `ZoneActors` `0x103e5960`, `CycleActors`): a None class is Actor, and the
   actors walked are the caller's own level's (`XLevel`).
-- **`VisibleActors(BaseClass, Actor, Radius, Loc)`** (`0x103e5260`): each actor
-  in the level's list, not hidden, of the class, whose location lies strictly
-  within `Radius` of `Loc` (a radius of 0, the default: no limit), with
-  `FastLineCheck` clear from `Loc` to it.
+- **`VisibleActors(BaseClass, Actor, Radius, Loc)`** (`0x103e5260`; `Loc` by
+  default the caller's own place): each actor in the level's list, from its
+  first slot, not hidden (`bHidden` alone, `0x103e5394`: a destroyed actor's
+  slot is None already), of the class, whose location lies strictly within
+  `Radius` of `Loc` -- its squared distance, summed z, y, x on the x87, under
+  `Radius` squared (`0x103e53d0`), so a negative radius reaches as far as a
+  positive one; a radius of 0, the default, no limit --, with
+  `FastLineCheck` clear from `Loc` to it (`0x103e544f`, the actor's place the
+  line's end). The caller is not passed over: a player's call finds the
+  player where it stands. To an actor at `Loc` the line has no length, and
+  is clear unless `Loc` lies in solid.
 - **`VisibleCollidingActors(BaseClass, Actor, Radius, Loc, bIgnoreHidden)`**
   (`0x103e55b0`): each actor the collision hash holds (movers too) whose
   location lies within `Radius` of `Loc` (`FCollisionHash::ActorRadiusCheck`,
