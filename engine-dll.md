@@ -1799,7 +1799,16 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   ticking once more. A frame that takes no travel ticks the pending join
   ([joining](network.md#joining)), then the client draws a viewport
   ([`WinDrv.dll`](windrv-dll.md#drawing-a-frame)); then the frame is
-  counted.
+  counted. When the join's tick loads its map (`LoadMap`, `0x10390f1e`)
+  without an error, and the server's is no single player's game
+  (`LONE=0`), the frame draws twice: the game's level and the Entry level
+  both given the level action Connecting (`0x10390ff8`, `0x1039105e`), the
+  client draws a viewport there and then (`0x1039106e`), the join still
+  pending and the viewport's player the one just logged in, then the
+  `JOIN` is sent (`SendJoin`, `0x1040c350`), the pending level is let go
+  of its drivers and deleted (`0x103910a3`), and the frame's own draw
+  follows (`0x1039117b`)
+  ([what the player sees](network.md#what-the-player-sees-of-a-join)).
 - **Detail by frame rate**: the game engine's tick (`UGameEngine::Tick`,
   `0x1038fe90`) clears the level's `bDropDetail` and `bAggressiveLOD` before
   each level tick when there is a client, and nothing in this build sets
@@ -1943,7 +1952,10 @@ and it stays on the screen until the next frame is drawn.
   ([the map load's collection](#the-map-loads-collection)) and the new one is
   loaded.
 - **Once the new level's players are in** (each viewport's: in the new level,
-  or for a net client's in the Entry level) and its brush tracker is made
+  or for a net client's in the Entry level; each logged in afresh by the
+  level's `SpawnPlayActor`, `MatchViewportsToActors`, `0x1038bf10`, nothing
+  of the player destroyed carried over, its progress lines and times
+  included) and its brush tracker is made
   (none for Entry): the same `SetViewport` again (`0x1038dfc6`), then each
   viewport's input reset and its render device flushed, a precache allowed.
 - **`PaintProgress`** (`0x10388740`): the first viewport's player's

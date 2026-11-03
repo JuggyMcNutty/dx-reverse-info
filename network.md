@@ -99,7 +99,8 @@ The control channel carries lines of text: the server's side is
 5. **Client:** each package it lacks downloaded, one at a time
    ([downloads](#downloads)). With all in hand, the map loaded (below), then
    `HAVE GUID= GEN=` for each package whose generation here differs from the
-   server's `GEN=` (the server counts only what the client's has), and `JOIN`,
+   server's `GEN=` (the server counts only what the client's has), one frame
+   drawn ([what the player sees](#what-the-player-sees-of-a-join)), and `JOIN`,
    not in a single player's game (`LONE=1`). `NETSPEED` again whenever the
    player sets one (the server takes one of at least 500, held to
    `MaxClientRate`). The rate is the connection's `CurrentNetSpeed`, which the
@@ -214,9 +215,17 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
 `CANCEL` for F10.
 
 - **Connecting.** While a join is pending, each frame drawn
-  (`UpdateConnectingMessage`, `0x10388900`, from `UGameEngine::Draw`): when no
-  progress shows, `Connecting (F10 Cancels):` and `deusex://<host>/<map>`
-  (`ConnectingText`, `ConnectingURL`) for 60 s.
+  (`UpdateConnectingMessage`, `0x10388900`, from `UGameEngine::Draw`): when
+  the first viewport's player shows no progress, its `ProgressTimeOut` behind
+  its own level's time (`0x1038895f`: Entry's for a player in the Entry
+  level), `Connecting (F10 Cancels):` and `deusex://<host>/<map>`
+  (`ConnectingText`, `ConnectingURL`) for 60 s. The frame that loads the
+  join's map draws once more before its `JOIN` goes, the join still pending
+  ([the game engine's frame](engine-dll.md#a-levels-tick)): so the player
+  just logged in to the Entry level to wait for its pawn, a new one with no
+  progress of its own, is given the lines there, and the console's tick in
+  the same draw opens `MultiplayerMessageWin` for them; they stay through
+  the wait, the pending level gone.
 - **Failing.** A pending level with an error (`UGameEngine::Tick`,
   `0x1038fe90`): `Connection failed` and the error for 4 s, logged
   `Pending connect to '<url>' failed; <error>`, and the pending level deleted;
