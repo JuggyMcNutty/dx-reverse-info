@@ -1585,7 +1585,14 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   pass crossed `AnimLast` from below (a `FinishAnim` waiting on it released).
   A non-looping one stops at `AnimLast` with `AnimRate` 0, `bAnimFinished` and
   `AnimEnd` (a weapon's `SimAnim` packed), and the next pass ends on the rate.
-  A simulated proxy pawn's animation sends no `AnimEnd`. So a long tick through
+  A pawn (`bIsPawn`, its class a `Pawn`) whose own `Role` is
+  `ROLE_SimulatedProxy`, on a client another player or an NPC, is sent no
+  `AnimEnd` at any of the three, the test made once before the passes
+  (`0x103a1b8b`-`0x103a1bed`, its sends passed over at `0x103a1e34`,
+  `0x103a1e88` and `0x103a1f6c`): its frame moves, stops, finishes and wraps
+  as any other's, its notifies called (DXEngine's `AnimEndServeConsole` with
+  `AnimEndJoinConsole`: the client's pawn 0 `AnimEnd`s to the server's 11,
+  its 5 wraps and 6 stops the server's). So a long tick through
   a fast loop plays four loops of it and sends four `AnimEnd`s, the rest of the
   time unplayed.
 - **The tick.** The slots move after the main animation, as it moves that: a
