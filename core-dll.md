@@ -650,6 +650,12 @@ The rest are UE1's own. The details:
   - a bool is true for `True`, false for `False` (in any case, or the localized
     word), and otherwise true for an int other than 0, by `appAtoi`
     (`0x10132490`), so `0.5`, `-0.5` and `0x1` are false;
+  - an int, a byte (the int's low 8 bits: `300` is 44) and a rotator's three
+    angles are `appAtoi`'s too (`0x10132320`, `0x101321b0`, `0x10136b10`).
+    `appAtoi` (`0x101235b0`) is MSVCRT's `_wtoi`: blanks and a sign first,
+    then the digits up to the first that is not one, 0 without any; under
+    Proton a number past an int's range is held to its ends (`2147483648` is
+    2147483647, `-2147483649` is −2147483648: DXEngine's `SweepVmConsole`);
   - a vector or rotator reads a number at the start, after the first comma
     and after the second; a part that is missing is 0 (`0x10136940`,
     `0x10136b10`).
