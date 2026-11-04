@@ -345,10 +345,29 @@ animates.
   playing fades out, the fade falling by the time step to 0 over 1 s for
   `MTRAN_Fade` (x 0.2: 5 s for `MTRAN_SlowFade`; x 3: 1/3 s for
   `MTRAN_FastFade`), at once for the others, then silent for twice `Latency`
-  (`Update`, `0x10609510`). Then the player's `Song` starts at full volume at
-  the order `SongSection` (a different song is loaded first; the same one
-  only jumps), with CD audio too if `UseCDMusic`. Section 255 is silence: the
-  music stops.
+  (`Update`, `0x10609510`): the change comes at the first update the fade
+  has fallen past -2 x `Latency` / 1,000 at its pace, the transition read
+  again at each, so one changed mid-way goes on from the fade as it stands.
+  With nothing playing, or section 255, the change is at once. Then the
+  player's `Song` starts at full volume at the order `SongSection` (a
+  different song is loaded first; the same one only jumps, after the same
+  fade, a section of its own too), with CD audio too if `UseCDMusic`.
+  Section 255 is silence: the music stops.
+- **The change is one step.** `Update` holds Galaxy's lock from its start to
+  its end, and the output's timer takes it to mix (`0x106142a0`): the full
+  volume is set and the song changed in it -- the old one unloaded, the new
+  one loaded, the music stopped, its voices cleared, started again and set
+  to the order before `SongSection` (`glxControlMusic`, `0x1060d0e0`), its
+  next step `SongSection` -- so no mixed sound has the old song at the new
+  volume.
+- **A song's start.** Its load leaves every music voice centred and the
+  sequencer's speed at its reset's 48 ticks a row (`0x1060e850`); the song's
+  own speed and tempo and its channels' pans are set only as the
+  sequencer's order count turns from 255 to order 0 (`0x10615710`), so a
+  song loaded straight into another order plays centred, and slowly, until
+  it reaches order 0 or a speed command (DXEngine's `MusicConsole`: its pair
+  of a hard left and a hard right tone, so loaded, both centred, 0 dB apart
+  in each channel; after order 0, the right tone 21 dB under in the left).
 - **A song that will not load** is a line in the log, Galaxy's `%s failed:
   %i` with the call and its code, `glxLoadMusic(&Mem, GLX_LOADFROMMEMORY )
   failed: <code>` (`0x1060a77e`-`0x1060a7a2`, event `0x2ff`), and the change
@@ -359,12 +378,85 @@ animates.
   (`DeusExPlayer.UpdateDynamicMusic`): combat and conversation music come in
   with `MTRAN_FastFade` and `MTRAN_Fade`, and the ambient music comes back
   where it was (after a fight, 5 s later and with `MTRAN_SlowFade`).
-- **The sliders.** Music plays at 127 x the fade x `MusicVolume` / 255
-  (`SetVolumes`, `0x106061b0`), which the mixer squares, 2v^2 / 32,768
-  (`0x106152df`-`0x10615327`): 0.36 of full at the default 153. A song's IT
-  header gives the loader its global volume, speed and tempo alone, not its
-  mix volume or separation, nor a sample's global volume (`0x10628990`); the
-  channels pan by a square-root table (`0x106153d4`).
+- **The sliders.** Music plays at 127 x the fade, never below 0, x
+  `MusicVolume` / 255, cut to a whole number (`SetVolumes`, `0x106061b0`),
+  which the mixer squares, 2v^2 / 32,768 (`0x106152df`-`0x10615327`), times
+  a music voice's own volume: twice its own byte squared (`0x10617f50`), the
+  100 of 127 a song's load leaves it at (`0x1060e850`), 20,000 where a
+  sound's is 32,258; with four more full-scale factors, 0.601 of full at
+  255, 0.215 at the default 153 (8.9 dB under) and 0.036 at 64 (24.5 dB). The
+  setting is read when `SetVolumes` runs: each update while a transition
+  fades or holds, at its change, at a `SET` (`PostEditChange`) and a new
+  viewport; the Sound menu's slider sets the music at once, without the fade
+  (`SetInstantMusicVolume`). A song's IT header gives the loader its global
+  volume, speed and tempo alone, not its mix volume or separation, nor a
+  sample's global volume (`0x10628990`), and the global volume goes into the
+  music's volume, which `SetVolumes` sets again in the same update: it plays
+  no part. A channel's pan is twice the header's, at most 127 of 128, so a
+  hard right one leaks 21 dB under into the left; the channels pan by a
+  square-root table (`0x106153d4`). The zone reverb is the sounds' alone:
+  the music's own send goes to a reverb that only a song file's reverb
+  chunk sets (`0x1060f3c0`), which the game's IT songs have none of.
+- **A song's voices.** A music voice's gain is the music volume's square,
+  times its own 20,000 and five more factors of 32,767 at most (its note's
+  volume, its volume envelope, its fade-out and two at full), each step over
+  32,768, then each side's share of the pan from the square-root table
+  (`0x10614920`): at a full slider and a full note 0.601 of full scale, a
+  centred channel 0.425 a side; at the default 153, 0.215 and 0.152. The
+  music's voices are summed apart from the sounds' and saturated to 16 bits
+  before the sounds are added (`0x106146a0`).
+- **An IT song** (`0x10628990`) is converted as it loads into the commands of
+  Galaxy's own player (`0x10616eb0`), which plays only what the loader keeps:
+  - **The header:** its global volume, which `Update`'s `SetVolumes` replaces
+    with the slider's at once after the load (`0x1060a810`), its initial
+    speed and tempo, its linear-slides flag and its channels' pans, a pan
+    over 64 (IT's surround, or a muted channel) a surround a quarter to the
+    left, the channel played. Never its mix volume, separation or channels'
+    volumes. Only the first 32 channels play (`0x1062a26e`).
+  - **A sample:** its volume, default pan, loop, ping-pong, 16-bit and signed
+    flags, length and rate. Never its global volume, sustain loop, vibrato or
+    stereo flag, nor whether its data is flagged present: a length is
+    enough. **An instrument:** its keyboard's samples (not its notes), its
+    fade-out and three envelopes of 10 nodes at most, a sustain loop a
+    sustain point (the volume envelope's at the loop's start, the pan and
+    pitch envelopes' at its end), the pitch envelope's sustain flag the pan
+    envelope's; never its global volume, default pan, new note action,
+    random variations, pitch-pan separation or filter, a filter envelope
+    played as a pitch envelope.
+  - **The orders** to the first end mark, those after it out of reach of a
+    section. An order whose pattern holds no data is passed over, the player
+    going on to the next (`0x10615710`).
+  - **The patterns,** each once, the first time the order list reaches it, the
+    decoder's state of each channel carried on from the pattern converted
+    before. A note cut is a volume of 0, the note playing on. The volume
+    column's volumes alone are kept, doubled to 127 at most (`0x10629ca7`),
+    none of its other commands.
+  - **One effect memory** a channel for every command: each command stores its
+    parameter there (`0x10629d63`) but A, D, E, F, K and L, which take a
+    parameter of 0 from it and store theirs (`0x10629e36`-`0x1062a08c`). So a
+    D00 slides by whatever any command on the channel gave last: after an
+    S86, down by 6 a tick; after a GF0, up by 15.
+  - **The commands** (`0x10629e0d`): A a speed of 32 at most; B; C, its row
+    read as decimal digits; D, both digits set sliding down by the second, D0F
+    and DF0 on every tick but the first; E and F, their extra-fine slides made
+    fine, by (x + 2) / 4; G, H, J, K, L, O and R; Q, without its volume
+    change, Q00 retriggering nothing; S3x, S4x, SBx, SDx and SEx; S8x a pan of
+    (x x 2,048 + 1,024) / 32,767; any S9x surround; SCx a note's volume to 0 a
+    tick later than IT's; T over 0x20 the tempo, T20 a speed of 32 (the
+    player's speed command takes up to 0x20 for a speed), T0x and T1x kept as
+    a command the player takes for a vibrato; X as the MOD's 8xx, 0 to 0x80 left
+    to right, 0xA4 and the others over 0x80 surround. S0x, S1x and SFx are
+    kept and ignored by the player; I, M, N, P, U, V, W, Y, Z, S2x, S5x, S6x,
+    S7x and SAx are dropped (`0x1062a180`).
+  - **Its player** steps a voice's gains at each tick, unramped, and reads a
+    sample between one frame and the next linearly ([the mixer](#the-mixer)).
+    Entering the first order -- the song's start, a jump to order 0 by B00 or
+    a section, the song's loop -- sets the speed, tempo and every channel's
+    pan to the header's again (`0x10615710`); a song started at another
+    section keeps the reset's speed, 48 ticks a row, and the tick the music
+    last had, until its patterns set theirs. A section change silences the
+    music's voices and starts the section at once, the speed, tempo and pans
+    playing on but for order 0 (`Update`, `0x1060a822`-`0x1060a863`).
 
 ## Reverb
 
