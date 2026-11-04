@@ -1569,7 +1569,9 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
 - **`TweenBlendAnim(Sequence, Time, BlendSlot)`** (`0x103e1300`): `TweenAnim`
   for a slot, its `SimBlendAnim` packed so too.
 - **The main animation's tick** (`AActor::Tick`, `0x103a1aa0`), before the
-  slots: up to four passes over the tick's time, each from the frame it is at.
+  slots: up to four passes over the tick's time, each from the frame it is at,
+  while it has a sequence and a rate, or a tween's rate from a negative frame
+  (`0x103a1bf9`): an actor with a rate and no sequence does not animate.
   A tween (a negative frame) moves up by `TweenRate`; reaching 0 with time to
   spare it goes on with that time, `AnimEnd` sent if there is no `AnimRate`.
   Otherwise the frame moves by the rate (a velocity-scaled one for a negative
@@ -1588,15 +1590,21 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   time unplayed.
 - **The tick.** The slots move after the main animation, as it moves that: a
   tween up from a negative frame, then the rate (or a velocity-scaled one) up
-  to the last frame, where the slot stops. The loop copies the main one's
-  conditions and shares its four iterations:
-  - it runs only while the main animation plays or tweens, so with the main
-    animation stopped the slots do not move;
-  - each iteration moves every slot by the frame's time, and a slot that ends or
-    finishes its tween leaves the rest only the time over;
-  - iterations repeat until the four are spent, so in a frame whose main
-    animation had no notify or end the slots move three times (up to three times
-    their rate).
+  to the last frame, where the slot stops (and is packed, `SimBlendAnim`'s X
+  and Y, for a client that does not simulate the actor, a weapon aside,
+  `0x103a22e7`-`0x103a2382`). They share the main loop's four passes and its
+  time left (`0x103a1fa1`, `0x103a21d0`):
+  - they run only while the main animation, on the state its loop left, has a
+    sequence and plays or tweens, so not on a tick that stopped it (a non-loop
+    end, a tween with no rate finished) or spent its four passes;
+  - each pass moves every slot by the time left, and a slot that ends or
+    finishes its tween leaves the slots and passes after it only the time
+    past that;
+  - the passes go on from those the main loop used while time is left: three
+    of the tick's time when its step ended the tick in its first pass (up to
+    three times the slots' rate), and none when a loop's step stopped between
+    `AnimLast` and 1.0, which leaves no time (BreatheLight, at 0.5 a second
+    with `AnimLast` 0.8, holds them still 0.4 s of every 2 s).
 - **The mesh.** `ULodMesh::GetFrame` (`0x10355360`) adds each slot's pose to the
   main animation's vertices as its difference from the mesh's first frame, so a
   blend sequence moves only what it changes. A slot tweening in moves from its
