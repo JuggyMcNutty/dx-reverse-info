@@ -274,6 +274,11 @@ timer:
     0.250.
   - The reverb gets each side at 127/128 of it. The surround pan plays
     centred with the right side's gains negated.
+  - The pan moves to the one last set by at most 512 of 32,767 each time
+    the gains are worked out (`0x10615329`). A song's pan commands and its
+    order 0 set both at once (`0x106177aa`, `0x106159aa`), so its pans
+    change at once; whether a sound's update sets only the pan it moves to
+    is unread.
 - **Resampling.** A voice steps through its sample at its rate × pitch in
   whole hertz, as a 16.16 fraction of `OutputRate`. The routine chosen for a
   CPU with SSE and stereo output, which is any modern one (`0x10622730`,
