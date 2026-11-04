@@ -138,6 +138,13 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
   shape, or pulsing, over Liberty Island's dock, the dock alone in the view,
   holds the frame it was first lit in under `D3DDrv`; through `OpenGLDrv` it
   changes as `Render.dll` builds it.
+- **The mip.** With the game's ini (`UseMipmapping=True`,
+  `UseTrilinear=False`) a draw takes one mip, with no anisotropy: the floor
+  of log2 of its texels to a pixel along the way they shrink most. Measured
+  under Wine on RADV: DXEngine's harness's `MipConsole`, a floor at a slant
+  whose mips are each a colour of their own, point-sampled (`PF_NoSmooth`),
+  changes mip where that log2 passes each whole number (0.99, 2.01, 3.00,
+  3.98, 5.01 and 5.92 at 1024x768), one texel to a pixel throughout.
 - **The modulation.** In 16 bits the stage's colour is `MaxColor` over 255,
   multiplied into the vertex colour of every draw that is not modulated. A
   one-pass surface's diffuse is trunc(256 × both stages' colours − 0.5). So
