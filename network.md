@@ -21,9 +21,10 @@ to the bit.
   channel (0), carrying the handshake as text; one per actor the other side is
   told of; file channels, for downloads.
 - **The level** (`ULevel`) is the driver's listener. It accepts or refuses
-  connections (`NotifyAcceptingConnection`, `0x1039ee60`: refused while the
-  server travels) and channels (`NotifyAcceptingChannel`, `0x1039f290`: a server
-  takes the control channel and file channels a client opens, a client only
+  connections (`NotifyAcceptingConnection`, `0x1039ee60`: a new client's
+  packets ignored while the server travels) and channels
+  (`NotifyAcceptingChannel`, `0x1039f290`: a server takes the control channel
+  and file channels a client opens, a client only
   actor channels), and answers the handshake.
 - **Demos** (`UDemoRecDriver`) write the same packets to a file.
 - **The settings**, `[IpDrv.TcpNetDriver]` in `DeusEx.ini` (the GOG build's):
@@ -649,7 +650,8 @@ number, passes this first.
 
 **Ticking by role** (`AActor::Tick`, `0x103a1aa0`):
 
-- another player's pawn on a client (a simulated proxy) moves smoothly along its
+- a pawn whose own `Role` is `ROLE_SimulatedProxy`, whatever the net mode
+  (`0x103a1fd2`), on a client another player's pawn, moves smoothly along its
   velocity (a player's, off the ground by a trace 8 units down and not flying or
   in water, gaining half the zone's gravity) and runs its `Tick`: no state code,
   timers or physics;

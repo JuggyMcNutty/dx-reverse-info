@@ -800,8 +800,8 @@ shape, Deus Ex's numbers):
   within max(radius, 48) across and its height up or down), true only for
   that node or one `CanMoveTo` reaches from it, else false unless the pawn
   flies, before any walk; a pawn at no node is walked (`actorReachable`).
-  Partly read: one of `NavReachConsole`'s Liberty Island answers, Gunther
-  Hermann's, it does not explain.
+  Partly read: one of DXEngine's `NavReachConsole`'s Liberty Island answers,
+  Gunther Hermann's, it does not explain.
 - **`actorReachable(Other, bKnowVisible)`** (`0x103c0630`): a non-pawn no
   further than 800 units and not in a pain zone the pawn does not resist, a pawn
   not with its feet in one; not in water unless the pawn can swim; a line from
@@ -1162,8 +1162,8 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   into gives an entry of 0, not less, when the box's middle lies on or in
   front of it while the box reaches behind it; that is the start inside. The
   sums are floats (the x87 at 24 bits, as in a console's tick, where
-  GrateConsole's boxes are swept: [render-dll.md](render-dll.md#lighting),
-  in floats) in a fixed order, so a box's middle exactly on a plane is 0
+  DXEngine's `GrateConsole`'s boxes are swept:
+  [render-dll.md](render-dll.md#lighting), in floats) in a fixed order, so a box's middle exactly on a plane is 0
   from it. With an owner (an
   actor's brush, a mover's), the walk turns every plane it reads, its
   nodes' and its hulls', into the world by the owner's `ToWorld` coordinates
@@ -1233,7 +1233,7 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     the cut line, in the multi-hit check.
   - **At the x87's precision**: a trace in a console's tick works it out
     at 24 bits ([render-dll.md](render-dll.md#lighting), in floats).
-    VisibleConsole and GrateConsole show it: UNATCO HQ's
+    DXEngine's `VisibleConsole` and `GrateConsole` show it: UNATCO HQ's
     `SkillAwardTrigger0` met at y -9.699432, Liberty Island's
     `DataLinkTrigger21`'s normal at x -0.957480 from inside it,
     02_NYC_BatteryPark's `CageLight12`'s at y -0.310714 and -0.999926 from
@@ -1395,7 +1395,8 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   both sides stops nothing. Bit 0x10 of the flags passed lets a start in solid
   pass until the line has been in empty space; the natives pass none. The
   level's hit has its normal turned to face the start; an actor's brush hit
-  keeps the node's plane turned by the actor's `ToWorld` (`0x103f3c20`).
+  keeps the node's plane turned by the actor's `ToWorld` (in `UModel::LineCheck`,
+  `0x103f3c20`).
 - **What an actor collides as** (`AActor::GetPrimitive`, `0x1034c9a0`): its
   brush, else its mesh, else the engine's cylinder of its collision size; so a
   mover with no brush (`09_NYC_ShipBelow` has one) collides as a cylinder. A
@@ -1562,12 +1563,13 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   frame and tween, without the main channel's notifies or loop): a one-frame
   sequence tweened whole from frame -1 (`0x103e0efa`), a slot with no sequence
   yet started at 0.001 untweened (`0x103e0e58`), a tween time of -1 at
-  `OldBlendAnimRate`; `SimBlendAnim` packed, the frame x 10,000, the rate x
-  10,000, the tween x 1,000 and the last frame x 10,000 as X, Y, Z and W
-  (`BlendFieldsConsole`). A slot outside 0..3, no mesh or a sequence not in it
-  logs and does nothing.
+  `OldBlendAnimRate`; `SimBlendAnim` packed, the frame × 10,000, the rate ×
+  10,000, the tween × 1,000 and the last frame × 10,000 as X, Y, Z and W, W
+  one more when all four are as they were, so the same animation again goes
+  again (`0x103e112d`; DXEngine's `BlendFieldsConsole`). A slot outside 0..3,
+  no mesh or a sequence not in it logs and does nothing.
 - **`TweenBlendAnim(Sequence, Time, BlendSlot)`** (`0x103e1300`): `TweenAnim`
-  for a slot, its `SimBlendAnim` packed so too.
+  for a slot, its `SimBlendAnim` packed so too, never bumped (`0x103e1433`).
 - **The main animation's tick** (`AActor::Tick`, `0x103a1aa0`), before the
   slots: up to four passes over the tick's time, each from the frame it is at,
   while it has a sequence and a rate, or a tween's rate from a negative frame
@@ -1582,9 +1584,12 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   Past `AnimLast`: a looping animation goes on to 1.0 in the same pass, wrapping
   to frame 0 with the time past 1.0 kept, or stops short of 1.0 with the
   frame where the step took it and no time left; `AnimEnd` is sent when the
-  pass crossed `AnimLast` from below (a `FinishAnim` waiting on it released).
+  pass crossed `AnimLast` from below, `bAnimFinished` set (`0x103a1e20`), so a
+  `FinishAnim` waiting on it is let go at its poll (`0x103e00a0`).
   A non-looping one stops at `AnimLast` with `AnimRate` 0, `bAnimFinished` and
-  `AnimEnd` (a weapon's `SimAnim` packed), and the next pass ends on the rate.
+  `AnimEnd`, `SimAnim`'s frame and rate packed for a client that does not
+  simulate the actor, a weapon aside ([replication](network.md#replication)),
+  and the next pass ends on the rate.
   A pawn (`bIsPawn`, its class a `Pawn`) whose own `Role` is
   `ROLE_SimulatedProxy`, on a client another player or an NPC, is sent no
   `AnimEnd` at any of the three, the test made once before the passes
@@ -1738,8 +1743,11 @@ in `User.ini`). Where each goes depends on what the key did:
 - **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`,
   the exec functions of the game, the HUD, the player pawn and each item of its
   inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest). An
-  exec function's parameters are each imported by its property's `ImportText`, a
-  failure logging Core's `BadProperty` and making no call (`ScriptConsoleExec`,
+  exec function's parameters are each imported by its property's `ImportText`
+  from where the last one stopped, a first one that is an object of the
+  executor's class taking the executor; a refused import ends them, an
+  optional one's with the call made and the rest zero, any other's with Core's
+  `BadProperty` as the command's output and no call (`ScriptConsoleExec`,
   Core.dll `0x10150860`).
 
 So a key bound to `Shot` (`DefUser.ini`'s `GreyStar`) takes a screenshot, and a
@@ -1799,8 +1807,9 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   walked, a reference to it written but matching no block at the arrival, which
   leaves the property as the spawn left it. A value is written only where it
   differs from its class's default by the property's `Identical` (`0x10391894`),
-  a string's without case (`appStricmp`, Core.dll `0x101676f0`), so a string
-  apart from it in case alone is not written (`CaseTravelConsole`). At the
+  a string's without case (`UStrProperty::Identical`, Core.dll `0x101676f0`,
+  by `appStricmp`), so a string apart from it in case alone is not written
+  (DXEngine's `CaseTravelConsole`). At the
   arrival the items are spawned in the order written and given their events last
   to first, so an item only a property of the player's names takes its turn
   after the chain's.

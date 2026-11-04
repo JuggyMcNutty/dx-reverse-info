@@ -366,7 +366,7 @@ by each property class's `ImportText` and `ExportTextItem`:
   Members not named keep their values. The index reader is broken: it starts on
   the `[` itself, finds no `]` there, logs `ImportText: Illegal array element`
   and fails the import at that key (the members before it set), so `N[1]=7` is
-  never read -- though the export writes it (TextConsole). Out
+  never read -- though the export writes it (DXEngine's `TextConsole`). Out
   (`ExportTextItem`, `0x10169710`): `(` + each portable member, the struct's own
   first, then the extended struct's (a Plane's W before X, Y, Z), each element
   of a static array as `Name[i]=`, joined by `,`, + `)` -- nothing at all when
@@ -685,8 +685,8 @@ The rest are UE1's own. The details:
   (`0x10134370`), is `_ftol` of the product or quotient as the x87 holds
   it: at 24 bits, in a console's tick ([render-dll.md](render-dll.md#lighting),
   in floats), rounded to a float first (7 *= 3e9 is −474,836,992, 512 under
-  the exact product's low bits: OpsConsole); in the level's tick, at 64,
-  exact (−474,836,480: DXEngine's `PrecisionConsole`, an actor's own tick);
+  the exact product's low bits: DXEngine's `OpsConsole`); in the level's
+  tick, at 64, exact (−474,836,480: DXEngine's `PrecisionConsole`, an actor's own tick);
   `/=` by 0.0 makes it 0.
 - **`IsInState(S)`** (`0x1013ece0`): true for the object's state or any
   state it extends.

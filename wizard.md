@@ -2,7 +2,8 @@
 
 The launcher's UI. The page classes are in `DeusEx.exe`; the dialog *templates* and every
 widget class are in `Window.dll`, loaded from its `hInstanceWindow` (`WDialog::DoModal`,
-`0x1090B829`). All captions come from `System/Startup.int`.
+`0x1090B829`). Its titles and page texts come from `System/Startup.int`, its buttons' from
+`System/Window.int` ([how a page gets its text](#how-a-page-gets-its-text)).
 
 The pages' source is in the SDK (`reference/ReleaseSDK1112f/Headers/DxHeaders.zip`), as C++
 in headers: `Engine/Inc/UnEngineWin.h` holds the six pages and `InitEngine`,
@@ -270,8 +271,10 @@ Eight `WButton`s at stride 120 from offset 52. Construction order and IDs at
 As the page opens (`WConfigPageSafeOptions__OnInitDialog`, `0x10911890`) every box is
 ticked but #6, Reset. Its Next reads "Run!" (`0x10911BD0`).
 
-`GetNext` (`0x10911C00`) reads each box with `BM_GETCHECK` (`0xF0`) and appends each ticked
-box's flags to a string, a space before each, as the table shows them. It optionally
+`GetNext` (`0x10911C00`) sends `BM_GETCHECK` (`0xF0`) once for each row's flags -- to box #2
+for #3, #4 and #5 ([the shipped bug](#-shipped-bug-three-safe-mode-checkboxes-are-dead)) --
+and appends a row's flags to a string, a space before each, when its read finds the box
+ticked. It optionally
 deletes `<appPackage()>.ini`, opens the game's own file again (`ShellExecute`, from the base
 directory, shown normally) with that string as its command line, and ends the wizard with 0
 (`EndDialog`). The new process gets these flags and nothing else of the command line. What

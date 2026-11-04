@@ -114,10 +114,11 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   `UBitmap::__Client`, which a `UClient`'s constructor sets and its `Destroy`
   clears (`Engine.dll`). The texture goes with the surface's pan: `PanU` and
   `PanV`, the zone's auto-pan for `PF_AutoUPan` and `PF_AutoVPan` (its pan
-  speed x the level's `TimeSeconds` x 35 texels, wrapping at 1,024: x 256
-  made an int, truncated (`_ftol`, `0x10b278a4`), its low 18 bits, / 256,
+  speed × the level's `TimeSeconds` × 35 texels, wrapping at 1,024: × 256
+  made an int, truncated (`_ftol`, `0x10b278a4`), its low 18 bits, ÷ 256,
   `0x10b1a628`-`0x10b1a652`, V `0x10b1a6f6`; the level's time running on
-  while paused, the clouds drift then too), a wave of 8 and 4 units on the
+  while paused, so a sky's auto-panned clouds drift then too), a wave of 8
+  and 4 units on the
   level's time for
   `PF_SmallWavy`. Its detail and macro textures go as `UTexture::Lock` leaves
   them: not panned, at their own scale (`DrawScale`, times the mip's shrink).
@@ -645,8 +646,8 @@ palette's last entry never shows (`0x10b05d40`).
     after the console's `PostRender` (`0x1038f74b`). So the console's tick
     and every script event of the frame -- the player's and the console's
     `PreRender` and `PostRender` -- work at 24 bits, and so does every
-    native they call: OpsConsole's `7 *= 3e9` in its tick gives the 24-bit
-    product, and a trace's sums there are the 24-bit ones
+    native they call: DXEngine's `OpsConsole`'s `7 *= 3e9` in its tick gives
+    the 24-bit product, and a trace's sums there are the 24-bit ones
     ([traces](engine-dll.md#traces)). The level's tick runs outside it, at
     the 64 bits the frame before's `PostRender` left: an actor's own tick
     gives `7 *= 3e9` as -474,836,480, the whole product's, where the
@@ -716,7 +717,7 @@ palette's last entry never shows (`0x10b05d40`).
     a × r) − 0.5`, cut down. The draws r are taken in turn from 0 over the
     texels of the light's rectangle on the map, row by row, round a table of
     256. **The light's rectangle** (`SetupLight`, `0x10b066a2`-`0x10b06865`):
-    the texels within |axis| x sqrt(max(0, 1.05 r^2 - h^2)) of the light's
+    the texels within |axis| × √(max(0, 1.05 r² − h²)) of the light's
     foot on the surface's plane, h its height over it, held to the map; every
     shape runs over those alone, so a cylinder light high over a surface
     lights a square.

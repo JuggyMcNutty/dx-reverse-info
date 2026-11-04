@@ -206,8 +206,10 @@ The original's seven Win32 dependencies, and how it meets each:
 1. **The GUI.** `Window.dll`'s classes (`WWizardDialog`, `WWizardPage`, `WListBox`,
    `WButton`, `WCoolButton`, `WLabel`, `WEdit`, `WUrlButton`) are thin wrappers over Win32
    controls. The dialog templates are resources inside `Window.dll`, loaded through
-   `hInstanceWindow` ([page layouts](wizard.md#page-layouts)). Every string the user sees is
-   in `System/Startup.int` and `System/Window.int`.
+   `hInstanceWindow` ([page layouts](wizard.md#page-layouts)). Its own strings are in
+   `System/Startup.int` and `System/Window.int`; a render device's name comes from its
+   package's `.int`, the Driver page's card from the ini
+   ([the pages](wizard.md#per-page-behaviour)).
 2. **Single-instance handoff.** A `WLog` window with the property `IsBrowser`;
    `WM_COPYDATA` carrying the command line's tail as one UTF-16 string; a 30 s timeout. The
    bypass tokens `Server`, `NewWindow`, `changevideo`, `TestRenDev` skip it

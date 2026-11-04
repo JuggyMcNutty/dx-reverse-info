@@ -2,9 +2,10 @@
 
 The game's display driver: `UD3DRenderDevice`, the Direct3D 7 render device
 it shipped with and its look was tuned on. Here: gamma, the light maps'
-brightness on screen, fog, detail textures, the screen's pixels, tiles, and
-the blending every pass uses, the reference a reimplemented look is judged
-against. Read with:
+brightness on screen and where a light map lies, a texture's way to the card
+and the mip a draw takes, the blending every pass uses, the screen's pixels,
+tiles, fog, detail textures and the rest of a frame, the reference a
+reimplemented look is judged against. Read with:
 [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
@@ -257,7 +258,8 @@ off, or a fog map on the surface, clears it first.
   include it, the fade's blend; the log then lacks "D3D Driver: Supports
   BLENDDIFFUSEALPHA".
 
-Run here, under Wine, neither this nor `OpenGLDrv` draws a detail texture:
+Run here, under Wine, neither this nor `OpenGLDrv` draws a detail texture,
+though `OpenGLDrv` counts a detail pass (`DETAILTEX`):
 a frame is the same with the setting on and off, Liberty Island's pier
 seen close up among them, though its texture has one (`DWoodFine_A`).
 Wine's Direct3D 7 does not offer `BLENDDIFFUSEALPHA`, so `SetRes` turns

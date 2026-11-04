@@ -111,7 +111,7 @@ are `exec` exports.
   the viewport. The window tree draws through a GC given the same
   multipliers (`PaintWindows`, `SetMultipliers`), and the rectangle
   `SetRenderViewport` gives in the root's units is multiplied by them into
-  the frame's pixels (`PreRender`, `0x1003a760`); the mouse and
+  the frame's pixels (`PreRender`, `0x1003a760`); a mouse position and
   `ConvertVectorToCoordinates` divide by them
   ([a point on the screen](#a-point-on-the-screen)).
 - **What it takes** (`Process`, `0x1003b3e0`): every key while the root's

@@ -217,8 +217,9 @@ Each channel keeps an obstruction time:
   ([traces](engine-dll.md#traces)), so a closed door muffles; no other actor
   does.
 - The channel plays at 1 − 2 × that time, at least 0.33: a sound behind a
-  wall fades over half a second to a third of its volume, and back as it
-  clears.
+  wall falls to a third of its volume over a third of a second, the time
+  running on to 0.5 s, and rises again once it clears and the time is back
+  under a third of a second.
 - Speech and a sound whose actor has gone run no line: their time only
   shrinks. So speech is never muffled.
 
@@ -348,10 +349,11 @@ animates.
 
 - **Changing the music.** When the player's `Transition` is set, the music
   playing fades out, the fade falling by the time step to 0 over 1 s for
-  `MTRAN_Fade` (x 0.2: 5 s for `MTRAN_SlowFade`; x 3: 1/3 s for
+  `MTRAN_Fade` (× 0.2: 5 s for `MTRAN_SlowFade`; × 3: 1/3 s for
   `MTRAN_FastFade`), at once for the others, then silent for twice `Latency`
   (`Update`, `0x10609510`): the change comes at the first update the fade
-  has fallen past -2 x `Latency` / 1,000 at its pace, the transition read
+  has fallen past −2 × `Latency` ÷ 1,000 times its pace, so the hold is
+  twice `Latency` whatever the fade, the transition read
   again at each, so one changed mid-way goes on from the fade as it stands.
   With nothing playing, or section 255, the change is at once. Then the
   player's `Song` starts at full volume at the order `SongSection` (a
@@ -383,23 +385,20 @@ animates.
   (`DeusExPlayer.UpdateDynamicMusic`): combat and conversation music come in
   with `MTRAN_FastFade` and `MTRAN_Fade`, and the ambient music comes back
   where it was (after a fight, 5 s later and with `MTRAN_SlowFade`).
-- **The sliders.** Music plays at 127 x the fade, never below 0, x
-  `MusicVolume` / 255, cut to a whole number (`SetVolumes`, `0x106061b0`),
-  which the mixer squares, 2v^2 / 32,768 (`0x106152df`-`0x10615327`), times
+- **The sliders.** Music plays at 127 × the fade, never below 0, ×
+  `MusicVolume` ÷ 255, cut to a whole number (`SetVolumes`, `0x106061b0`),
+  which the mixer squares, 2v² ÷ 32,768 (`0x106152df`-`0x10615327`), times
   a music voice's own volume: twice its own byte squared (`0x10617f50`), the
   100 of 127 a song's load leaves it at (`0x1060e850`), 20,000 where a
-  sound's is 32,258; with four more full-scale factors, 0.601 of full at
+  sound's is 32,258; with five more full-scale factors, 0.601 of full at
   255, 0.215 at the default 153 (8.9 dB under) and 0.036 at 64 (24.5 dB). The
   setting is read when `SetVolumes` runs: each update while a transition
   fades or holds, at its change, at a `SET` (`PostEditChange`) and a new
   viewport; the Sound menu's slider sets the music at once, without the fade
-  (`SetInstantMusicVolume`). A song's IT header gives the loader its global
-  volume, speed and tempo alone, not its mix volume or separation, nor a
-  sample's global volume (`0x10628990`), and the global volume goes into the
-  music's volume, which `SetVolumes` sets again in the same update: it plays
-  no part. A channel's pan is twice the header's, at most 127 of 128, so a
-  hard right one leaks 21 dB under into the left; the channels pan by a
-  square-root table (`0x106153d4`). The zone reverb is the sounds' alone:
+  (`SetInstantMusicVolume`). A song's own volumes play no part
+  ([an IT song](#music), below). A channel's pan is twice the header's, at
+  most 127 of 128, so a hard right one leaks 21 dB under into the left; the
+  channels pan by a square-root table (`0x106153d4`). The zone reverb is the sounds' alone:
   the music's own send goes to a reverb that only a song file's reverb
   chunk sets (`0x1060f3c0`), which the game's IT songs have none of.
 - **A song's voices.** A music voice's gain is the music volume's square,
@@ -446,7 +445,7 @@ animates.
     and DF0 on every tick but the first; E and F, their extra-fine slides made
     fine, by (x + 2) / 4; G, H, J, K, L, O and R; Q, without its volume
     change, Q00 retriggering nothing; S3x, S4x, SBx, SDx and SEx; S8x a pan of
-    (x x 2,048 + 1,024) / 32,767; any S9x surround; SCx a note's volume to 0 a
+    (x × 2,048 + 1,024) ÷ 32,767; any S9x surround; SCx a note's volume to 0 a
     tick later than IT's; T over 0x20 the tempo, T20 a speed of 32 (the
     player's speed command takes up to 0x20 for a speed), T0x and T1x kept as
     a command the player takes for a vibrato; X as the MOD's 8xx, 0 to 0x80 left
