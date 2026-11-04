@@ -203,9 +203,11 @@ turn:
     if it was saved there, else from `Maps`. From `Current` the URL is made
     on the browse's as a relative travel's is
     ([addresses](network.md#addresses)): its map
-    `<SavePath>\Current\<map>.<ext>`, the map named cut at its first `.dx`
-    -- `..\Save\Current\01_NYC_UNATCOIsland.dxs` --, its options
-    the browse's, its portal the browse's; the level takes that URL, which
+    `<SavePath>\Current\<map>.<ext>`
+    (`..\Save\Current\01_NYC_UNATCOIsland.dxs`), the map named cut at its
+    first `.dx`, with case (`appStrstr`, `0x100119dd`), so
+    `14_OceanLab_Lab.dx ` loses its space there; its options the browse's,
+    its portal the browse's; the level takes that URL, which
     then becomes the last URL. The screen shows `SAVING`, then
     `LOADING` ([the loading screen](engine-dll.md#the-loading-screen)).
   - A new mission, a map outside any, or a player with `bStartingNewGame` set

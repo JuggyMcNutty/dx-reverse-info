@@ -155,6 +155,10 @@ Its only users are `DeusExPlayer`'s debug console commands.
   - So a file with no extension named as a package stands for it: a Linux
     binary called `DeusEx` beside `DeusEx.exe` is taken for the `DeusEx`
     package, and the game stops at its start ("ReadFile beyond EOF").
+  - A name's trailing spaces and dots are dropped by Windows' file system as
+    it opens the file, not by the search: Mission 14's five travels with a
+    space before their `#` (`14_OceanLab_Lab.dx #Sunkenlab`) look for
+    `14_OceanLab_Lab.dx ` and open `14_OceanLab_Lab.dx`.
   - A file found in the cache has its date set to the current time
     (`appUpdateFileModTime`), so it is not purged as unused.
   - On the paths the name alone finds it, whatever its GUID: a different
