@@ -115,8 +115,10 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   clears (`Engine.dll`). The texture goes with the surface's pan: `PanU` and
   `PanV`, the zone's auto-pan for `PF_AutoUPan` and `PF_AutoVPan` (its pan
   speed x the level's `TimeSeconds` x 35 texels, wrapping at 1,024: x 256
-  made an int, its low 18 bits, / 256, `0x10b1a628`-`0x10b1a652`, V
-  `0x10b1a6f6`), a wave of 8 and 4 units on the level's time for
+  made an int, truncated (`_ftol`, `0x10b278a4`), its low 18 bits, / 256,
+  `0x10b1a628`-`0x10b1a652`, V `0x10b1a6f6`; the level's time running on
+  while paused, the clouds drift then too), a wave of 8 and 4 units on the
+  level's time for
   `PF_SmallWavy`. Its detail and macro textures go as `UTexture::Lock` leaves
   them: not panned, at their own scale (`DrawScale`, times the mip's shrink).
 - **The viewer's `Sprite`**, when a player views with one set (the Matrix
