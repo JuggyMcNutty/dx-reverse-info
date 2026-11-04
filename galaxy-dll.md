@@ -349,6 +349,10 @@ animates.
   the order `SongSection` (a different song is loaded first; the same one
   only jumps), with CD audio too if `UseCDMusic`. Section 255 is silence: the
   music stops.
+- **A song that will not load** is a line in the log, Galaxy's `%s failed:
+  %i` with the call and its code, `glxLoadMusic(&Mem, GLX_LOADFROMMEMORY )
+  failed: <code>` (`0x1060a77e`-`0x1060a7a2`, event `0x2ff`), and the change
+  goes on, no song playing.
 - **Where it is.** While no transition is waiting, each frame writes the
   order playing back into the player's `SongSection`. Deus Ex's dynamic music
   keeps it to "save our place in the ambient track"
