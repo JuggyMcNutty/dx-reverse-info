@@ -536,21 +536,33 @@ How the original runs UnrealScript.
 ### Variables and calls
 
 - **Variables.** A variable token (`LocalVariable`, `0x1012ebc0`, and the
-  instance and default ones) leaves the variable's address in a global,
-  `GPropAddr`, and copies its value only when given a buffer.
+  instance and default ones, `0x1012ec60`, `0x1012ed00`) leaves the
+  variable's address in a global, `GPropAddr`, and copies its value only
+  when given a buffer, whole, each element of a static array
+  (`CopyCompleteValue`, vtable `+0x90`). An element (`ArrayElement`,
+  `0x1012ef90`) steps its index first and copies one (`CopySingleValue`,
+  `+0x8C`); a member (`StructMember`, `0x1012f3d0`) copies the struct into a
+  zeroed buffer of its own and takes the member from there.
 - **`Let`** (`0x1012fe40`) evaluates its left side with no buffer, for the
   address alone, and its right side straight into the variable: no
   temporary. Through `None` it writes to a scratch variable, with a warning.
   It takes every type but bool. **`LetBool`** (`0x1012ff30`) evaluates the
   value into a zeroed int of its own and sets or clears the bit by it.
-- **Calls** (`CallFunction`, `0x1013f4e0`):
+- **Calls** (`CallFunction`, `0x1013f4e0`) take each argument as they come
+  to it, a later one that changes a variable leaving the earlier copy as it
+  was:
   - a native is called directly and reads its own arguments from the
-    caller's code, each with a `Step`;
+    caller's code, each with a `Step` into a value of its own
+    (`execAdd_IntInt` `0x101337f0`, `execConcat_StringString` `0x1013aa70`:
+    `I + Bump(I)`, `Bump` setting its `out` `I` to 10, is 1); an `out` one is
+    read and written through `GPropAddr` once every argument is stepped
+    (`execAddEqual_IntInt` `0x10134480`: `I += Bump(I)` is 10);
   - a script function gets a frame on the machine stack (`alloca`: its
     parameters and locals, zeroed). Each argument is evaluated from the
-    caller's code straight into its parameter, up to `EndFunctionParms`. An
-    `out` argument's address is kept and its value copied back after the
-    call, after the return value is written, the last first: an `out`
+    caller's code straight into its parameter, up to `EndFunctionParms`, an
+    `out` one's value too, so the function starts with the variable as it
+    was then. An `out` argument's address is kept and its value copied back
+    after the call, after the return value is written, the last first: an `out`
     argument that is also the variable assigned ends with the parameter's
     value, through a `return` of the call too (the return steps the call
     into its caller's buffer), and of two `out` arguments given one variable
@@ -587,10 +599,14 @@ How the original runs UnrealScript.
   called from C++ counted with the rest.
 - **`a.b` with `a` `None`** (`Context`, `0x101300d0`): a warning ("Accessed
   None"), `b` skipped by a size stored inline, and a zero result.
-- **`switch`** (`execSwitch`, `0x1012f850`): the condition kept, then each
-  case's value compared with it -- a string by `appStricmp`, without regard
+- **`switch`** (`execSwitch`, `0x1012f850`): the condition stepped once into
+  a buffer of its own, so a case's call that changes its variable leaves it
+  as it was, then each case's value compared with it -- a string by `appStricmp`, without regard
   to case; any other type by `appMemcmp` over the switch's size, so a float
   by its bits (−0.0 is not 0.0).
+- **A struct's `==` and `!=`** (`0x101303a0`, `0x101305a0`): each struct
+  stepped into a zeroed buffer of its own, then each member compared by its
+  [`Identical`](#packages-and-linkers).
 - **A dynamic array's element** (`execDynArrayElement`, `0x1012f190`)
   asserts, `Array` (UnCorSc.cpp 325), on every access: its array pointer is
   a null the source left (`//!!`). Deus Ex's scripts declare `array<>`
@@ -706,14 +722,24 @@ The rest are UE1's own. The details:
   - `VRand` (`0x10139080`) draws points in the cube from −1 to 1 and takes
     the first inside the unit sphere, scaled to length 1: a direction with
     none favoured;
+  - `VSize` (`0x10138d10`) and `Dot` (`0x10138630`) sum Z's and Y's terms
+    first, then X's, at the tick's precision; `Dot` stores once as a float,
+    `VSize` the sum as a double for `appSqrt` (`0x10123290`, an `fsqrt` at
+    that precision) and the root as a float. `Lerp` (`0x10136610`) is
+    (B − A) × Alpha + A, stored once;
   - `Normal` (`0x10138de0`, `FVector::SafeNormal` `0x10144be0`) is zero
     under a squared length of 1e-8, a length of 0.0001; otherwise the vector
     times one over the root, at the x87's precision (24 bits in a console's
     tick: [render-dll.md](render-dll.md#lighting), in floats), each axis
     stored as a float.
 - **A float made an int** -- `int(f)` (`0x10131b40`), `byte(f)`
-  (`0x10131aa0`, the int's low 8 bits) and a rotator scaled by a float
-  (`0x101395e0`, each angle times the float rounded to a float first) -- by
+  (`0x10131aa0`, the int's low 8 bits) and a rotator times a float
+  (`0x101395e0`, `0x101396d0`, `*=` `0x101398b0`: each angle times the float
+  at the x87's precision, rounded to 24 bits in a console's tick, whole in
+  the level's) or over one (`0x101397c0`, `/=` `0x101399c0`: each angle
+  times one over the float, `fdivr` of 1.0, so at 64 bits a whole quotient
+  can come out one under: rot(90, 0, 0) / 90 is (0, 0, 0) in the level's
+  tick) -- by
   MSVCRT's `_ftol`: truncated to 64 bits and the low 32 kept, so past an
   int's range it wraps (3e9 is −1,294,967,296); NaN, or past 64 bits, 0. An
   int scaled in place by a float, `*=` 159 (`0x10134280`) and `/=` 160
@@ -724,7 +750,7 @@ The rest are UE1's own. The details:
   tick, at 64, exact (−474,836,480: DXEngine's `PrecisionConsole`, an actor's own tick);
   `/=` by 0.0 makes it 0.
 - **`IsInState(S)`** (`0x1013ece0`): true for the object's state or any
-  state it extends.
+  state it extends; in no state, for its class or any class above it.
 - **Rotators:**
   - `rotator(v)` (`FVector::Rotation`, `0x10144390`): yaw `atan2(Y, X)` and
     pitch `atan2(Z, √(X² + Y²))`, each × 65535 / 2π, truncated and not
