@@ -75,8 +75,16 @@ are `exec` exports.
     `0x1003a4a0`, by `GetWindowsTickOffset`, `0x1003a3b0`), not the level's:
     each window, shown or not, its own native tick, then its script's
     `Tick` only while `bTickEnabled` and its timers, before its children
-    (`TickTree`, `0x1003bfc0`): the root's own first of all
-    ([the root's tick](#keyboard-focus)). Each frame's `PostRender`
+    (`TickTree`, `0x1003bfc0`), its higher siblings' branches before it,
+    each step while the window is not being destroyed: the root's own first
+    of all ([the root's tick](#keyboard-focus)). A class's native tick is
+    its own work alone, calling neither a base class's nor the script: a
+    button's repeat (`0x10008190`), a scale's (`0x10040250`), an edit
+    field's blink and drag (`0x100207d0`), a text log's expiry
+    (`0x10047c30`), a computer window's typing (`0x1000f7b0`), a list's
+    drag and hot keys (`0x10033e50`), the root's focus and then the modal's
+    accelerator table (`0x1003a540`, `0x100374a0`); a plain window's is
+    empty (`0x10003be0`). Each frame's `PostRender`
     (`0x1003a960`) sends `WindowReady` to each window that shows and has not
     had it, its children first, bottom to top, before the windows are
     painted (`InitializeWindows`, `0x1003bc80`; `InvokeWindowReady`,
@@ -653,7 +661,10 @@ yaw, its pitch left out.
 - **From the keyboard or a script** (`PressButton`, `0x10007b20`, Space by
   default), the button shows pressed for its activate delay, plays its
   click sound and activates. The script's Enter, Space and accelerator
-  press it.
+  press it. The delay is a timer of the window's with no function name
+  (`AddActivateTimer`, `0x10008510`), a new press's taking the last's
+  place; it ends the show (`Timer`, `0x100080e0`) among the window's
+  timers, after its script's `Tick`.
 - **Made insensitive** while the mouse holds it, it lets go
   (`SensitivityChanged`, `0x10007f10`).
 - **Its look** (`ChangeButtonAppearance`, `0x10008380`):
