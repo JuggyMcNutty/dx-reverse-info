@@ -91,11 +91,13 @@ is empty with no tag; `IsEOF` is true from then on.
 `ParseToken` (`0x10001f80`):
 
 - **`FILE=name,description`** and **`EMAIL=name,subject,from,to,cc`**: the
-  fields, split at commas and trimmed of spaces (`ParseFile`, `0x10002380`;
-  `ParseEmail`, `0x10002560`). A missing field is empty; a comma in a field
-  cuts it there. `GetFileInfo` and `GetEmailInfo` give the last ones read,
-  whatever the token. `ParseEmail` tests the tag, not the `=` it looked for,
-  so an `EMAIL` with no `=` would crash; the game has none.
+  fields after the tag's first `=`, anywhere in it, split at commas and
+  trimmed of spaces (`ParseFile`, `0x10002380`; `ParseEmail`, `0x10002560`).
+  A missing field is empty; a comma in a field cuts it there. `GetFileInfo`
+  and `GetEmailInfo` give the last ones read, whatever the token; a `FILE`
+  with no `=` leaves them as they were. `ParseEmail` tests the tag, not the
+  `=` it looked for, so an `EMAIL` with no `=` would crash, reading its
+  fields from address 2; the game has none.
 - **`NOTE`**, **`GOAL`** and **`COMMENT`** read on to their end tag
   (`FindEndTag`, `0x10002ba0`) and give no text: all three hide what they
   hold. The tags inside are parsed with their effects -- an `EMAIL`'s
@@ -110,16 +112,20 @@ is empty with no tag; `IsEOF` is true from then on.
 - **`PLAYERNAME`** and **`PLAYERFIRSTNAME`**: the name given to
   `SetPlayerName` (`0x10001460`), and the part of it before its first space.
 - **`DC`**, **`C`** and **`/C`** (`ParseColor`, `0x100028c0`): the three
-  numbers after `=`, or black without one. `GetColor` (`0x100019c0`) gives
-  them after `DC` or `C`, and after `/C` the colour the parser was made with:
-  black, as nothing sets it; after any other token, black. `DC` sets the
-  colour `GetColor` gives, not the parser's default. The alpha is whatever
-  byte was left there.
+  numbers after the tag's first `=`, or black without one, into the last
+  colour, `/C`'s too. `GetColor` (`0x100019c0`) gives the last colour after
+  `DC` or `C`, and after `/C` the colour the parser was made with: black, as
+  only its constructor sets it; after any other token, black. The alpha is
+  whatever byte was left there.
 - **`G=name`** and **`F=name`**: a name, which `GetName` (`0x10001980`) gives
-  after a `NOTE`, `G`, `F` or `L`, and None after any other token; `L` sets
-  none. The name is what follows the tag's first `=`, anywhere in it, None
+  after a `NOTE`, `G`, `F` or `L`; after any other it makes a name of a null
+  string, which fails FName's assertion (`Name`, UnName.cpp line 55,
+  Core.dll `0x1014b950`) and stops the game, and no script of the game calls
+  it. `L` sets none. The name is what follows the tag's first `=`, anywhere in it, None
   without one (`ParseName`, `0x10002880`), `GOAL`'s too (`0x10001f80`).
 - **`/<`** and **`/>`**: a `<` and a `>` as text.
+- **A new parser** (its constructor, `0x10001100`) has no tag (`TT_None`),
+  no name and black colours.
 - The rest (`TEXT`, `NP`, `JC`, `JL`, `JR`, `P`, `B`, `/B`, `U`, `/U`, `I`,
   `/I`, `L`) are only their tag.
 
