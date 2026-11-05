@@ -308,9 +308,25 @@ it walks every property instead and calls `Modify` before each change.
     is its first token, dots not allowed: `-7` names `-`, `a b` names `a`,
     `"a b"` names `a b`.
   - Of a key given twice in a section the last is read, even empty: a user ini's
-    second, empty `ngWorldSecret=` beats a first with a value. A line
-    (`FConfigFile::Read`, DeusEx.exe `0x10916780`) is its key up to the first
-    `=`, nothing trimmed, a value's quotes taken off as it is read.
+    second, empty `ngWorldSecret=` beats a first with a value.
+  - The reader (`FConfigFile::Read`, GOG DeusEx.exe `0x10916780`; the
+    config cache is DeusEx.exe's own, its factory, `0x10915080`, passed to
+    `appInit`): a line ends at a CR or LF, runs of them passed over, so
+    blank lines vanish, a NUL ending the text. A header is a line that
+    begins `[` and ends `]` as it stands, so `[]` is a section named empty
+    and `[S] ` no header, its keys the section's before. A line is a key up
+    to its first `=` and its value after it, nothing trimmed, each line a
+    pair of its own; a value that begins and ends with `"` is taken without
+    them, a lone `"` empty. A line with no `=`, and one above the first
+    header, is dropped. `;` means nothing: `;Object=x` is a key named
+    `;Object`. `.int` files go through it too (`Localize`, `0x10148430`).
+  - `GetString` (`0x10917130`) finds a key in any case and copies its text
+    as it is; `GetSection` (`0x10917690`) lists each pair `key=value` in the
+    file's order; `SetString` (`0x10918030`) changes a value only if the new
+    one differs by more than case, else adds the key; `Write` (`0x10915760`),
+    only when something changed, writes the whole file, `[%s]`, each pair
+    `%s=%s`, a blank line after each section, CR LF, so a value read with
+    quotes is written without them, a comment or a line with no `=` lost.
   - The file's bytes (`appLoadFileToString`, `0x101488c0`): a file of even
     size beginning `FF FE` is UTF-16 little-endian, one beginning `FE FF`
     big-endian, each unit a character and the byte-order mark dropped; any
