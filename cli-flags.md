@@ -8,7 +8,7 @@ Three parsers, **not** equivalent:
 | Helper | Form | Matching |
 |---|---|---|
 | `ParseParam(cmdline, "X")` | `-X` or `/X` | flag present: the name anywhere after the line's first character with `-` or `/` just before it (Core.dll `0x10146d4f`, `0x10146d55`); nothing after it is checked, so `-log` also matches `-LOG=<file>` |
-| `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found as `appStrfind` finds it (`0x10146bee`), no `-` needed, so `LOG=` is not found in `ABSLOG=`; a value in quotes keeps its spaces, one not in quotes ends at a space, tab, CR, LF or comma, or at its buffer's length (`0x10146bc0`, `0x10146c96`) |
+| `Parse(cmdline, "X=", out)` | `X=value` | value extraction: `X=` found as `appStrfind` finds it (`0x10146bee`), no `-` needed, so `LOG=` is not found in `ABSLOG=`; true whenever it is found, the value empty or not. The value is copied first, its buffer's length less one at most (`appStrncpy`, `0x101233c0`), past the quote of one that begins with `"`, then cut: a quoted one at its next `"`, running to the line's end with none, no escapes; any other at a space, tab, CR, LF or comma (`0x10146bc0`, `0x10146c2b`, `0x10146c4e` to `0x10146c96`); what the buffer has no room for is dropped (below) |
 | `appStrfind(cmdline, "X")` | anywhere | **a substring in any case, but not straight after an ASCII letter or digit (Core.dll `0x10145ca0`); no `-` required** |
 
 The `appStrfind` cases are the surprising ones: `readini` and the four single-instance
@@ -16,10 +16,26 @@ bypass tokens match *anywhere in the command line* not straight after an ASCII l
 digit, inside a map name or URL too. Matching the line's `argv` words one by one does not
 reproduce them.
 
-Most checks read the command line `appInit` keeps, without the program's path. Two read the
-one Windows gives, path and all: the single-instance bypass, with its four tokens, and the
+Most checks read the command line `appInit` keeps, without the program's path. Three read
+the one Windows gives, path and all: the single-instance bypass, with its four tokens, the
 splash's, with `-log`, `-server` and `TestRenDev`
-([`launch-flow.md`](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+([`launch-flow.md`](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)),
+and `EXEC=` (`0x1090947A`).
+
+Each `Parse` of the line reads into a buffer of its own, in UTF-16 characters, one of them
+the terminator:
+
+| Value | Read at | Buffer |
+|---|---|---|
+| `INI=`, `USERINI=`, `CDPATH=` | Core.dll `appInit` `0x10149A78`, `0x10149BB0`, `0x10149DA6` | 256 |
+| `LOG=` | `0x10903880` | 1,024 less the base directory's length (`0x1090384E`) |
+| `ABSLOG=` | `0x109038A8` | 1,024 |
+| `EXEC=`, `-consolecommand=`, `-testrendev=` | `0x1090947A`, `0x1090A635`, `0x1090A756` | 4,096, `Parse`'s `FString` form (Core.dll `0x10146DC0`) |
+| `MULTIHOME=` | IpDrv.dll `getlocalhostaddr` `0x10703FBD` | 256 |
+
+`PORT=` (IpDrv.dll `0x1070AECE`) and `PktLoss=`, `PktOrder=`, `PktDup=` and `PktLag=`
+(Engine.dll) are `Parse`'s int form (Core.dll `0x10147730`): `appAtoi` of the text straight
+after `X=`, nothing cut, no quote taken off. `CPUSPEED=` is its float form.
 
 ## Flags
 
@@ -33,7 +49,7 @@ splash's, with `-log`, `-server` and `TestRenDev`
 | `-safe` | `ParseParam` | `0x1090ABA9` | show the SafeMode page |
 | `-changevideo` | `ParseParam` | `0x1090B23E` | show the Renderer page |
 | `-nodetect` | `ParseParam` | `0x1090DAC6` | skip 3D device detection on the Renderer page |
-| `-EXEC=<file>` | `Parse` | `0x1090947A` | after engine init, run `exec <file>` in the client console |
+| `-EXEC=<file>` | `Parse` | `0x1090947A` | after engine init, run `exec <file>` on viewport 0, whose `Exec` takes the file's name again by `ParseToken`, 63 characters at most (Engine.dll `0x10373A60`, `0x10374241`), so `EXEC="my file.txt"` runs `my`; `ExecMacro` logs `Execing <file>` (`0x10374700`) |
 | `-consolecommand=<cmd>` | `Parse` | `0x1090A635` | run `<cmd>` through `GExec`, then **exit without launching** |
 | `-testrendev=<class>` | `Parse` | `0x1090A756` | load render-device class, write `Detected.ini`, **exit** |
 | `-LOG=<file>` | `Parse` | `0x10903880` | log to a named file |
