@@ -113,6 +113,19 @@ Its only users are `DeusExPlayer`'s debug console commands.
 
 ## Packages and linkers
 
+- **`Identical`**, each property class's own (vtable `+0x6C`), is how two
+  values are taken for the same, a missing second one counting as zero: by a
+  save, against the class's defaults (`UObject::Serialize` `0x10150210`,
+  `SerializeTaggedProperties` `0x10126730`: a value `Identical` to its
+  default is not written, and loads as the default); by the travel's export
+  (`UProperty::ExportText` `0x10165440`, which writes nothing for one);
+  by replication ([network.md](network.md#replication)); by a struct's `==`
+  and `!=` (`0x101303a0`, `0x101305a0`), member by member. By type: a string
+  (`0x101676f0`) by `appStricmp`, an empty or missing one `""`, so strings
+  apart in case alone are the same, where the script's `==` is `appStrcmp`
+  (`0x1013b560`); a struct (`0x101690d0`) each member; a fixed array
+  (`0x10167d30`) and a dynamic one (`0x10168480`, the counts first) each
+  element; a map (`0x10168d80`) always the same.
 - **An export for no context is never made** (`ULinkerLoad::CreateExport`,
   `0x1012e230`). An export is made only when its flags share one of the
   linker's context flags: `RF_LoadForClient`, `RF_LoadForServer`,
@@ -749,7 +762,9 @@ The rest are UE1's own. The details:
   manager's buckets and the flag base's use it
   ([events](engine-dll.md#the-manager), [flags](extension-dll.md#flags)).
 - **`appStricmp`** (`0x10123560`) is the C library's `_wcsicmp`, which folds
-  A to Z to lower case: an underscore sorts before the letters.
+  A to Z to lower case: an underscore sorts before the letters. No module of
+  the game sets a locale (none imports `setlocale`), so A to Z alone fold,
+  every other character as it is.
 - **The name table** (`FName::FName(Name, FindType)`, `0x1014b950`): a name is
   found in 4,096 buckets by `appStrihash`, compared with `appStricmp`, so one
   entry holds every spelling of a name, spelt as it was first made. With

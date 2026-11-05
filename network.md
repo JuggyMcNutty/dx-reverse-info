@@ -548,8 +548,10 @@ copy and is compared with its defaults.
   simulated proxy.
 - **Properties:** those the native list gives (`GetOptimizedRepList`, for
   `Actor`, `Pawn`, `PlayerPawn`, `Mover`, `ZoneInfo`, the two replication infos
-  and `Inventory`), and each replicated script property whose value differs from
-  what the client last got and whose replication statement holds (the statement
+  and `Inventory`), and each replicated script property whose value is not
+  `Identical` to what the client last got, a string's without case
+  ([`Identical`](core-dll.md#packages-and-linkers)), and whose replication
+  statement holds (the statement
   its `RepOwner` names, each evaluated once a call). The classes with a native
   list declare `nativereplication`, and the class net cache leaves their own
   properties out of the script replication (`UPackageMap::GetClassNetCache`,
@@ -671,7 +673,10 @@ A viewport's own player is spawned with the remote role simulated
 
 Each is its class's replication statements written in C++: a value goes when it
 differs from what the client last got and the condition holds, all only on the
-server (`Role` the authority). `Mover` (`0x10365320`), `ZoneInfo` (`0x103657a0`)
+server (`Role` the authority). A string differs by `appStricmp` (`0x103616e0`),
+so one changed in case alone does not go: the replication infos' names, the
+game's name and class, the server's names, the admin's, the messages of the
+day and the end's comments. `Mover` (`0x10365320`), `ZoneInfo` (`0x103657a0`)
 and `GameReplicationInfo` (`0x10366960`) are their statements exactly. The
 others differ:
 
