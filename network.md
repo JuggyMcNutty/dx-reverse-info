@@ -62,9 +62,11 @@ The control channel carries lines of text: the server's side is
 (`UNetPendingLevel`, `0x1040a880`). A line's command is Core's `ParseCommand`'s
 (`0x10147a20`) and each `KEY=` value its `Parse`'s, as the command line's
 ([`cli-flags.md`](cli-flags.md)): a key in any case, but not straight after a
-letter or digit, so `HELLO`'s `VER=` is not `MINVER=`'s; a value in double
-quotes, or up to a space, tab, CR, LF or comma, so a login's `Name=JC(1)`
-comes whole.
+letter or digit, so `HELLO`'s `VER=` is not `MINVER=`'s. A text value is in
+double quotes, or up to a space, tab, CR, LF or comma, so a login's
+`Name=JC(1)` comes whole; `URL=` holds 1,023 characters, `PKG=` 63. A number
+is `Parse`'s int form, `appAtoi` of what follows, so `VER= 1100` is 1100;
+`LONE=` is true for `On`, `True` or `1` alone (`ParseUBOOL`).
 
 1. **Client:** `HELLO REVISION=0 MINVER=1100 VER=1100`.
 2. **Server:** `UPGRADE MINVER=1100 VER=1100`, and the connection closed, when
@@ -88,11 +90,12 @@ comes whole.
      its `ngWorldSecret`, each as UTF-16 without the terminator, in 32 lowercase
      hex digits; `Checksum=NoChecksum` when the password is empty. Without
      stats, nothing (`0x1040a880`).
-4. **Server:** a `LOGIN` with no `RESPONSE=`, or one equal to
-   `!ChallengeResponse(Challenge)` -- the answer's `== 0` set into a register
-   and compared with the response (`0x1039fb7c` to `0x1039fb90`) -- gets
-   `FAILURE CHALLENGE` (`0x1039fffe`): in practice a response of 0 alone,
-   any other let on, the right one or not. Then the game's `PreLogin`
+4. **Server:** a `LOGIN` with no `RESPONSE=`, or with one that is 1 where
+   the challenge's answer is 0 and 0 where it is anything else, gets
+   `FAILURE CHALLENGE` (`0x1039fffe`): the server compares the response with
+   whether the answer is 0, not with the answer (`0x1039fb7c` to
+   `0x1039fb90`), so in practice a response of 0 alone is refused, any other
+   let on, the right one or not. Then the game's `PreLogin`
    (script) may refuse, by its error alone (`0x1039f780`: a
    `FailCode` with no error lets the login on): `FAILURE` and its message,
    `FAILCODE` and its code (the client's menu takes it: a password asked for,
@@ -682,8 +685,11 @@ A viewport's own player is spawned with the remote role simulated
 
 Each is its class's replication statements written in C++: a value goes when it
 differs from what the client last got and the condition holds, all only on the
-server (`Role` the authority). A string differs by `appStricmp` (`0x103616e0`),
-so one changed in case alone does not go: the replication infos' names, the
+server (`Role` the authority). A float differs by its bits, the replication
+infos' `Score` and `Deaths` compared as DWORDs, so a change from 0.0 to -0.0
+goes and an unchanged NaN does not. A string differs by `appStricmp`
+(`0x103616e0`), so one changed in case alone does not go: the replication
+infos' names, the
 game's name and class, the server's names, the admin's, the messages of the
 day and the end's comments. `Mover` (`0x10365320`), `ZoneInfo` (`0x103657a0`)
 and `GameReplicationInfo` (`0x10366960`) are their statements exactly. The

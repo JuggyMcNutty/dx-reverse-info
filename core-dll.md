@@ -322,11 +322,12 @@ it walks every property instead and calls `Modify` before each change.
     `;Object`. `.int` files go through it too (`Localize`, `0x10148430`).
   - `GetString` (`0x10917130`) finds a key in any case and copies its text
     as it is; `GetSection` (`0x10917690`) lists each pair `key=value` in the
-    file's order; `SetString` (`0x10918030`) changes a value only if the new
-    one differs by more than case, else adds the key; `Write` (`0x10915760`),
-    only when something changed, writes the whole file, `[%s]`, each pair
-    `%s=%s`, a blank line after each section, CR LF, so a value read with
-    quotes is written without them, a comment or a line with no `=` lost.
+    file's order; `SetString` (`0x10918030`) adds a key not there and
+    changes one there only for a value that differs by more than case, so
+    `JC` over `jc` keeps `jc`; `Write` (`0x10915760`), only when something
+    changed, writes the whole file, `[%s]`, each pair `%s=%s`, a blank line
+    after each section, CR LF, so a value read with quotes is written
+    without them, and a line with no `=`, `;` ones among them, is lost.
   - The file's bytes (`appLoadFileToString`, `0x101488c0`): a file of even
     size beginning `FF FE` is UTF-16 little-endian, one beginning `FE FF`
     big-endian, each unit a character and the byte-order mark dropped; any
@@ -530,6 +531,7 @@ How the original runs UnrealScript.
   |---|---|
   | below 0x39 | expressions and statements (variables, `Let`, jumps, calls, constants, context) |
   | 0x39 to 0x59 | conversions |
+  | 0x5A | none: no handler |
   | 0x60 to 0x6F | a native numbered 256 or more; the next byte holds the rest of its number |
   | 0x70 and up | the native of that number |
 
@@ -539,8 +541,7 @@ How the original runs UnrealScript.
   byte widened to a character (`appFromAnsi`, `0x1014a0c0`, into a ring of
   256 buffers of 1,024, `0x10145c60`), at most 1,023 of them; a Unicode one
   (`0x10130990`) is taken as it is. The compiler writes 8-bit when every
-  character is below 0x100 (`appIsPureAnsi`, `0x10145b30`). 0x5A has no
-  handler.
+  character is below 0x100 (`appIsPureAnsi`, `0x10145b30`).
 - **A cast** (`DynamicCast`, `0x10130ed0`) and `UObject::IsA`
   (`0x101155f0`) compare the very class up its `SuperField` chain, a null
   class passing any object, so a class of another's name in another package
@@ -582,7 +583,8 @@ How the original runs UnrealScript.
   - a native is called directly and reads its own arguments from the
     caller's code, each with a `Step` into a value of its own
     (`execAdd_IntInt` `0x101337f0`, `execConcat_StringString` `0x1013aa70`:
-    `I + Bump(I)`, `Bump` setting its `out` `I` to 10, is 1); an `out` one is
+    `I + Bump(I)`, `I` 1 and `Bump` setting its `out` `I` to 10 and
+    returning 0, is 1); an `out` one is
     read and written through `GPropAddr` once every argument is stepped
     (`execAddEqual_IntInt` `0x10134480`: `I += Bump(I)` is 10);
   - a script function gets a frame on the machine stack (`alloca`: its
@@ -614,8 +616,10 @@ How the original runs UnrealScript.
   (`FUNC_Singular`'s own value; the SDK's `RF_InSingularFunc`, `0x800`, goes
   unused). A call of a function named after a probe whose bit is clear, and
   one sent to the other side of a net game, are held off too. A call held
-  off, or ended without a value, writes nothing: a variable assigned from
-  it keeps its value, but a bool, which `LetBool` clears. What else takes a
+  off, or ended without a value, writes no result: a variable assigned from
+  it keeps its value, but a bool, which `LetBool` clears; a held-off call's
+  `out` arguments are copied back from its frame all the same
+  (`CallFunction`, `0x1013f4e0`). What else takes a
   result has set its buffer first: a condition, a context's object, a
   cast, a conversion, a struct's member and a script function's parameter
   to zero, so they read zero; a native's optional parameter to its
@@ -629,9 +633,9 @@ How the original runs UnrealScript.
   None"), `b` skipped by a size stored inline, and a zero result.
 - **`switch`** (`execSwitch`, `0x1012f850`): the condition stepped once into
   a buffer of its own, so a case's call that changes its variable leaves it
-  as it was, then each case's value compared with it -- a string by `appStricmp`, without regard
-  to case; any other type by `appMemcmp` over the switch's size, so a float
-  by its bits (−0.0 is not 0.0).
+  as it was, then each case's value compared with it -- a string by
+  `appStricmp`, without regard to case; any other type by `appMemcmp` over
+  the switch's size, so a float by its bits (−0.0 is not 0.0).
 - **A struct's `==` and `!=`** (`0x101303a0`, `0x101305a0`): each struct
   stepped into a zeroed buffer of its own, then each member compared by its
   [`Identical`](#packages-and-linkers).
@@ -655,10 +659,11 @@ How the original runs UnrealScript.
   a 64-bit mask, `ProbeMask`, with a bit for each. An event of a probe, or a
   script call of a function named after one, runs only with its bit set.
   Nothing else is checked: any other call runs.
-- **The mask is set at every `UObject::GotoState`** (`0x1012e8f0`), even into
-  the state the object is in: the probes that the state or the class has a
-  function for, less those the state `ignores`. With no state frame it does
-  nothing; else it first clears the latent action. The state is found by
+- **The mask is set at every `UObject::GotoState`** (`0x1012e8f0`) of an
+  object with a state frame, even into the state the object is in: the
+  probes that the state or the class has a function for, less those the
+  state `ignores`. With no state frame `GotoState` does nothing; else it
+  first clears the latent action. The state is found by
   `FindState` (`0x10150c80`), in the state's fields and the class's, a
   class's own name never one; none found is no state, the class the node.
   Into another state, its name compared, it first sends `EndState`, if its
@@ -778,10 +783,9 @@ The rest are UE1's own. The details:
   it: at 24 bits, in a console's tick ([render-dll.md](render-dll.md#lighting),
   in floats), rounded to a float first (7 *= 3e9 is −474,836,992, 512 under
   the exact product's low bits: DXEngine's `OpsConsole`); in the level's
-  tick, at 64, exact (−474,836,480: DXEngine's `PrecisionConsole`, an actor's own tick);
-  `/=` by 0.0 makes it 0.
-- **`IsInState(S)`** (`0x1013ece0`): true for the object's state or any
-  state it extends; in no state, for its class or any class above it.
+  tick, at 64, exact (−474,836,480: DXEngine's `PrecisionConsole`, an
+  actor's own tick); `/=` by 0.0 makes it 0.
+- **`IsInState(S)`**: [events and probes](#events-and-probes).
 - **Rotators:**
   - `rotator(v)` (`FVector::Rotation`, `0x10144390`): yaw `atan2(Y, X)` and
     pitch `atan2(Z, √(X² + Y²))`, each × 65535 / 2π, truncated and not
@@ -818,11 +822,12 @@ The rest are UE1's own. The details:
   asked for does not find.
 - **`new(Outer, Name, Flags) Class`** (`UObject::execNew`, `0x1013d9f0`):
   `StaticConstructObject` (`0x10157ff0`) of the class under that name, in its
-  outer: the calling object, which the outer given, None too, takes the place
-  of, the transient package for None or a caller outside the object table (a
-  class's defaults; `GetTransientPackage`, `0x101573e0`). So `new class'X'`
-  makes the object in the caller and `new(None)` in the transient package:
-  `new(Self)` on the player makes the object in its level's package. A flag outside the script's own (`RF_ScriptMask`, `0x704005`) is
+  outer: the one given, None too, else the calling object; the transient
+  package for None or a caller outside the object table (a class's
+  defaults; `GetTransientPackage`, `0x101573e0`). So `new class'X'` and
+  `new(Self)` make the object in the caller, the player's in its level's
+  package, and `new(None)` in the transient package. A flag outside the
+  script's own (`RF_ScriptMask`, `0x704005`) is
   logged, `new: Flags %08X not allowed`, and left out. An Object of a config
   class made so (`new class'X'`, `X` with a `config` variable) hangs the game
   at exit, saved or not; one of a plain class does not (seen with the

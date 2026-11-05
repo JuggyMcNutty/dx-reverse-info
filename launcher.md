@@ -13,7 +13,7 @@ Method: [working on the binaries](README.md#working-on-the-binaries).
 |---|---|
 | [`launch-flow.md`](launch-flow.md) | startup→shutdown sequence, all exit paths, the seven platform seams |
 | [`wizard.md`](wizard.md) | page graph, `FirstRun` gates, control inventory, the shipped bug, what it shows under wine |
-| [`cli-flags.md`](cli-flags.md) | every flag, and which of the three parsers reads it |
+| [`cli-flags.md`](cli-flags.md) | every flag, which of the three parsers reads it, and each value's buffer |
 | [`ini-keys.md`](ini-keys.md) | every read/write, files, the one registry key |
 | [`types/launch.h`](types/launch.h) | struct definitions + size ledger |
 

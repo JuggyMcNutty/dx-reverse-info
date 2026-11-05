@@ -63,7 +63,7 @@ The natives are the links': eight of `InternetLink`, nine of `TcpLink`, five of 
 What the menus, the server browser and a server's uplink are made of: an actor per socket,
 polled each tick. An `IpAddr` is in host byte order (the address's first number in its top
 byte), its port a plain number. A new link is set up by its C++ constructor over the class's
-defaults: text link mode, receive by events, no socket (`0x10702480`).
+defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
 
 - **`InternetLink`:**
   - `Resolve` looks a host name up on a thread of its own and raises `Resolved` or
@@ -77,8 +77,11 @@ defaults: text link mode, receive by events, no socket (`0x10702480`).
   (a line end added in line mode, everything queued in the send FIFO, the whole length with
   the line end answered, `0x10708870`; 0 only with WinSock down or the link's `Socket` 0,
   which a failed `BindPort` alone leaves, a link never bound or whose connection went
-  holding -1 and queuing as any, `0x10706960`, `0x10702480`), `SendBinary`, `ReadText`,
-  `ReadBinary`. Its tick (`0x10706fb0`) goes by its state:
+  holding -1 and queuing as any, `0x10706960`, `0x10702480`), `SendBinary`, `ReadText`
+  (255 bytes at most), `ReadBinary`. `Open` and `Listen` empty the send FIFO; `Listen`'s
+  backlog is 1. A link whose `BindPort` failed, its `Socket` 0, logs a second `BindPort`
+  as already bound and answers 0, answers true at `Open` and `Listen`, which do nothing,
+  and 0 at `SendText` and `ReadText`. Its tick (`0x10706fb0`) goes by its state:
   - listening: it accepts a queued connection (`CheckConnectionQueue`) into a new actor of
     its `AcceptClass`, connected and in the listener's link mode, or with none into itself
     (its `RemoteSocket`), and raises `Accepted` on the one that took it;

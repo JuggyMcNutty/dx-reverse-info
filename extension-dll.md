@@ -75,11 +75,11 @@ are `exec` exports.
     `0x1003a4a0`, by `GetWindowsTickOffset`, `0x1003a3b0`), not the level's:
     each window, shown or not, its own native tick, then its script's
     `Tick` only while `bTickEnabled` and its timers, before its children
-    (`TickTree`, `0x1003bfc0`), its higher siblings' branches before it,
-    each step while the window is not being destroyed: the root's own first
-    of all ([the root's tick](#keyboard-focus)). A class's native tick is
-    its own work alone, calling neither a base class's nor the script: a
-    button's repeat (`0x10008190`), a scale's (`0x10040250`), an edit
+    (`TickTree`, `0x1003bfc0`), siblings top to bottom, each with its
+    branch, each step while the window is not being destroyed: the root's
+    own first of all ([the root's tick](#keyboard-focus)). A class's native
+    tick is its own work alone, calling neither a base class's nor the
+    script: a button's repeat (`0x10008190`), a scale's (`0x10040250`), an edit
     field's blink and drag (`0x100207d0`), a text log's expiry
     (`0x10047c30`), a computer window's typing (`0x1000f7b0`), a list's
     drag and hot keys (`0x10033e50`), the root's focus and then the modal's
@@ -90,8 +90,9 @@ are `exec` exports.
     painted (`InitializeWindows`, `0x1003bc80`; `InvokeWindowReady`,
     `0x1003bd20`).
     `GetTickOffset` (`0x1004fda0`) is that time at any moment: a timer
-    added, and a held button's or scale's first repeat, count what of the
-    frame has gone.
+    added, a held button's or scale's first repeat, a log window's line
+    (`AddLog`, `0x100476a0`) and an edit field's first blink (`0x1001cea0`)
+    count what of the frame has gone.
   - The mouse's position and movement go to the player's root window first
     (`0x100264b0`, `0x10026580`). Typed characters go to it after the
     console (`0x10026650`).
@@ -1045,10 +1046,10 @@ as the window is made.
   field with no margins, its insertion point's blink rate no wait and a
   period of twice `cursorBlinkSpeed`, the cursor's on and off, as
   `SetCursorBlinkSpeed` (`0x1000dac0`) sets it again; then it makes the
-  window selectable.
-  Neither child draws the text, which is the window's own (drawing, below).
-  The constructor (`0x1000d4d0`) sets word wrap, the cursor lit and shown,
-  and the first tick, which does nothing.
+  window selectable. Neither child draws the text, which is the window's
+  own (drawing, below). The constructor (`0x1000d4d0`) turns word wrap on
+  and the cursor lit and shown, and marks the first tick, which does
+  nothing.
 - **Its size.** `SetTextSize(cols, rows)` (`0x10010cf0`) and `SetTextFont`
   (`0x10010e70`), which sets the font and the cell's width and height at
   once and queues its colour, size the window to the columns by the cell
@@ -1082,7 +1083,12 @@ as the window is made.
   interval later, then one each interval, as many in a tick as are due: at
   0.03 s, about one every second frame at 60 frames a second. The clock, the
   blink and the fades stop while the game is paused, unless the window was
-  made during a pause.
+  made during a pause: its first tick in one sets `bGamePaused` and
+  `bPauseProcessing` and goes no further, and the game going on clears both.
+- **Starting.** Shown, the window is marked to start (`VisibilityChanged`,
+  `0x1000ee70`), and its next tick past the first sends `ComputerStart` to
+  it and to each parent in turn until one takes it (`0x1000ef10`), paused
+  or not.
 - **Placing a character** (`CalculateCharDisplayPosition`, `0x10010710`): in
   the current cell, which then moves on a column. One that would go in the
   last column starts the next row instead and goes first in it, but for a
@@ -1116,8 +1122,9 @@ as the window is made.
   sets the colour at once. It shows while `ShowTextCursor` (`0x10011340`,
   true when not given) has it on, its input field, or a window it is in, is
   hidden -- with no input field, a script's `inputWindow` None, never -- and
-  its blink is lit. The blink flips each `cursorBlinkSpeed` (0.5 s), and each character
-  typed lights it and starts the count again: it holds while text types and
+  its blink is lit. The blink flips each `cursorBlinkSpeed` (0.5 s), and
+  each character typed lights it and starts the count again: it holds while
+  text types and
   blinks once it stops. The InfoLink hides it through the transmission's
   opening and shows it as the first speech starts (`DataLinkPlay`).
 - **Drawing** (`Draw`, `0x1000ed60`): the script's `DrawWindow`, the six

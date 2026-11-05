@@ -120,9 +120,10 @@ is empty with no tag; `IsEOF` is true from then on.
 - **`G=name`** and **`F=name`**: a name, which `GetName` (`0x10001980`) gives
   after a `NOTE`, `G`, `F` or `L`; after any other it makes a name of a null
   string, which fails FName's assertion (`Name`, UnName.cpp line 55,
-  Core.dll `0x1014b950`) and stops the game, and no script of the game calls
-  it. `L` sets none. The name is what follows the tag's first `=`, anywhere in it, None
-  without one (`ParseName`, `0x10002880`), `GOAL`'s too (`0x10001f80`).
+  Core.dll `0x1014b950`) and stops the game; no script of the game calls it
+  after one. `L` sets none. The name is what follows the tag's first `=`,
+  anywhere in it, None without one (`ParseName`, `0x10002880`), `GOAL`'s too
+  (`0x10001f80`).
 - **`/<`** and **`/>`**: a `<` and a `>` as text.
 - **A new parser** (its constructor, `0x10001100`) has no tag (`TT_None`),
   no name and black colours.
