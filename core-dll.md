@@ -352,15 +352,18 @@ it walks every property instead and calls `Modify` before each change.
   with which the game's menus read and write their settings:
   - The class is found by its name in any package loaded (the menus name
     `DeusExMPGame`, `DXMapList`, `Player`, not their packages); the property
-    by its name.
+    by its name, once, on that class, its own before its base's
+    (`0x10143fd0`), else `Unrecognized class/property` is logged.
   - `GET` gives the class default's first element as the ini writes it,
     with no quotes: a string bare; an object its class and path name
     (`Texture'Engine.S_Actor'`) or `None`; a bool `True` or `False`; an enum
     byte its value's name.
   - `SET` takes the rest of the line, spaces and all, as the value
     (`GlobalSetProperty`, `0x101523a0`). Every object of the class or a
-    subclass reads it, each then told of the change (`PostEditChange`); then
-    the class's defaults; then the class's config is saved.
+    subclass reads it at that property's place, each then told of the change
+    (`PostEditChange`); then the class's defaults; then the class's config is
+    saved. So `SET Actor bSinglePlayer` sets `Actor`'s in a `PlayerPawn` too,
+    and `SET PlayerPawn bSinglePlayer` the player's own.
 
 ### A property's text
 
@@ -610,25 +613,38 @@ How the original runs UnrealScript.
   Nothing else is checked: any other call runs.
 - **The mask is set at every `UObject::GotoState`** (`0x1012e8f0`), even into
   the state the object is in: the probes that the state or the class has a
-  function for, less those the state `ignores`. Into another state it first
-  sends `EndState` under `RF_InEndState` (`0x2000`; not from within one),
+  function for, less those the state `ignores`. With no state frame it does
+  nothing; else it first clears the latent action. The state is found by
+  `FindState` (`0x10150c80`), in the state's fields and the class's, a
+  class's own name never one; none found is no state, the class the node.
+  Into another state, its name compared, it first sends `EndState`, if its
+  probe is on, under `RF_InEndState` (`0x2000`; not from within one),
   `RF_StateChanged` (`0x1000`) cleared before and tested after: a `GotoState`
-  finished during it sets the flag, and this one then returns preempted (2), its
-  state and label never taken. The state set, `BeginState` the same way. A
-  finished `GotoState` sets `RF_StateChanged` and returns 1; the script's goes
-  to its label only then. One to no state, or to a state the class has not,
-  returns 0 without the flag (`0x1012e8f0`), so made during an `EndState` it
-  preempts nothing and the outer one goes on into its state.
+  finished during it sets the flag, and this one then returns preempted (2),
+  its state and label never taken. The node set, its code cleared, the mask
+  that of the node and the class. One to no state, or to a state the class
+  has not, then returns 0 without the flag, so made during an `EndState` it
+  preempts nothing and the outer one goes on into its state. Into a state,
+  `BeginState` is sent the same way; then `RF_StateChanged` is set, and it
+  returns 1.
 - **A script's `GotoState`** (`execGotoState`, `0x1013dd00`) calls it only
   for another state than the object's (one left out is the object's own),
-  then goes to the label if the change was not preempted by a `GotoState` in
-  `EndState` or `BeginState`. Into the state the object is in (None for no
-  state) it only goes to the label: no `EndState` or `BeginState`, and the
-  probes as they are, so a `Disable` in `BeginState` holds. The label is
-  `Begin` when none is given; `GotoLabel` (`0x1012eb10`) clears the latent
-  action, looks for the label in the state and the states above it, and
-  stops the state code when none has it, logged for a named label
-  (`Label not found`).
+  the object's here None in no state; then goes to the label only for the
+  object's own state or a return of 1, never one preempted or not found. Into
+  the state the object is in it only goes to the label: no `EndState` or
+  `BeginState`, and the probes as they are, so a `Disable` in `BeginState`
+  holds. The label is `Begin` when none is given; `GotoLabel` (`0x1012eb10`)
+  clears the latent action, looks for the label in the state and the states
+  above it, and stops the state code when none has it. `execGotoState` logs
+  `GotoState (<state> <label>): State not found` for a return of 0 to a name
+  not None or `Auto`, and `Label not found` for a named label not found.
+- **`GetStateName()`** (native 284, `0x1013edb0`) is the state frame's node's
+  name: in no state the class's, None for an object with no frame.
+  **`IsInState(S)`** (`0x1013ece0`) walks that node and the ones above it,
+  in no state the class and its supers. Every actor has a frame, and the
+  console: `InitExecution` (`0x10150750`) makes one, in no state, every probe
+  on, from `Engine.dll`'s map load, `SpawnActor` and the console's
+  initialization; an object made by `new` has none.
 - **`Disable(name)`** (`0x1013dfb0`) clears the probe's bit until the mask
   is next set. **`Enable(name)`** (`0x1013de80`) sets it, if the state or the
   class has a function for the probe and the state does not ignore it. For
