@@ -519,6 +519,18 @@ How the original runs UnrealScript.
 
 - **Operands follow their token:** a variable's property, a constant's value,
   a jump's offset, a call's function or name.
+- **A string constant** (`execStringConst`, `0x10130890`) is 8-bit text, each
+  byte widened to a character (`appFromAnsi`, `0x1014a0c0`, into a ring of
+  256 buffers of 1,024, `0x10145c60`), at most 1,023 of them; a Unicode one
+  (`0x10130990`) is taken as it is. The compiler writes 8-bit when every
+  character is below 0x100 (`appIsPureAnsi`, `0x10145b30`). 0x5A has no
+  handler.
+- **A cast** (`DynamicCast`, `0x10130ed0`) and `UObject::IsA`
+  (`0x101155f0`) compare the very class up its `SuperField` chain, a null
+  class passing any object, so a class of another's name in another package
+  is not it; the script's `IsA(name)` (`0x1013ee60`) compares by name.
+  `AllObjects` (`0x1013f1f0`), `Engine.dll`'s iterators, `StaticFindObject`
+  (`0x10151de0`) and a spawn's notifications test a class the same way.
 - **A runaway loop.** Each `Jump` (`0x1012faf0`) and `JumpIfNot`
   (`0x1012fbc0`) run, taken or not, adds one to a count. Past 10,000,000 the
   frame logs "Runaway loop detected (over 10000000 iterations)" as a
@@ -809,7 +821,11 @@ The rest are UE1's own. The details:
   every other character as it is.
 - **The name table** (`FName::FName(Name, FindType)`, `0x1014b950`): a name is
   found in 4,096 buckets by `appStrihash`, compared with `appStricmp`, so one
-  entry holds every spelling of a name, spelt as it was first made. With
+  entry holds every spelling of a name, spelt as it was first made. A
+  package's linker makes every name of its table at its load (`0x10160553`),
+  so the first package loaded fixes a name's text: DeusEx.u's `annadies` for
+  the conversations' `AnnaDies`; `string(name)` (`execNameToString`,
+  `0x101320b0`) gives the entry's. With
   `FNAME_Find` a name not there is None; otherwise it is made, in the slot a
   deleted name left last (`FName::Available`), else in a new one at the end.
   `FNAME_Intrinsic` flags it `RF_Native`.

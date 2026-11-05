@@ -1464,6 +1464,10 @@ What the game shows under a menu, by the player's UI background option
 
 ## Small
 
+- **`StringToName(S)`** (`0x10037940`) makes a name of the string, and stops
+  the game (`GError`, "StringToName: Invalid character 0x%04x in name") at a
+  character other than A to Z, a to z, 0 to 9, `_` and `-`. The game's 26
+  calls pass identifiers alone.
 - **Edit fields.** `Undo` (`0x1001e0a0`) and `Redo` (`0x1001e170`) walk a
   list of changes, each a position, the text removed and the text put in.
   Typing straight after the last change joins it (`AddUndo`, `0x10020450`).
