@@ -88,8 +88,12 @@ comes whole.
      its `ngWorldSecret`, each as UTF-16 without the terminator, in 32 lowercase
      hex digits; `Checksum=NoChecksum` when the password is empty. Without
      stats, nothing (`0x1040a880`).
-4. **Server:** a wrong response gets `FAILURE CHALLENGE`. Then the game's
-   `PreLogin` (script) may refuse, by its error alone (`0x1039f780`: a
+4. **Server:** a `LOGIN` with no `RESPONSE=`, or one equal to
+   `!ChallengeResponse(Challenge)` -- the answer's `== 0` set into a register
+   and compared with the response (`0x1039fb7c` to `0x1039fb90`) -- gets
+   `FAILURE CHALLENGE` (`0x1039fffe`): in practice a response of 0 alone,
+   any other let on, the right one or not. Then the game's `PreLogin`
+   (script) may refuse, by its error alone (`0x1039f780`: a
    `FailCode` with no error lets the login on): `FAILURE` and its message,
    `FAILCODE` and its code (the client's menu takes it: a password asked for,
    the join's error staying the FAILURE's, `0x1040a880`), and the connection
