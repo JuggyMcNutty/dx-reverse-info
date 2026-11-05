@@ -743,7 +743,10 @@ The rest are UE1's own. The details:
     under a squared length of 1e-8, a length of 0.0001; otherwise the vector
     times one over the root, at the x87's precision (24 bits in a console's
     tick: [render-dll.md](render-dll.md#lighting), in floats), each axis
-    stored as a float.
+    stored as a float: the squares summed X's and Y's first, then Z's, the
+    sum stored as a double for `appSqrt`'s `fsqrt`, one over it an `fdivr`.
+    In a console's tick two of three normals stand a last bit from a
+    double's (DXEngine's `SweepVmConsole`).
 - **A float made an int** -- `int(f)` (`0x10131b40`), `byte(f)`
   (`0x10131aa0`, the int's low 8 bits) and a rotator times a float
   (`0x101395e0`, `0x101396d0`, `*=` `0x101398b0`: each angle times the float
