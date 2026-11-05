@@ -59,7 +59,12 @@ the machine's (Windows' computer name).
 
 The control channel carries lines of text: the server's side is
 `ULevel::NotifyReceivedText` (`0x1039f780`), the client's the pending level's
-(`UNetPendingLevel`, `0x1040a880`).
+(`UNetPendingLevel`, `0x1040a880`). A line's command is Core's `ParseCommand`'s
+(`0x10147a20`) and each `KEY=` value its `Parse`'s, as the command line's
+([`cli-flags.md`](cli-flags.md)): a key in any case, but not straight after a
+letter or digit, so `HELLO`'s `VER=` is not `MINVER=`'s; a value in double
+quotes, or up to a space, tab, CR, LF or comma, so a login's `Name=JC(1)`
+comes whole.
 
 1. **Client:** `HELLO REVISION=0 MINVER=1100 VER=1100`.
 2. **Server:** `UPGRADE MINVER=1100 VER=1100`, and the connection closed, when
