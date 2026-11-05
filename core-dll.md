@@ -798,10 +798,12 @@ The rest are UE1's own. The details:
   `Effects.Wrong.LaserBeam1` are the one `FireTexture`, which a `Texture`
   asked for does not find.
 - **`new(Outer, Name, Flags) Class`** (`UObject::execNew`, `0x1013d9f0`):
-  `StaticConstructObject` (`0x10157ff0`) of the class under that name, in the
-  outer given, or, with none, in the transient package (`GetTransientPackage`,
-  `0x101573e0`): `new(Self)` on the player makes the object in its level's
-  package. A flag outside the script's own (`RF_ScriptMask`, `0x704005`) is
+  `StaticConstructObject` (`0x10157ff0`) of the class under that name, in its
+  outer: the calling object, which the outer given, None too, takes the place
+  of, the transient package for None or a caller outside the object table (a
+  class's defaults; `GetTransientPackage`, `0x101573e0`). So `new class'X'`
+  makes the object in the caller and `new(None)` in the transient package:
+  `new(Self)` on the player makes the object in its level's package. A flag outside the script's own (`RF_ScriptMask`, `0x704005`) is
   logged, `new: Flags %08X not allowed`, and left out. An Object of a config
   class made so (`new class'X'`, `X` with a `config` variable) hangs the game
   at exit, saved or not; one of a plain class does not (seen with the
