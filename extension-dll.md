@@ -1038,13 +1038,23 @@ as the window is made.
   font, white text, no time between characters (a print appears whole) and
   no fade, word wrap on; the cursor the white `Solid` texture, 8 wide and 2
   high, white, blinking each 0.5 s, shown; no sounds. `Init` (`0x1000d530`)
-  gives it a child that fills it and a hidden edit field for input, and
-  makes it selectable. The first tick after it is made does nothing.
+  sets its `player` to the root's, keeps it going through pauses when it is
+  made during one, starts the blink's count, then makes its two children:
+  `textWindow`, a plain window, shown, aligned to fill it with no margins
+  (`CreateTextWindow`, `0x1000e250`), and `inputWindow`, a hidden edit
+  field with no margins, its insertion point's blink rate no wait and a
+  period of twice `cursorBlinkSpeed`, the cursor's on and off, as
+  `SetCursorBlinkSpeed` (`0x1000dac0`) sets it again; then it makes the
+  window selectable.
+  Neither child draws the text, which is the window's own (drawing, below).
+  The constructor (`0x1000d4d0`) sets word wrap, the cursor lit and shown,
+  and the first tick, which does nothing.
 - **Its size.** `SetTextSize(cols, rows)` (`0x10010cf0`) and `SetTextFont`
   (`0x10010e70`), which sets the font and the cell's width and height at
   once and queues its colour, size the window to the columns by the cell
-  width and the rows by the cell height, once it has a font: the InfoLink's
-  is 294 by 60.
+  width and the rows by the cell height, once it has a font and its text
+  window (`CalculateTextWindowSize`, `0x1000e2d0`): the InfoLink's is 294
+  by 60.
 - **The queue.** What a script prints is not drawn at once: each character,
   line break and change goes into a queue, with a time.
   - A character (`Print`, `0x10011810`) or a line break takes the window's
@@ -1104,8 +1114,9 @@ as the window is made.
   default a white bar 8 by 2. `SetCursorTexture` (`0x10011270`) takes the
   cell's width and 2 for a size not given; `SetCursorColor` (`0x100110b0`)
   sets the colour at once. It shows while `ShowTextCursor` (`0x10011340`,
-  true when not given) has it on, no input field shows and its blink is
-  lit. The blink flips each `cursorBlinkSpeed` (0.5 s), and each character
+  true when not given) has it on, its input field, or a window it is in, is
+  hidden -- with no input field, a script's `inputWindow` None, never -- and
+  its blink is lit. The blink flips each `cursorBlinkSpeed` (0.5 s), and each character
   typed lights it and starts the count again: it holds while text types and
   blinks once it stops. The InfoLink hides it through the transmission's
   opening and shows it as the first speech starts (`DataLinkPlay`).
