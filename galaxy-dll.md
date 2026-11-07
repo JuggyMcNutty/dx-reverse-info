@@ -437,8 +437,10 @@ animates.
     with the slider's at once after the load (`0x1060a810`), its initial
     speed and tempo, its linear-slides flag and its channels' pans, a pan
     over 64 (IT's surround, or a muted channel) a surround a quarter to the
-    left, the channel played. Never its mix volume, separation or channels'
-    volumes. Only the first 32 channels play (`0x1062a26e`).
+    left (`0x10628bcc`; left 0.866, right 0.5 inverted), the channel played;
+    none of the game's songs plays a channel its header pans so. Never its
+    mix volume, separation or channels' volumes. Only the first 32 channels
+    play (`0x1062a26e`).
   - **A sample:** its volume, default pan, loop, ping-pong, 16-bit and signed
     flags, length and rate. Never its global volume, sustain loop, vibrato or
     stereo flag, nor whether its data is flagged present: a length is
@@ -449,9 +451,10 @@ animates.
     envelope's; never its global volume, default pan, new note action,
     random variations, pitch-pan separation or filter, a filter envelope
     played as a pitch envelope.
-  - **The orders** to the first end mark, those after it out of reach of a
-    section. An order whose pattern holds no data is passed over, the player
-    going on to the next (`0x10615710`).
+  - **The orders** to the first end mark, at most 255, those after it out
+    of reach of a section (`0x10628c04`-`0x10628c20`). An order whose pattern
+    holds no data is passed over, the player going on to the next
+    (`0x10615710`).
   - **The patterns,** each once, the first time the order list reaches it, the
     decoder's state of each channel carried on from the pattern converted
     before. A note cut is a volume of 0, the note playing on. The volume
@@ -467,13 +470,17 @@ animates.
     and DF0 on every tick but the first; E and F, their extra-fine slides made
     fine, by (x + 2) / 4; G, H, J, K, L, O and R; Q, without its volume
     change, Q00 retriggering nothing; S3x, S4x, SBx, SDx and SEx; S8x a pan of
-    (x × 2,048 + 1,024) ÷ 32,767; any S9x surround; SCx a note's volume to 0 a
-    tick later than IT's; T over 0x20 the tempo, T20 a speed of 32 (the
-    player's speed command takes up to 0x20 for a speed), T0x and T1x kept as
-    a command the player takes for a vibrato; X as the MOD's 8xx, 0 to 0x80 left
-    to right, 0xA4 and the others over 0x80 surround. S0x, S1x and SFx are
-    kept and ignored by the player; I, M, N, P, U, V, W, Y, Z, S2x, S5x, S6x,
-    S7x and SAx are dropped (`0x1062a180`).
+    (x × 2,048 + 1,024) ÷ 32,767; any S9x the 8xx's 0xA4, a surround; SCx a
+    note's volume to 0 a tick later than IT's; T over 0x20 the tempo, T20 a
+    speed of 32 (the player's speed command takes up to 0x20 for a speed),
+    T0x and T1x kept as a command the player takes for a vibrato; X as the
+    MOD's 8xx, its parameter as it is. S0x, S1x and SFx are kept and ignored
+    by the player; I, M, N, P, U, V, W, Y, Z, S2x, S5x, S6x, S7x and SAx are
+    dropped (`0x1062a180`). The player's 8xx (`0x10616eb0`, its command 8)
+    sets a pan to 0x80, left to right, 0x80 at 127 of 128, and over it a
+    surround, its right side inverted: 0x84 to 0xC4 at a pan of twice the
+    step past 0x84 from the left, 0xA4 the middle and 0xC4 127 of 128, the
+    others in the middle. The game's songs use XA4 and S91 alone.
   - **Its player** steps a voice's gains at each tick, unramped, and reads a
     sample between one frame and the next linearly ([the mixer](#the-mixer)).
     Entering the first order, the order count turning from 255 to 0 -- the
@@ -484,12 +491,20 @@ animates.
     another section keeps the reset's speed, 48 ticks a row, and the tick
     the music last had, until its patterns set theirs. A section change
     silences the music's voices at once and flags a jump, which the player
-    reads as the next row starts (`0x10616f29`): the section starts as the
-    row playing ends, the speed, tempo and pans playing on but for order 0
-    (`Update`, `0x1060a822`-`0x1060a863`), and until then the order written
-    back into `SongSection` is the one before the section, 255 before order
-    0. A section past the last order is refused (`glxControlMusic`), the
-    voices silenced all the same and the song going on at its next order.
+    reads as the next row starts (`0x10616f29`), a pattern delay's rows
+    played out first: the section starts as the row playing ends, the speed,
+    tempo and pans playing on but for order 0 (`Update`,
+    `0x1060a822`-`0x1060a863`), and until then the order written back into
+    `SongSection` is the one before the section, 255 before order 0. The
+    rest of the row's ticks run on the silenced voices, a note delay's note
+    sounding and a retrigger moving its voice's place alone; a song just
+    loaded, no row playing, starts its section at its first tick. A section
+    past the last order is refused (`glxControlMusic`), logged as
+    `glxControlMusic( GLX_SETPOSITION2, Viewport->Actor->SongSection )
+    failed: 17` (`0x1060a86b`-`0x1060a888`), the order count as it was, but
+    the voices are silenced and the jump flagged all the same: the song goes
+    on at the order after the count as the row ends, a song just loaded at
+    order 0.
 
 ## Reverb
 
