@@ -380,6 +380,23 @@ it walks every property instead and calls `Modify` before each change.
     little-endian, the byte-order mark `FF FE` first. So an ini or `.int`
     holding a character past Latin-1 is saved as UTF-16, every other as 8-bit;
     an ini is written whole, CR LF.
+  - A write that fails fails quietly. `Write` clears the file's changed mark
+    before it writes, and writes no file `Detach` (`0x10915d60`) marks not to
+    be saved; its answer goes nowhere: `Flush` (`0x10915250`) writes each
+    changed file and goes on -- `SaveConfig`'s at its end, the files kept in
+    the cache, and the exit's (`Exit`, `0x10918cc0`), which then drops them.
+    `appSaveStringToFile` writes nothing for an empty text, and makes the file
+    through the file manager's `CreateFileWriter` (GOG DeusEx.exe
+    `0x109067b0`) with no flags and `GNull` for its errors: for writing, made
+    anew (`CREATE_ALWAYS`), shared with none. A file it cannot make --
+    read-only, which Windows refuses an administrator too, or in a folder not
+    writable -- gives no writer and nothing logged; only its `NoFail` flag (1)
+    makes that fatal (`Failed to create file: %s`), and its `EvenIfReadOnly`
+    flag (4) clears the file's attributes first. A write that fails part way
+    logs nothing either (`GNull`), the file left short. So a read-only ini is
+    never written: nothing is logged or shown, the game plays on, and what was
+    saved is read back from the cache as set for the rest of the run; the next
+    change marks the file again.
 - **`StaticSaveConfig()`** (`0x1013e7c0`): `SaveConfig` of the context's
   class's defaults (`UClass::Defaults`), from an object's call as from the
   class's; the object's own values are never written.

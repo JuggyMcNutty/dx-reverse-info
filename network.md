@@ -679,9 +679,12 @@ A run of properties comes between the actor's `PreNetReceive` and
     halfway if that left more than three quarters of the distance squared; under
     40, a jump 15% of the way.
   - `SimAnim` gives the animation: frame and last frame by 10,000, rate by
-    5,000, tween by 1,000, a negative last frame for a loop (a pawn's
-    `AnimMinRate` then at least 0.5).
-  - A mover's `SimInterpolate` gives its interpolation: alpha and rate by 100,
+    5,000, tween by 1,000 -- the number sent times the double 0.0001,
+    0.0002 or 0.001, the product as the x87 holds it rounded once to a float
+    (`0x103683cc`-`0x1036840b`) --, a negative last frame for a loop (a
+    pawn's `AnimMinRate` then at least 0.5).
+  - A mover's `SimInterpolate` gives its interpolation: alpha and rate by
+    100, each the number times the double 0.01 so (`0x10368277`-`0x103682ae`),
     the key and the previous one, and `PHYS_MovingBrush`.
   - `bJustTeleported` clears. The local player's `PlayerReplicationInfo.Ping`
     loses half the client's average frame time.

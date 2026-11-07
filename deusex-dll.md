@@ -200,7 +200,11 @@ turn:
   `<SavePath>\Current\<MapName>.<ext>?load?loadonly?loadgame`, an absolute
   URL on the browse's, so the browse's player options after its own
   ([addresses](network.md#addresses)); the level keeps the URL the save
-  holds, which then becomes the last URL.
+  holds, which then becomes the last URL. A slot with no `SaveInfo`
+  (`0x10010f96`), or whose level does not load, its load's error kept in a
+  string of its own (`0x10011323`), fails the browse with no error's text,
+  which a start then browses once more at `DX.dx`
+  ([starting the game engine](engine-dll.md#starting-the-game-engine)).
 - **Any other map**, and a URL with a `?load=` of any value (`0x100115ce`),
   which the game engine's browse leaves to this one, loading no save
   ([addresses](network.md#addresses)): the map it tests is the `?load=`'s
@@ -241,7 +245,9 @@ turn:
     loads from `Maps`. The screen shows `LOADING` alone, as for a
     `?loadgame`. A destination that fails to load (not there) is followed by
     the map of the current level's URL loaded again with the same travel
-    info (`Dx.Dx` with no level): the level starts afresh, the failure's
+    info (`Dx.Dx` with no level, `0x1001183f`-`0x10011e51`; so the start's
+    first browse of a map not there loads `Dx.Dx` on its URL, the menu's
+    map, and succeeds): the level starts afresh, the failure's
     message gone with it, or plays on where that URL names no map there
     (`Index.dx`, a file in the emptied `Current`). Within one mission a
     failed load leaves the level playing, pruned, with the message

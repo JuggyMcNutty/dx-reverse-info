@@ -155,9 +155,22 @@ logged `EndFullscreen`), back in a window at its windowed size. In a window, unl
 is a child window's (the editor's), it logs `AttemptFullscreen` and opens the first that opens
 of `GameRenderDevice` full screen, `WindowedRenderDevice` full screen and `WindowedRenderDevice`
 in a window (`TryRenderDevice`, `0x1110d150`), full screen at `FullscreenViewportX` by `Y`.
-`EndFullscreen` is the console's `ENDFULLSCREEN` too, in any state, in a window logged and its
-window put back at its windowed size (`0x11106dcf`-`0x11106dea`); `PREFERENCES` and the window's
-`WM_DESTROY` end full screen first (`0x111072bb`, `0x11109c3e`).
+`EndFullscreen` is the console's `ENDFULLSCREEN` too, in any state (`0x11106dcf`-`0x11106dea`):
+the viewport's `Exec` (`0x11106d90`) takes its own words, this one, `TOGGLEFULLSCREEN` and the
+rest, only once Engine's `UViewport::Exec` has taken nothing, so after the input's, the render
+device's, the viewport's, the exec functions and the engine's
+([a key's binding](engine-dll.md#a-keys-binding)). It logs `EndFullscreen`; a device that runs
+full screen alone (`FullscreenOnly`) gives way to `WindowedRenderDevice` in a window; else
+D3DDrv's (`BLIT_Direct3D`) is set to `WindowedViewportX` by `Y` in a window, OpenGLDrv's
+(`BLIT_OpenGL`) asked for -1 by -1 in a window, and any other viewport resized in a window
+(`BLIT_DibSection`, -1 by -1); then the window's frame is updated. `ResizeViewport`
+(`0x1110d640`) takes -1 for the client's size of the mode (`0x1110d93b`-`0x1110d967`), and keeps
+each size it takes as the client's for its mode (`WindowedViewportX`, `Y` and
+`WindowedColorBits`, or the full screen ones), saving the client's config at once (`SaveConfig`,
+`0x1110e2f3`-`0x1110e35b`): the ini written, a window sized by hand's too (`WM_SIZE`, below). So
+in a window the windowed size is the window's own, and `ENDFULLSCREEN` there logs its line and
+sizes the window at the size it has; full screen it is the toggle's way back. `PREFERENCES` and
+the window's `WM_DESTROY` end full screen first (`0x111072bb`, `0x11109c3e`).
 
 In a window, `WM_SIZE` (`0x11109f82`) gives the viewport or its render device the client area's
 new size, so a maximize that no command carries leaves the window maximized and the game drawn

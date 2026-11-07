@@ -329,6 +329,51 @@ fields, after their properties (none):
   its `Destination` (both made level when it walks) `MinHitWall` or less along
   the normal; then, with `HitWall` not probed and the pawn not falling, its
   `MoveTimer` goes to −1 and `bFromWall` is set instead.
+- **A direction** (Core's `FVector::SafeNormal`,
+  [the natives](core-dll.md#the-natives)): none for a vector whose squared
+  length is under 1e-8, a length under 0.0001, a NaN's too; else the vector
+  over its length as the x87 works it out, stored as floats. The physics
+  take each direction they need so:
+  - the acceleration `calcVelocity` turns the velocity toward, walking,
+    flying and swimming (`0x103ca63c`, `0x103d3121`, `0x103d3dc5`), but the
+    acceleration itself where each axis compares equal to 0 (C3, a NaN axis
+    too): one under 0.0001 long gives none, and the velocity only slows by
+    the friction;
+  - the speed caps, a direction times the most: `calcVelocity`'s
+    (`0x103ce090`, `0x103ce1a6`), a `Projectile`'s `MaxSpeed`
+    (`0x103d4821`), a fall's terminal velocity and air speed (`0x103d2425`,
+    `0x103d1ad0`), `ParabolicTrace`'s terminal velocity (`0x1036c789`) and a
+    swimmer's 4,000 (`startSwimming`, `0x103d2e5a`);
+  - a fall's air control, its test move and the acceleration it cuts
+    (`0x103d0c02`, `0x103d0dc9`); a landing walker's acceleration, made a
+    direction before it walks on (`processLanded`, `0x103d043d`); a falling
+    `moveToward`'s, toward the spot across (`0x103be2fa`);
+  - a walk's sloped wall made level (`0x103cab86`), the player's two
+    diagonals (`0x103caddb`, `0x103caf66`) and a step up's direction
+    (`0x103cb1a0`); a flight's and a swim's step up and their test of the
+    velocity's up or down (`0x103d3342`, `0x103d3351`, `0x103d3fcd`,
+    `0x103d3fd8`); a roll's velocity and acceleration (`0x103d4bbc`,
+    `0x103d4bd1`);
+  - the direction `TwoWallAdjust` keeps a slide to (`moveSmooth`
+    `0x103c9191`, `physFalling` `0x103d2114`, `physRolling` `0x103d51f0`,
+    `jumpLanding` `0x103c285a`, `ParabolicTrace` `0x1036c69d`), and in it the
+    corner's line, the two normals' cross, each axis's two products and their
+    difference as the x87 holds them, stored as floats (`0x103237f9`): two
+    walls all but facing make none, and the slide goes nowhere;
+  - `processHitWall`'s way to the `Destination` (`0x103cedae`); the sight
+    tests', `LineOfSightTo`'s (`0x103bed0f`) and the sides `AICanSee` looks
+    at (`0x103c7022`); the reach tests' steps (`walkReachable` `0x103c1d9f`,
+    its jump `0x103c1e98`, `flyReachable` `0x103c1308`, `swimReachable`
+    `0x103c1725`), `SuggestJumpVelocity`'s with no time (`0x103c2e12`) and
+    `PickWallAdjust`'s (`0x103c43be`); a net actor's priority, the way to it
+    from the viewer (`FActorPriority`, `0x103a4409`); a cylinder's normals
+    (`UPrimitive::PointCheck`, `0x103d88ab`, `0x103d8989`; `LineCheck`,
+    `0x103d8f9d`); and `physSpider`'s five, which no stock script sets.
+
+  The BSP's checks call `UnsafeNormal`, which has no floor, in helpers of
+  `UModel::PointCheck` and `LineCheck` (`0x103f19b0`, `0x103f42f0`), and
+  `Normalize`, which leaves a vector under 1e-8 squared as it is, in one
+  both share (`0x103f6600`).
 - **A projectile's move** (`AActor::physProjectile`, `0x103d4600`): in steps
   of the time left, up to 8, each the velocity less the zone's fluid friction
   (in water) plus the acceleration × the time left, a `Projectile` held to its
@@ -1785,11 +1830,22 @@ own nodes (a Liberty Island save: 209 of the level's 13,212 flagged in front,
   with no token, `FURL::DefaultLocalMap`, which Deus Ex sets to `DX.dx` here
   whatever the ini's `[URL] LocalMap` names (`0x10389429`-`0x103894a4`). So
   a client given a map on its command line still starts at `DX.dx` unless
-  `-hax0r` comes with it. A URL that does not parse, or a level that cannot be
-  loaded, is fatal; a browse that fails without an error's text is tried once
-  more at `DX.dx`, unless that was the URL (`0x103895f0`-`0x10389663`). Then
-  the input, the console (`ini:Engine.Engine.Console`), the viewport and the
-  audio.
+  `-hax0r` comes with it. A URL that does not parse is fatal (`InvalidUrl`).
+  A browse that fails without an error's text is tried once more at
+  `DX.dx`, a partial URL on the `[DefaultPlayer]` one, not on the first,
+  unless the URL's text, as typed, was `DX.dx` in any case
+  (`0x103895f0`-`0x10389663`); one that fails with a text, or fails again,
+  is fatal, `FailedBrowse` with the URL's text and the last error. The
+  browse fails without a text for a server's address on a client, its join
+  begun (`0x1038b6e5`-`0x1038b7c9`), for a URL of another protocol the
+  system opened ([addresses](network.md#addresses)), and in Deus Ex's
+  browse for a `?loadgame=N` whose slot has no save or whose level does not
+  load ([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)):
+  so a client started at a server's address plays `DX.dx` while it joins,
+  and one started at an empty slot starts on `DX.dx`. A start map that is
+  not there fails no browse, Deus Ex's loading `Dx.Dx` in its place. Then
+  the input, the console (`ini:Engine.Engine.Console`), the viewport and
+  the audio.
 - **`UEngine::InitAudio`** (`0x1037fe50`): on a client with `UseSound` and
   without `-nosound`, creates `ini:Engine.Engine.AudioDevice` and starts it; one
   that fails to start is logged ("Audio initialization failed.") and dropped.
