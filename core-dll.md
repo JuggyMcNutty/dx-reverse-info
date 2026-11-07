@@ -151,7 +151,12 @@ Its only users are `DeusExPlayer`'s debug console commands.
   (`CsgOper`, `PolyFlags`, `TempScale`). Source-protected mods' packages hold
   exports of no context at all: the anti-cheat packages the live servers send
   (ANNA, DXNMS) point their classes' `ScriptText` at exports named None, of
-  class `Class`, with no flags and no data.
+  class `Class`, with no flags and no data. One for the client alone
+  (`RF_LoadForClient` without `RF_LoadForServer`) is made in the game and not
+  on a dedicated server; the game's packages have none, every export and
+  name of its maps, `.u`, `.utx`, `.uax` and `.umx` files for both or for
+  the editor alone, and nor have Revision's, HDTP's, Biomod's, Shifter's or
+  The Nameless Mod's.
 - **What a save writes.** Every export in a save carries the three context
   flags beside those a load reads:
 

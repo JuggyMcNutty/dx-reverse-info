@@ -290,7 +290,13 @@ fields, after their properties (none):
   - No move (each axis of the delta under 0.0001, the double 0.0001) and no
     turn does nothing (true), the hit it was given left as it was
     (`0x1039915a` to `0x10399228`); any other move first sets the hit to
-    none, time 1. `walkMove`, `flyMove` and `swimMove` pass one hit to all
+    none, time 1. Each axis, the float as stored, is made positive by an
+    `fchs` where the x87 has it under 0 and compared with the double, its
+    C0 read, so a float of 0.0001 (9.99999975e-5) is under it, as a NaN is,
+    and a delta under it on every axis is none however long. A walking
+    step, a rolling one, a thrown thing's, a trailer's owner's velocity and
+    a client's smoothing (`PostNetReceive`, `0x103684e4`) are tested so
+    too (below). `walkMove`, `flyMove` and `swimMove` pass one hit to all
     their test moves, and `jumpLanding` one a step, so a test move of nothing
     keeps the hit of the move before it. A turn alone, with nothing standing
     on the actor, only sets its rotation (true), but for a brush that is not
@@ -379,7 +385,8 @@ fields, after their properties (none):
   less the owner's facing × the trailer's `Mass`, else the owner's place.
   Anything else goes to the owner's place and turns, through `MoveActor`
   with no move, to the owner's rotation with `bTrailerSameRotation`, else
-  against the owner's velocity, or straight up (pitch 16384) with none.
+  against the owner's velocity, or straight up (pitch 16384) with none, each
+  axis under the double 0.0001 (`0x103d7a70`-`0x103d7ad6`).
   Each place is a `FarMoveActor` without a check.
 - **A path** (`AActor::physPathing`, `0x103dd8a0`): while `PhysRate` is not
   0, the actor interpolates and time is left -- from its `Target`, an
@@ -424,7 +431,8 @@ fields, after their properties (none):
   - Steps, up to 8: a player's, and another pawn's whose move over the time
     left is over 20 units, of at most 0.05 s (half the time left, over 0.05
     s); any other the whole time left.
-  - A step that does not move (each axis under 0.0001) is the last. A pawn
+  - A step that does not move (each axis under the double 0.0001, as
+    `MoveActor`'s test, `0x103ca93e`-`0x103ca9d7`) is the last. A pawn
     standing still on the same base, a line 20 units down from its cylinder's
     bottom centre finding the floor 4.1 to 4.6 away, is left as it is.
   - A step that moves, after one that met a wall too steep to walk up
@@ -728,7 +736,9 @@ fields, after their properties (none):
     (1 − the tick × its fluid friction), plus the acceleration × the tick;
   - the move that velocity plus the zone's velocity, in steps of the time
     left, or half of it, of at most 0.1 s, up to 8;
-  - each step moved (`MoveActor`); a wall gives `HitWall`. With `bBounce` the
+  - each step moved (`MoveActor`), but one of nothing (each axis under the
+    double 0.0001, `0x103d4e90`-`0x103d4f20`); a wall gives `HitWall`. With
+    `bBounce` the
     step's time not moved goes back to the time left, at most twice;
     without, it slides along the wall, and along a second wall through
     `TwoWallAdjust`, `HitWall` again;
@@ -1550,8 +1560,9 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     thrower's or of an actor based on it, is taken; a hit ends the move
     2 units short of it along the line (no move within 2 units), the hit's
     time that of the move made over the step's length; the region is found
-    again where the move ends. A move under 0.0001 on every axis is not
-    made, and the last move's hit stands for it.
+    again where the move ends. A move under the double 0.0001 on every axis
+    (`0x1036caae`-`0x1036cb1d`) is not made, and the last move's hit stands
+    for it.
   - It fails (0, its final location the start) on leaving the world, a step
     longer than about 1,580 units, or running out of time, the landing step
     counted; on entering water with one step's time (0.01 with steps of
@@ -1771,11 +1782,14 @@ own nodes (a Liberty Island save: 209 of the level's 13,212 flagged in front,
   Entry level (`entry.dx`, with no option), the start URL. It is the command line's first token
   (its second if the first is `SERVER`), but only when the command line has
   `-hax0r` or `-server` and the token does not start with `-`; otherwise, and
-  with no token, `FURL::DefaultLocalMap`, which Deus Ex sets to `DX.dx` here. So
+  with no token, `FURL::DefaultLocalMap`, which Deus Ex sets to `DX.dx` here
+  whatever the ini's `[URL] LocalMap` names (`0x10389429`-`0x103894a4`). So
   a client given a map on its command line still starts at `DX.dx` unless
   `-hax0r` comes with it. A URL that does not parse, or a level that cannot be
-  loaded, is fatal. Then the input, the console (`ini:Engine.Engine.Console`),
-  the viewport and the audio.
+  loaded, is fatal; a browse that fails without an error's text is tried once
+  more at `DX.dx`, unless that was the URL (`0x103895f0`-`0x10389663`). Then
+  the input, the console (`ini:Engine.Engine.Console`), the viewport and the
+  audio.
 - **`UEngine::InitAudio`** (`0x1037fe50`): on a client with `UseSound` and
   without `-nosound`, creates `ini:Engine.Engine.AudioDevice` and starts it; one
   that fails to start is logged ("Audio initialization failed.") and dropped.
@@ -1997,7 +2011,10 @@ it is. It runs `PlayerInput` alone, then sets each `input` float to 0 itself
   its script `Tick`, its state code, its timer, its `LifeSpan` and its
   physics, in that order. The timer calls `Timer` once a tick, however many
   of its periods passed: the counter keeps what is left over them, and a
-  timer that does not loop stops. With under 0.0001 s of `LifeSpan` left,
+  timer that does not loop stops. With 0.0001 s or less of `LifeSpan` left
+  (the life span less the tick as the x87 holds it, before it is stored as
+  a float, against the double 0.0001; a NaN life span is taken for 0 and
+  never counted down),
   `Expired`, then the actor is destroyed, and its tick ends there either way
   (`0x103a2731`-`0x103a2757`): one without the authority, which
   [`DestroyActor`](#destroyed-actors) refuses, stays, its life span below

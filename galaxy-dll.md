@@ -209,8 +209,13 @@ it, the music's: channel n starts its sound on voice n + 1.
 
 Each channel keeps an obstruction time:
 
-- A line runs from the player's eyes (the player's own place and
-  `EyeHeight`, even when viewing through another actor) to the sound's actor.
+- A line runs from the sound's actor to the player's eyes (the player's own
+  place and `EyeHeight`, even when viewing through another actor): the
+  check's start the actor's place, its end the eyes
+  (`0x10609cb9`-`0x10609da3`), however short, so a sound at the eyes of a
+  player inside solid is muffled ([traces](engine-dll.md#traces): a line of
+  no length in solid is blocked). Run (DXEngine's `SolidSoundConsole`): a
+  fan at the eyes 10 dB down in the solid under Liberty Island's pier.
 - When it meets the level's BSP (`UModel::FastLineCheck`, `Engine.dll`
   `0x103f3280`, `FastTrace`'s test), the time grows by the time step, up to
   0.5 s. When clear, it shrinks back to 0. The BSP holds the movers' polygons

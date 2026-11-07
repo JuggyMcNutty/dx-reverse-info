@@ -155,11 +155,15 @@ logged `EndFullscreen`), back in a window at its windowed size. In a window, unl
 is a child window's (the editor's), it logs `AttemptFullscreen` and opens the first that opens
 of `GameRenderDevice` full screen, `WindowedRenderDevice` full screen and `WindowedRenderDevice`
 in a window (`TryRenderDevice`, `0x1110d150`), full screen at `FullscreenViewportX` by `Y`.
+`EndFullscreen` is the console's `ENDFULLSCREEN` too, in any state, in a window logged and its
+window put back at its windowed size (`0x11106dcf`-`0x11106dea`); `PREFERENCES` and the window's
+`WM_DESTROY` end full screen first (`0x111072bb`, `0x11109c3e`).
 
 In a window, `WM_SIZE` (`0x11109f82`) gives the viewport or its render device the client area's
 new size, so a maximize that no command carries leaves the window maximized and the game drawn
-at its size. As it is dragged the window is held to 640 by 480 at least (`WM_GETMINMAXINFO`,
-`0x1110a812`).
+at its size. As it is dragged the window is held to 640 by 480 at least, the whole window, its
+frame and caption too: `WM_GETMINMAXINFO`'s least tracking size (`0x1110a812`), whatever the
+window's state.
 
 ## The window's commands
 
