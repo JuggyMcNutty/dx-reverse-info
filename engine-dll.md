@@ -1763,13 +1763,24 @@ own nodes (a Liberty Island save: 209 of the level's 13,212 flagged in front,
 ## A key's binding
 
 A key's binding is a line of commands with `|` between them (`[Engine.Input]`
-in `User.ini`). Where each goes depends on what the key did:
+in `User.ini`), cut as Core's `ParseLine` cuts a line, not exact (Core.dll
+`0x10147e60`), into 256 characters: up to a CR, an LF or the text's end, 255
+characters at most, a longer line's rest the next command; outside double
+quotes a `//` drops the rest of the line from there (the quotes in it still
+counted) and a `|` ends the command, one in a comment too; then every CR, LF
+and `|` after it is passed over. A line of nothing but a comment, or one that
+begins with a `|`, is an empty command. An exec file's lines are cut alike
+(`UViewport::ExecMacro`, `0x10374700`: the file imported as a text buffer,
+`Execing` logged, each command to the viewport's `Exec`; a file that is not
+there Core.int's `FileNotFound` on the command's output). Where each goes
+depends on what the key did:
 
 - **`UInput::ExecInputCommands`** (`0x10393bf0`), while the engine runs: on a
   press the command goes whole to the viewport's `Exec` (an `OnRelease` one
-  too, which nothing takes), and on a release when it starts with
-  `OnRelease` the rest of it; on anything else (a key held, an axis, a
-  release without `OnRelease`) to the input's own `Exec`.
+  too, which nothing takes), and on a release when it starts with the word
+  `OnRelease`, as `ParseCommand` takes it, the rest of it; on anything else
+  (a key held, an axis, a release without `OnRelease`) to the input's own
+  `Exec`.
 - **`UInput::Exec`** (`0x10393e10`), with the key's action: `BUTTON` sets its
   `input` byte to 1 on a press and to 0 on a release, and leaves it
   otherwise, so a byte a script clears while the key is held stays clear
@@ -1786,7 +1797,12 @@ in `User.ini`). Where each goes depends on what the key did:
   `Exec`, the render device's, the viewport's own words (`GETPING`, `INJECT`,
   `NETSPEED`, `LANSPEED`, `SHOWALL`, `REPORT`, `SHOT`, `SHOWACTORS`,
   `HIDEACTORS`, `RMODE`, `EXEC`), the console's exec functions, then
-  `UPlayer::Exec`.
+  `UPlayer::Exec`. Each word of the input's, the viewport's and the engine's
+  is Core's `ParseCommand`'s (`0x10147a20`): past spaces and tabs, the word
+  in any case with no ASCII letter or digit straight after it, then the
+  spaces and tabs after it, so `exec"x.txt"` runs `x.txt` and `shot.` takes a
+  shot; an exec function's name is the line's first token (`ParseToken`), and
+  an alias's (`UInput::Exec`'s, a name found, never made).
 - **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`,
   the exec functions of the game, the HUD, the player pawn and each item of its
   inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest). An

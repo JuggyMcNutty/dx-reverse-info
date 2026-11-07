@@ -130,14 +130,28 @@ Its only users are `DeusExPlayer`'s debug console commands.
   a fixed array
   (`0x10167d30`) and a dynamic one (`0x10168480`, the counts first) each
   element; a map (`0x10168d80`) always the same.
-- **An export for no context is never made** (`ULinkerLoad::CreateExport`,
-  `0x1012e230`). An export is made only when its flags share one of the
-  linker's context flags: `RF_LoadForClient`, `RF_LoadForServer`,
-  `RF_LoadForEdit` as the game runs. A reference to any other reads as None.
-  No stock package has one. Source-protected mods do: the anti-cheat
-  packages the live servers send (ANNA, DXNMS) point their classes'
-  `ScriptText` at exports named None, of class `Class`, with no flags and no
-  data.
+- **An export or a name outside the context is never made**
+  (`ULinkerLoad::CreateExport`, `0x1012e230`). An export is made only when
+  its flags share one of the linker's context flags, which its constructor
+  sets (`0x101600d5`-`0x10160101`): `RF_LoadForEdit` with `GIsEditor`,
+  `RF_LoadForClient` with `GIsClient`, `RF_LoadForServer` with `GIsServer`.
+  The game's `WinMain` clears `GIsEditor` and sets `GIsServer`, and
+  `GIsClient` but with `-server` (DeusEx.exe `0x10908d79`-`0x10908dc0`), so
+  the game's context is the client's and the server's, a dedicated server's
+  the server's alone. A reference to any other export reads as None. The
+  editor's alone are not made: each map's brushes (flags `0x340000`, 74,485
+  in the 88 maps), their models and some of their polys, its editor cameras
+  and script text, and each class's `ScriptText` in the `.u` files; a level's
+  actor list holds None in their places, and of the maps' game objects'
+  properties only 234 game-loaded `Brush` actors' `Brush` refers to one, and
+  reads None. A name of the package's table likewise: one whose flags share
+  none of the context flags is None and makes no name (`0x10160543`, before
+  the `FName` at `0x10160553`): 1,230 in the 88 maps, each used by the
+  editor's exports alone, among them the property names their tags use
+  (`CsgOper`, `PolyFlags`, `TempScale`). Source-protected mods' packages hold
+  exports of no context at all: the anti-cheat packages the live servers send
+  (ANNA, DXNMS) point their classes' `ScriptText` at exports named None, of
+  class `Class`, with no flags and no data.
 - **What a save writes.** Every export in a save carries the three context
   flags beside those a load reads:
 
@@ -161,6 +175,10 @@ Its only users are `DeusExPlayer`'s debug console commands.
   a byte each (Latin-1); on a load, the count's sign says which, and a string
   of the terminator alone is made empty. So a note typed past Latin-1 is
   saved wide and every other string of a save as 8-bit.
+  A name of a package's table is such a string, then its flags
+  (`FNameEntry`'s `<<`, `0x1014e260`): copied whole into the entry, 16-bit,
+  and the name made of it (`AllocateNameEntry`, `0x1014e430`), so a name
+  keeps every character of a 16-bit one as a note does.
 - **A package's file** (`appFindPackageFile`, `0x10148ec0`). A name ending in
   `.dll` finds none. The search:
   1. the name as given, if a file of it exists in the working directory
@@ -449,9 +467,22 @@ by each property class's `ImportText` and `ExportTextItem`:
   for a `globalconfig` one, the object's name for a per-object config class): a
   dynamic array has the section's lines of its name removed and one
   `Name=element` line written per element; a map's lines are removed; anything
-  else is one key, `Name` or `Name[i]`, its text exported undelimited (a string
-  bare, a struct's members quoted within); the config cache is flushed to disk
-  at once, and every class deriving from the config class re-reads its defaults.
+  else is one key, `Name` or `Name[i]`, its text exported undelimited (a
+  string bare, a struct's members quoted within); the config cache is flushed
+  to disk at once. Then the config is read again into the defaults of every
+  class deriving from the topmost class with `CLASS_Config` above the
+  object's class -- its base classes walked while each has the flag, the
+  class itself when its base has none --, the object's class among them, each
+  by `LoadConfig` with propagation (`0x10150d60`): its base classes' sections
+  first, from the topmost config class down, then its own, its `CPF_Config`
+  properties alone, its localized ones left. So a value the write kept, one
+  that differs in case alone (`SetString`), is the file's in the defaults
+  again, a float holds what the file holds of it, to six decimals, and a
+  subclass takes what its base's section now holds. `LoadConfig` reads every
+  section from one file, the object's class's config file, a `globalconfig`
+  property's declaring class's section too, and `SaveConfig` writes them so:
+  a subclass declared `config(Other)` reads and writes its base's
+  `globalconfig` keys in `Other.ini`.
 
 ### The .int files
 

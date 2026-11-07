@@ -434,11 +434,16 @@ The scripts' own addresses:
   to `[DefaultPlayer]` in the user ini as well.
 - **The player's options in the URL** (`FURL::LoadURLConfig`, `0x103f9bc0`):
   every key of the user ini's `[DefaultPlayer]`, in its order and as the ini
-  spells it, each an option through `AddOption`, so a key given twice is one
-  option with the last value (the config cache hands the section over whole).
-  The game engine's first URL takes them (`UGameEngine::Init`, `0x103891c0`),
-  and so does `PlayerPawn.GetDefaultURL(Option)` (`0x103b8a90`), which answers
-  the option's value from them. A client's `LoadMap` (`0x1038c1f0`) writes
+  spells it, each `Key=value` an option through `AddOption` (`0x103f9960`),
+  which takes the place of an option that matches it up to and with its `=`,
+  in any case, so a key given twice is one option with the last value (the
+  config cache hands the section over whole), and a line with no name, `=x`,
+  is the option `=x`, in the place of any other that begins with `=`. The
+  game engine's first URL takes them (`UGameEngine::Init`, `0x103891c0`), and
+  so does `PlayerPawn.GetDefaultURL(Option)` (`0x103b8a90`), which answers
+  the text after `Option=` of the first of them that begins so
+  (`FURL::GetOption`, `0x103f9ee0`), "" with none: `GetDefaultURL("")` is the
+  line with no name's value. A client's `LoadMap` (`0x1038c1f0`) writes
   seven of its URL's options back there, each the URL has (`SaveURLConfig`,
   `0x103f9cb0`): `Name`, `Team`, `Class`, `Skin`, `Face`, `Voice`,
   `OverrideClass`.

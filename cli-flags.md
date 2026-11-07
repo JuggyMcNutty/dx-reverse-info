@@ -38,19 +38,30 @@ no file is: the file manager opens a name as given (`CreateFileW`, `DeusEx.exe` 
 `0x10907000`), so `appInit`'s copy of `Default.ini` or `DefUser.ini` to it writes nothing, its
 failure unchecked (Core.dll `0x10149b35`, `0x10149c66`), and the config cache reads nothing
 from it and writes nothing back ([configuration](core-dll.md#configuration)). Its `Find`
-(`DeusEx.exe` `0x10915e30`) adds `.ini` to a name under five characters, or with no `.`
-fourth or fifth from its end, before it takes `System.ini` and `User.ini` for the two inis'
-names as given, so an `INI=` of such a name is two files: `System`, the class configs' and
-`ini:` names' (`ResolveName`, Core.dll `0x10154be0`), the name as given; a read or write
-naming no file -- the launcher's own keys (`FirstRun`, the wizard's, `CdPath`), `appInit`'s
-`Language` -- the name and `.ini`. An empty `INI=`'s are the empty name and `System\.ini`;
-`INI=MyMod`'s `MyMod` and `MyMod.ini`. So an empty `USERINI=` plays with no key bindings and
-the classes' defaults for the player's settings, none saved; an empty `INI=` reads no paths
-and no game engine class, and `InitEngine`'s load of `ini:Engine.Engine.GameEngine`
-(`0x1090bb21`) ends in a critical error, Core.int's `ConfigNotFound`, "Can't find
-'ini:Engine.Engine.GameEngine' in configuration file" (`StaticLoadClass`, Core.dll
-`0x10155229`), `.ini` written at the exit that follows (`appExit`, Core.dll `0x10149f20`) when
-the run set a key in it. A `LOG=` found empty names
+(`DeusEx.exe` `0x10915e30`) adds `.ini` to a name under five characters, or with no `.` fourth
+or fifth from its end, before it takes `System.ini` and `User.ini` for the two inis' names as
+given, so an `INI=` of such a name is two files: `System`, the class configs' and `ini:` names'
+(`ResolveName`, Core.dll `0x10154be0`), the name as given; a read or write naming no file the
+name and `.ini`, an empty value where that file is not there: the launcher's own keys
+(`FirstRun`, the wizard's renderer, detail and sound settings, `DescFlags`, the device's
+`Description`, `CdPath`), `appInit`'s `Language` and `CdPath`, the `[URL]` section
+(`FURL::StaticInit`, Engine.dll `0x103f6c50`: the protocol, the default and local maps, the
+host, the portal, the map and save extensions, the port), the script's `GetConfig` (Core.dll
+`0x1013e4e0`), the save's snapshot check of `GameRenderDevice` (`DDeusExGameEngine::SaveGame`,
+DeusEx.dll `0x1000f3e3`), WinDrv's before DirectDraw (`UWindowsClient::Init`, WinDrv.dll
+`0x11101d20`) and D3DDrv's `DescFlags` for Glide (D3DDrv.dll `0x1000afcb`); the game's start
+forces its local map to `DX.dx` all the same ([starting the game
+engine](engine-dll.md#starting-the-game-engine)). In Core, Engine, WinDrv, D3DDrv, IpDrv,
+DeusEx.dll and `DeusEx.exe` every other read of the config cache names a file: a class's
+config, `System` or `User` (`User.ini` itself names the user ini as given), a `.int`, or
+IpDrv's commandlets' own; OpenGlDrv, Window and Editor, which import the cache too, are not
+read here. An empty `INI=`'s are the empty name and `System\.ini`; `INI=MyMod`'s `MyMod` and
+`MyMod.ini`. So an empty `USERINI=` plays with no key bindings and the classes' defaults for
+the player's settings, none saved; an empty `INI=` reads no paths and no game engine class, and
+`InitEngine`'s load of `ini:Engine.Engine.GameEngine` (`0x1090bb21`) ends in a critical error,
+Core.int's `ConfigNotFound`, "Can't find 'ini:Engine.Engine.GameEngine' in configuration file"
+(`StaticLoadClass`, Core.dll `0x10155229`), `.ini` written at the exit that follows (`appExit`,
+Core.dll `0x10149f20`) when the run set a key in it. A `LOG=` found empty names
 the base directory itself, an `ABSLOG=` nothing: the log's writer is not made, the device
 goes dead (`0x10903971`) and the game runs without a log; a `LOG=` found decides, an
 `ABSLOG=` after it unread.
@@ -71,7 +82,7 @@ after `X=`, nothing cut, no quote taken off. `CPUSPEED=` is its float form.
 | `-safe` | `ParseParam` | `0x1090aba9` | show the SafeMode page |
 | `-changevideo` | `ParseParam` | `0x1090b23e` | show the Renderer page |
 | `-nodetect` | `ParseParam` | `0x1090dac6` | skip 3D device detection on the Renderer page |
-| `-EXEC=<file>` | `Parse` | `0x1090947a` | after engine init, run `exec <file>` on viewport 0, whose `Exec` takes the file's name again by `ParseToken`, 63 characters at most (Engine.dll `0x10373a60`, `0x10374241`), so `EXEC="my file.txt"` runs `my`; `ExecMacro` logs `Execing <file>` (`0x10374700`) |
+| `-EXEC=<file>` | `Parse` | `0x1090947a` | after engine init, run `exec <file>` on viewport 0, whose `Exec` takes the file's name again by `ParseToken`, 63 characters at most (Engine.dll `0x10373a60`, `0x10374241`), so `EXEC="my file.txt"` runs `my`; `ExecMacro` logs `Execing <file>` (`0x10374700`) and runs the file's lines as `ParseLine` cuts them ([a key's binding](engine-dll.md#a-keys-binding)) |
 | `-consolecommand=<cmd>` | `Parse` | `0x1090a635` | run `<cmd>` through `GExec`, then **exit without launching** |
 | `-testrendev=<class>` | `Parse` | `0x1090a756` | load render-device class, write `Detected.ini`, **exit** |
 | `-LOG=<file>` | `Parse` | `0x10903880` | log to a named file |
