@@ -68,9 +68,14 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
     `0x10b1f7e0`) takes its points from a cache of the frame's transformed
     points (`URender::PointCache`, each stamped with the frame's
     `URender::Stamp`): each point is transformed and given its outcode against
-    the view's four sides once a frame, however many surfaces share it. A
-    surface whose points are all outside one side goes without a clip; one that
-    crosses a side is clipped against that side only. Its edges are rasterized
+    the view's four sides once a frame, however many surfaces share it, and
+    projected when it lies within them, at any depth (`0x10b14eee`): the
+    sides meet at the eye, and no plane before it cuts a surface. A
+    surface whose points are all outside one side goes without a clip; one
+    that crosses a side is clipped against that side only, and in a frame
+    whose `NearClip` has a W, a mirror's, against that plane too
+    (`0x10b1545e`; the master frame's is 0, `CreateMasterFrame`
+    `0x10b15776`). Its edges are rasterized
     into a span a row (`0x10b19cc0`), which `FSpanBuffer::CopyFromRaster` (or
     `CopyFromRasterUpdate`, for a surface that also occludes) lays into the
     zone's span buffer; one with nothing left showing is flagged
@@ -160,9 +165,10 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   - **Where it starts**: the zone on the viewer's side of the mirror (the
     node's `iZone` on that side), whose span buffer is what of the mirror
     shows, and whose render time it stamps. Its `NearClip` is the mirror's
-    plane in the parent's view space, turned round; nothing in `Render.dll`
-    clips by it. What lies behind the mirror stays out through the zones'
-    span buffers, as in any frame.
+    plane in the parent's view space, turned round, and each surface and
+    mesh face is clipped at it (`ClipBspSurf` `0x10b1545e`, the mesh's
+    `0x10b0cb10`). What lies behind the mirror stays out through the zones'
+    span buffers too, as in any frame.
   - **One frame a plane**: `CreateChildFrame` (`0x10b15a40`) returns the
     parent's child of the same level, surface number, `NearClip` and zone,
     the spans merged, when it has one. Every mirror's surface number is 0,
@@ -957,6 +963,19 @@ palette's last entry never shows (`0x10b05d40`).
     two-sided.
   - `D3DDrv` draws with culling off, so only this keeps a translucent mesh's
     back faces unseen.
+  - **At the eye.** A corner is projected only when it lies within the
+    view's four sides and deeper than a unit (`DrawLodMesh` `0x10b0f8d1`-
+    `0x10b0f8e6`, `DrawMesh` `0x10b0d7da`-`0x10b0d7ef`). A face is clipped
+    at the sides it crosses alone (`0x10b0c598`, in the face's draw
+    `0x10b0bab0`), each corner the clip makes projected whatever its depth
+    (`FTransform::Project`, `0x10b12400`), so a face crossing before the eye
+    goes to the render device down to the eye, its corners' depths under a
+    unit among them; in a frame whose `NearClip` has a W, a mirror's, it is
+    clipped at that plane too (`0x10b0cb10`-`0x10b0cb93`). A corner within
+    the sides a unit or less before the eye is never projected: the face
+    takes the screen place and depth its memory last held, its place held
+    to the frame like every corner's (`0x10b0cb96`-`0x10b0cbeb`), a mesh
+    within a unit of the eye drawn wrong.
   - **In face order** on a render device that is not span-based: opaque,
     masked and translucent faces as they come, each with its own flags. A
     span-based one (the software renderer) first sorts the faces kept by

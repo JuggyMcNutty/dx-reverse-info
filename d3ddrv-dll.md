@@ -193,6 +193,18 @@ harness's
 fit best with `OpenGLDrv`'s moved half a pixel right and down: their grey
 levels 0.76 and 0.35 apart (RMSE, of 255) moved, 1.65 and 0.80 unmoved.
 
+**The depth.** Each point's 1/w is its 1/z, z its depth in the view, and
+its depth z' = F ÷ (F − 1) × (1 − 1/z) (`DrawGouraudPolygon`
+`0x10005827`-`0x10005866`, the surfaces' and tiles' alike), so z' is 0 a
+unit before the eye and 1 at F: 32,767, or 8,192 at 16-bit colour, the
+colour depth `SetRes` is given (`0x1000c40f`-`0x1000c45b`). At 16-bit
+colour a draw while Core's `GUglyHackFlags` has 1 set takes a quarter of
+its 1/z, its near plane at 0.25 (`0x100057ef`-`0x10005806`). Direct3D's
+own clipping is off (`D3DRENDERSTATE_CLIPPING` false, `0x1000c8c6`):
+`Render.dll` hands over what lies nearer than a unit
+([which faces are drawn](render-dll.md#meshes)), its z' under 0, and
+whether it is cut is the rasterizer's.
+
 ## Tiles
 
 `DrawTile` (`0x10005ba0`) draws a rectangle of a texture on the screen: the

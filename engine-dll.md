@@ -2267,7 +2267,13 @@ the scale grown by the top mip's size over that one's, so a texel lands where
 it would. Given a time, as every frame's draw gives it the viewport's
 `CurrentTime`, it steps the texture it locks (`Update`, `0x103ececd`;
 [stepping](fire-dll.md#stepping)), not its current frame: an animation's frame
-drawn, or a detail or macro texture, steps by its own clock.
+drawn, or a detail or macro texture, steps by its own clock. Then it copies
+the texture's flags into the texture info, `bRealtimeChanged` (0x10 of its
+flags at +0x84) among them, and clears the texture's own (`0x103eced0`-
+`0x103ecf3a`): the first lock after a change, a step of its own among them,
+carries the change to the render device, which makes its copy again
+([one copy a texture](d3ddrv-dll.md#textures)), and every later lock finds
+the texture unchanged. `UTexture::Unlock` (`0x103ed070`) does nothing.
 
 ## Small
 
