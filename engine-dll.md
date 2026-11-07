@@ -569,17 +569,24 @@ fields, after their properties (none):
   (`0x103c6490`); `BaseClass` is read and not used. The start node: `FromPoint`
   if a navigation point; else the pawn's `MoveTarget` if one the pawn overlaps;
   else the first in the level's list the pawn overlaps. From it, the far end of
-  each of its `Paths` (with `bUsePrunedPaths`, `PrunedPaths` too) whose reach
-  spec the pawn fits (collision radius and height) and may use (its move flags),
-  at the spec's distance. With no start node: 32 nodes within 1,000 units of
-  `FromPoint`, or of the pawn (its square under 1e6), taken in the level's
-  order, once 32 are held each new one replacing the nearest held one farther
-  than it, then those the pawn can reach (`actorReachable`; `0x103c6490`), at
-  the straight distance.
+  each of its `Paths` up to the first -1 (with `bUsePrunedPaths`, `PrunedPaths`
+  too) whose reach spec the pawn fits (collision radius and height) and may use
+  (its move flags), at the spec's distance. With no start node: 32 nodes within
+  1,000 units of `FromPoint`, or of the pawn (its square under 1e6), taken in
+  the level's order, once 32 are held each new one replacing the nearest held
+  one farther than it, then those the pawn can reach (`actorReachable`, its
+  line from the eye tested; `0x103c6490`), at the straight distance. The list
+  is sorted by `appQsort` (`0x103c68ef`, comparing at `0x103c6a70`), Core's
+  call of MSVCRT's `qsort`, so equal distances keep the order that leaves: a
+  run of up to 8 entries sorted by moving its largest, the first of equals, to
+  its end, again and again; a longer one split round the middle of its first,
+  middle and last entries. Each step sets `NavPoint` to None before taking the
+  next entry, so it is None once the list is done; `distance` keeps the last
+  node's.
 - **`ComputePathnodeDistances(startActor)`** (`0x103c8910`): clears the paths
   (`clearPaths`), then sets each node's `visitedWeight` to its shortest
-  distance over the path network from `GetPathnodeList`'s nodes
-  (`0x103c8a40`), each node's paths relaxed depth first
+  distance over the path network from `GetPathnodeList`'s nodes, unsorted
+  (`0x103c8998`, `0x103c8a40`), each node's paths relaxed depth first
   (`RelaxPathnodeDistances`). No script calls it.
 - **`FindRandomDest`** (`0x103bcb90`, clearing the paths unless told not to;
   `APawn::findRandomDest`, `0x103dc700`) answers None: its first test
@@ -857,16 +864,20 @@ shape, Deus Ex's numbers):
   what blocks it; **`swimMove`** (`0x103c3ca0`) as well, and a move that leaves
   the water is taken back to the water's edge (`findWaterLine`, `0x103d3b10`,
   halving between the two points to within a unit) and is 0.
-- **`FindBestJump(Dest, Vel, Landing, bMovePawn)`** (`0x103c2f50`): the jump
-  `SuggestJumpVelocity` (`0x103c2c80`) gives, landed (`jumpLanding`,
-  `0x103c2530`: three `MoveActor` test moves, held off 2 units, passing pawns
-  and decorations that are not static). That jump: the time in the air for its
-  own upward speed to come down to the destination's height, in steps of 0.05 s
+- **`FindBestJump(Dest, Vel, Landing, bMovePawn)`** (`0x103c2f50`): `Vel`'s Z
+  set to the pawn's `JumpZ` (`0x103c2f87`), the jump `SuggestJumpVelocity`
+  (`0x103c2c80`) gives, landed (`jumpLanding`, `0x103c2530`: three `MoveActor`
+  test moves, held off 2 units, passing pawns and decorations that are not
+  static, the pawn moved to where it lands). That jump: the time in the air for
+  its upward speed to come down to the destination's height, in steps of 0.05 s
   under the zone's gravity (-100 where it points up), and the speed across that
   covers the distance in it, at most `GroundSpeed`. It counts where it lands
-  more than 8 units nearer, less than 350 below its start, out of a pain zone it
-  does not resist and out of water unless it can swim ("Failing FBJ" logged for
-  a fall of 350 or more).
+  more than 8 units nearer (the distance from its start, a float, less the
+  distance from where it lands), less than 350 below its start, out of a pain
+  zone its feet do not resist and out of water unless it can swim. A fall of
+  350 or more logs `FAILING FBJ: nc %f from odS %f and dS %f and dz %f success
+  %d` (`0x10481960`): the distance gained, the two distances, the landing's
+  height less the start's, and 0.
 - **`AIDirectionReachable`**'s steps (above) are these moves, threshold 4.1, no
   goal: a walk's fall retried at `MaxStepHeight`, its range classified nearer,
   inside or beyond (`ClassifyDistanceSq`, `0x103c7f80`). `jumpReachable`
