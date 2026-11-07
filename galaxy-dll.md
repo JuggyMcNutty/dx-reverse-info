@@ -55,7 +55,7 @@ time it has played, when its lip sync is next worked out, the sample's mean
 |---|---|---|
 | `UseDirectSound` | True | DirectSound output, else WinMM (as `-nodsound` gives) |
 | `UseFilter` | True | asks the mixer to interpolate a sound resampled up; its SSE routine interpolates linearly either way ([the mixer](#the-mixer)) |
-| `UseStereo` | True | stereo output, else mono |
+| `UseStereo` | True | stereo output, else mono, mixed by the plain routine ([the mixer](#the-mixer)) |
 | `UseSurround` | False | a sound behind the listener plays centred, its right side inverted |
 | `ReverseStereo` | False | left and right swapped |
 | `UseDigitalMusic`, `UseCDMusic` | True, False | the level's tracker music; CD audio |
@@ -262,7 +262,13 @@ timer:
    worked out again every millisecond from what `Update` last set, or with a
    module playing at each of its ticks.
 2. The reverb runs over its buffer into the dry one.
-3. The result is saturated to 16 bits and added, saturating, to the music's.
+3. The result is saturated to 16 bits and added, saturating, to the music's
+   (`0x106146a0`). The music's voices, summed apart, are written into the
+   output's buffer, a second long (`0x10613943`), saturated to 16 bits where
+   its play cursor has reached, and the sounds' mix is added at the write
+   cursor plus `Latency` (DirectSound's, `0x106142a0`): the music is heard
+   a turn of the buffer after the sounds mixed with it, less their lead,
+   some 0.93 s.
 
 - **A voice's gains:** the voice's volume × the sample volume squared × each
   side's share of the pan.
@@ -280,6 +286,22 @@ timer:
     order 0 set both at once (`0x106177aa`, `0x106159aa`), so its pans
     change at once; whether a sound's update sets only the pan it moves to
     is unread.
+- **Mono output** (`UseStereo` off) mixes every voice, the music's too,
+  with the plain routine (`0x10623210`, copied in by `0x1062414f`), the
+  SSE, MMX and 3DNow! ones taken only for stereo output (`0x10614080`):
+  - one gain, the mean of the two sides' (above), rounded down to one of 64
+    levels, 16 × v² with v the whole square root of their sum over 16 (the
+    table at `0x1064d338`): a voice whose sides sum to under 16 of 32,767
+    is silent, and the rest lose up to 9.5 dB at the lowest levels, 0.3 dB
+    near full;
+  - a surround voice's right side added, not negated;
+  - a 16-bit sample read at its whole frame, never interpolated, an 8-bit
+    one through the cosine table when `UseFilter` asks and the voice steps
+    under a frame;
+  - nothing sent to the reverb, so the zone's reverb is silent;
+  - the music's mix written out with its high byte saturated and its low
+    byte as it falls, and the sounds' 32-bit mix added to it and saturated
+    so, once (`0x10623eed`).
 - **Resampling.** A voice steps through its sample at its rate × pitch in
   whole hertz, as a 16.16 fraction of `OutputRate`. The routine chosen for a
   CPU with SSE and stereo output, which is any modern one (`0x10622730`,
@@ -454,13 +476,20 @@ animates.
     S7x and SAx are dropped (`0x1062a180`).
   - **Its player** steps a voice's gains at each tick, unramped, and reads a
     sample between one frame and the next linearly ([the mixer](#the-mixer)).
-    Entering the first order -- the song's start, a jump to order 0 by B00 or
-    a section, the song's loop -- sets the speed, tempo and every channel's
-    pan to the header's again (`0x10615710`); a song started at another
-    section keeps the reset's speed, 48 ticks a row, and the tick the music
-    last had, until its patterns set theirs. A section change silences the
-    music's voices and starts the section at once, the speed, tempo and pans
-    playing on but for order 0 (`Update`, `0x1060a822`-`0x1060a863`).
+    Entering the first order, the order count turning from 255 to 0 -- the
+    song's start, a jump to order 0 by B00 or a section, a pattern loop back
+    in it (SBx steps the count back, `0x10617a37`), the song's loop, an
+    empty order 0 passed over too -- sets the speed, tempo and every
+    channel's pan to the header's again (`0x10615710`); a song started at
+    another section keeps the reset's speed, 48 ticks a row, and the tick
+    the music last had, until its patterns set theirs. A section change
+    silences the music's voices at once and flags a jump, which the player
+    reads as the next row starts (`0x10616f29`): the section starts as the
+    row playing ends, the speed, tempo and pans playing on but for order 0
+    (`Update`, `0x1060a822`-`0x1060a863`), and until then the order written
+    back into `SongSection` is the one before the section, 255 before order
+    0. A section past the last order is refused (`glxControlMusic`), the
+    voices silenced all the same and the song going on at its next order.
 
 ## Reverb
 
