@@ -199,7 +199,9 @@ the world: no wall hides any part of it.
   `HIDEACTORS` clears it and `SHOWACTORS` sets it (`UViewport::Exec`).
 - **The order** (`0x10b1ce7f`): bit 0 of Core's `GUglyHackFlags` set; the
   render device's `ClearZ` on the frame; the event, with the viewport's
-  canvas; the bit cleared.
+  canvas; the bit cleared (`0x10b1cec5`). Nothing else sets it: of the
+  game's DLLs only `Render.dll` and `D3DDrv.dll` import it, and `Core.dll`,
+  which exports it, never touches it.
 - **The canvas's frame** is the one `DrawWorld` draws, given it before the
   player's `PreRender`
   ([the loading screen](engine-dll.md#the-loading-screen)).
@@ -956,9 +958,17 @@ palette's last entry never shows (`0x10b05d40`).
     (`0x10b0ff9e`, and `0x10b10320` in its second face loop).
   - `DrawMesh`, for a plain mesh, culls a face turned away only when its
     flags with the actor's (`0x10b0dbac`) are `PF_Flat` without
-    `PF_TwoSided` or `PF_Invisible` (`0x10b0dc8a`): the actor's flags give
-    `PF_Flat` unless `bMeshCurvy`, so a face turned away is culled unless it
-    is two-sided or invisible, or the actor `bMeshCurvy`.
+    `PF_TwoSided` or `PF_Invisible` (`0x10b0dc8a`). The actor's flags give
+    `PF_Flat` unless `bMeshCurvy` (`0x10b26284`), but `DrawMesh` first ORs
+    it into the flags it is given (`0x10b0d1c9`), a LOD mesh's too, before
+    it hands one on to `DrawLodMesh`, the one way in to either: a face
+    turned away is culled unless it is two-sided or invisible, whatever
+    `bMeshCurvy`, and the face's draw never takes the path it keeps for a
+    face without `PF_Flat`, a curved mesh's, cut into four up to three
+    times (`0x10b0bc13`). `D3DDrv` tests no such bit.
+  - A plain mesh's face whose own flags hold `PF_Invisible` is its weapon
+    triangle ([a pawn's attachments](#a-pawns-attachments)): kept whichever
+    way it faces, its place noted, never drawn (`0x10b0e329`).
   - The actor's flags (`0x10b26230`, [sprites](#sprites)) make no face
     two-sided.
   - `D3DDrv` draws with culling off, so only this keeps a translucent mesh's

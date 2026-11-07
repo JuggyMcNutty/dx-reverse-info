@@ -195,11 +195,20 @@ levels 0.76 and 0.35 apart (RMSE, of 255) moved, 1.65 and 0.80 unmoved.
 
 **The depth.** Each point's 1/w is its 1/z, z its depth in the view, and
 its depth z' = F ÷ (F − 1) × (1 − 1/z) (`DrawGouraudPolygon`
-`0x10005827`-`0x10005866`, the surfaces' and tiles' alike), so z' is 0 a
-unit before the eye and 1 at F: 32,767, or 8,192 at 16-bit colour, the
-colour depth `SetRes` is given (`0x1000c40f`-`0x1000c45b`). At 16-bit
-colour a draw while Core's `GUglyHackFlags` has 1 set takes a quarter of
-its 1/z, its near plane at 0.25 (`0x100057ef`-`0x10005806`). Direct3D's
+`0x10005827`-`0x10005866`, the surfaces' and tiles' alike). F is 32,767,
+or 8,192 at 16-bit colour (`0x1000c40f`-`0x1000c45b`): in a window the
+colour depth `SetRes` is given, the desktop's, and in full screen that of
+the display mode it picks, the nearest the ini's `FullscreenColorBits`
+(`0x1000b360`;
+[choosing the render device](windrv-dll.md#choosing-the-render-device)).
+F ÷ (F − 1) is kept as a float (`0x1000c43b`), 1 + 1/32,768 (or
+1 + 1/8,192), so z' is 0 a unit before the eye and 1 at 32,769 units
+(8,193). Run (DXEngine's `FarConsole` from Liberty Island's start, the
+game full screen): at 16 bits the Statue of Liberty, past 8,193 units, is
+not drawn; at 32 it is. At 16-bit colour a draw while Core's
+`GUglyHackFlags` has 1 set, the overlays'
+([the overlays](render-dll.md#the-overlays)), takes a quarter
+of its 1/z, its near plane at 0.25 (`0x100057ef`-`0x10005806`). Direct3D's
 own clipping is off (`D3DRENDERSTATE_CLIPPING` false, `0x1000c8c6`):
 `Render.dll` hands over what lies nearer than a unit
 ([which faces are drawn](render-dll.md#meshes)), its z' under 0, and

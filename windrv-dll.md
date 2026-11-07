@@ -205,4 +205,10 @@ destroyed instead, and the tick ends there. The viewport's `Repaint`
 3. `WindowedRenderDevice` fullscreen, if `StartupFullscreen`;
 4. `WindowedRenderDevice` in a window.
 
-With none, it asserts.
+With none, it asserts. The device opens (`TryRenderDevice`, `0x1110d150`) in full screen at the
+client's `FullscreenViewportX` and `Y` and `FullscreenColorBits` ÷ 8 bytes a pixel; in a window
+at `WindowedViewportX` and `Y` and the desktop's depth, as the viewport's constructor reads it
+(`GetDeviceCaps`' `BITSPIXEL`, `0x111069b7`): 4 bytes on a desktop of 24 or 32 bits, 2 on any
+other. The game's ini has `FullscreenColorBits` 16; the Display menu's Texture Color Depth
+(`MenuChoice_TextureColorBits`, 16-bit or 32-bit, from the next start) sets it and
+`WindowedColorBits`.
