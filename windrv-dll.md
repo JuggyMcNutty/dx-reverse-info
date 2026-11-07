@@ -120,8 +120,10 @@ game goes on -- ends a drag and resets the engine's input (`UInput::ResetInput`,
 zeroed, with no release sent, so the root window keeps its marks of the keys held and an Alt held
 into Alt+Tab stays down to its windows until Alt is pressed again
 ([the root window](extension-dll.md#the-root-window)); full screen, the window leaves full screen
-and is minimised; the mouse's DirectInput device is let go. Gaining it (`WM_SETFOCUS`,
-`0x1110a1ab`) runs `SETPAUSE 0`, resets the input again and takes the mouse's device back.
+and is minimised (`0x1110a12f`-`0x1110a159`), and its restore, `WM_SIZE`'s `SIZE_RESTORED`,
+toggles it full screen again (`0x1110a003`-`0x1110a019`); the mouse's DirectInput device is let
+go. Gaining it (`WM_SETFOCUS`, `0x1110a1ab`) runs `SETPAUSE 0`, resets the input again and takes
+the mouse's device back.
 
 ## The window
 
@@ -145,15 +147,33 @@ Back in a window it gives the hot keys back (`0x1110da29`-`0x1110da77`), puts it
 frame back (`0x1110e1ac`) and moves to the rectangle's corner it kept, at its new size
 (`MoveWindow`, `0x1110e29f`).
 
+The toggle (`UWindowsViewport::ToggleFullscreen`, `0x1110d500`) is Alt+Enter's
+([the keys](#the-keys)), Maximize's ([the window's commands](#the-windows-commands)), the
+console's `TOGGLEFULLSCREEN` (`0x11106e1c`) and the restore's after the focus is lost
+([the focus](#the-keys)). Full screen, it ends full screen (`EndFullscreen`, `0x1110d380`,
+logged `EndFullscreen`), back in a window at its windowed size. In a window, unless its viewport
+is a child window's (the editor's), it logs `AttemptFullscreen` and opens the first that opens
+of `GameRenderDevice` full screen, `WindowedRenderDevice` full screen and `WindowedRenderDevice`
+in a window (`TryRenderDevice`, `0x1110d150`), full screen at `FullscreenViewportX` by `Y`.
+
+In a window, `WM_SIZE` (`0x11109f82`) gives the viewport or its render device the client area's
+new size, so a maximize that no command carries leaves the window maximized and the game drawn
+at its size. As it is dragged the window is held to 640 by 480 at least (`WM_GETMINMAXINFO`,
+`0x1110a812`).
+
 ## The window's commands
 
 The window's commands (`WM_SYSCOMMAND`, `0x1110b149`), from its caption, its window menu or
-Windows:
+Windows, each read without the four low bits Windows keeps for itself (`0x1110b152`), so that a
+double click on the caption, whose Maximize has them set, is Maximize too:
 
 - the screen saver and the monitor's power saving are refused, each logged (`SC_SCREENSAVE`,
   `SC_MONITORPOWER`), in a window or full screen;
 - Maximize -- the caption's box, a double click on the caption, the window menu's -- toggles
-  full screen, as Alt+Enter does (`SC_MAXIMIZE`, `0x1110b172`);
+  full screen, as Alt+Enter does (`SC_MAXIMIZE`, `0x1110b172`), and goes no further, so the
+  window is never maximized (`0x1110b177`). Full screen the window keeps its maximize box with
+  its menu, its style losing `WS_CAPTION` and `WS_THICKFRAME` alone (`0x1110db65`), so the
+  menu's Maximize goes back to a window;
 - full screen, the switches to another window and the task list are refused (`SC_NEXTWINDOW`,
   `SC_PREVWINDOW`, `SC_TASKLIST`, `SC_HOTKEY`; `0x1110b18c`-`0x1110b1af`);
 - every other goes to `DefWindowProc`: the window's menu (`SC_KEYMENU`, from Alt+Space and the
