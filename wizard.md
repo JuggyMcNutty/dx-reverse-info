@@ -86,7 +86,11 @@ Window.dll's `WWizardDialog`: a stack of pages over one dialog (104).
 - **Its logo** is `..\Help\LogoSmall.bmp`, loaded into the static at the top left without
   checking it loaded: 500×77, in the GOG install (dated 2021-11-26) and Steam's as in the
   SDK's `Help/`, so the band above the page shows it, and stays empty only on an install
-  without it.
+  without it. Under wine the static's window takes the bitmap's size, its 3-pixel modal
+  frame (a raised edge and a ring of `COLOR_3DFACE`) inside, and the bitmap is shrunk into
+  the 494×71 left by `StretchBlt` in the DC's default `BLACKONWHITE`: six columns and six
+  rows each ANDed into their neighbour where its Bresenham walk merges them (the captures of
+  `tools/wine/wizard-capture.sh` against a model of that walk, every pixel).
 - **Its icon** is `DeusEx.exe`'s icon group 128, the executable's only one: a 32×32 of 16
   and one of 256 colours, and a 16×16 of 16, plain DIBs with their masks, every pixel in.
 - **Four buttons** along the bottom, Back, Next, Finish and Cancel, each shown only while

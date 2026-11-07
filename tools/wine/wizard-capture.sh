@@ -16,15 +16,21 @@
 # Running.ini -- are put back as they were.
 #
 # Wine is the Proton build the IDA tools use, in the same prefix, which has
-# the Python the driver runs on (tools/ida/idalib-mcp.sh). The captures are
-# the game's pictures: keep them out of the repositories.
+# the Python the driver runs on (tools/ida/idalib-mcp.sh). A prefix of its
+# own (WIZ_PREFIX) needs only that Python: wineboot -i, then python.org's
+# Windows installer, /quiet InstallAllUsers=1 (3.14.10's works). The
+# captures are the game's pictures: keep them out of the repositories.
 set -eu
 : "${WIZ_PREFIX:=$HOME/Games/umu/umu-default}"
 : "${WIZ_PROTON:=$HOME/.local/share/Steam/compatibilitytools.d/Proton-CachyOS Latest}"
 : "${WIZ_PYTHON:=C:\\Program Files\\Python314\\python.exe}"
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)                 # the parent folder of the repositories
-system="$root/gamefiles/System"
+# GOG's install where goggamefiles/ holds it, as the harness takes it (DXEngine's
+# tools/dxcap.sh): Steam's DeusEx.exe is packed and starts only under Steam's
+# client, so in gamefiles/ no wizard comes up. WIZ_SYSTEM names another.
+system="${WIZ_SYSTEM:-$root/goggamefiles/System}"
+[ -n "${WIZ_SYSTEM:-}" ] || [ -f "$system/DeusEx.exe" ] || system="$root/gamefiles/System"
 out=${1:-"$root/reference/original-wizard"}
 mkdir -p "$out"
 [ -f "$system/DeusEx.exe" ] || { echo "no DeusEx.exe in $system" >&2; exit 1; }
@@ -52,6 +58,19 @@ run() {  # scenario
 }
 
 run firstrun
+
+# -changevideo's page comes only once the game has run: on an untouched ini,
+# FirstRun 0, the first-run wizard comes first. Raised for the rest, as the
+# first run's Finish raises it.
+python3 - "$system/DeusEx.ini" <<'EOF'
+import re, sys
+p = sys.argv[1]
+data = open(p, "rb").read()
+data, n = re.subn(rb"(?m)^FirstRun=\d*\r$", b"FirstRun=1100\r", data)
+if n != 1:
+    sys.exit("FirstRun not found once in " + p)
+open(p, "wb").write(data)
+EOF
 run changevideo
 
 # The relaunch stops at the CD prompt: point CdPath nowhere for this run.
@@ -67,10 +86,16 @@ EOF
 rm -f "$out/cdprompt.ready" "$out/cdprompt.go"
 run safe &
 for _ in $(seq 1 120); do [ -e "$out/cdprompt.ready" ] && break; sleep 1; done
-ps -eo args | grep -i '[d]eusex\.exe' > "$out/safe-relaunch.txt" || true
+# The game's own process, its program a Windows path to DeusEx.exe, not
+# another naming the file (IDA's DeusEx.exe.i64, a shell's command line)
+ps -eo args | awk 'tolower($1) ~ /\\deusex\.exe$/' > "$out/safe-relaunch.txt" || true
 touch "$out/cdprompt.go"
 wait
 echo "relaunched as: $(cat "$out/safe-relaunch.txt")"
+# With no CD prompt (an exe that checks no disc) the relaunched game plays:
+# ended here, killed so it writes nothing, or the scenarios after hand their
+# command lines to it and open no window of their own.
+ps -eo pid,args | awk 'tolower($2) ~ /\\deusex\.exe$/ { print $1 }' | xargs -r kill -9 2>/dev/null || true
 
 run recovery
 run make
