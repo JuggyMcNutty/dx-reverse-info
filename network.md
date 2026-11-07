@@ -340,8 +340,9 @@ A server moves its game to another map, and its clients follow:
 
 A URL starts as the default one, `[URL]`'s (`FURL::StaticInit`, `0x103f6c50`:
 the protocol `deusex`, no host, the port 7,790, the map `Index.dx`, no portal),
-and its text is read in this order, past its leading spaces (its trailing ones
-stay in the map) (the URL parser, `0x103f7b60`):
+and its text is read in this order, its first 1,023 characters alone, which
+it copies (`appStrncpy` into 1,024, `0x103f7d00`-`0x103f7d16`), past its leading
+spaces (its trailing ones stay in the map) (the URL parser, `0x103f7b60`):
 
 - the options (`?`) and a portal (`#`) first, each up to the next `?` or `#`,
   in any order; a space in one makes no URL;
@@ -390,6 +391,18 @@ goes on with its map all the same
 level's own map is loaded again on that URL, with no option, the player
 logging in with no name (`Player`). A start URL that is none is fatal
 (`UGameEngine::Init`, `0x103891c0`: `Invalid URL: <url>`).
+
+A URL that is one, past `?failed`, `?entry` and `?pop`: the game engine's browse
+leaves `?restart`, a `?load=` or `?loadgame=` (`GetOption`, any value) and a map
+of the game's protocol with no host to Deus Ex's browse, failing
+(`0x1038b5d7`-`0x1038b6e0`; [the game
+engine](deusex-dll.md#the-game-engine-travel-and-saving)); with a client, one of
+the game's protocol with a host is joined; one of another protocol is handed to
+the system: `appLaunchURL` (Core.dll `0x1016c770`) logs `LaunchURL <url> ` and
+opens it with `ShellExecute`'s `open`, the error, when that fails,
+`Failed launching URL`, and the browse fails, the level playing on
+(`0x1038b85f`-`0x1038b890`). Any server's `ClientTravel` reaches it: a server
+can have its clients' systems open any URL, of any protocol's handler.
 
 The Join screens join with the console's `open` and the address typed or picked
 (Join LAN adds `?lan`).
@@ -733,8 +746,11 @@ the net mode -- no test of the net mode or of the kind of a player's `Player`:
   input, `PlayerInput` and `PlayerTick`, any other its `Tick`; its state code,
   timers, life span and physics -- but an autonomous proxy, on a client the
   local player's pawn, has its physics only in its moves (`AutonomousPhysics`,
-  `0x103a2763`), and a proxy's state code runs, and its latent action counts
-  down, in a simulated state alone (`AActor::ProcessState`, `0x103e5b9c`).
+  `0x103a2763`), a proxy's state code runs, and its latent action counts
+  down, in a simulated state alone (`AActor::ProcessState`, `0x103e5b9c`),
+  and a proxy whose life span runs out is not destroyed
+  ([destroyed actors](engine-dll.md#destroyed-actors)): it stays, its
+  `Expired` again each tick, its physics stopped, until its channel closes.
 
 A viewport's own player is spawned with the remote role simulated
 (`UGameEngine::Init`, `LoadMap`, `0x1038bf92`), a client's with autonomous (the

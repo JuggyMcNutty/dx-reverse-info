@@ -197,7 +197,13 @@ turn:
   URL on the browse's, so the browse's player options after its own
   ([addresses](network.md#addresses)); the level keeps the URL the save
   holds, which then becomes the last URL.
-- **Any other map:** it compares the mission numbers.
+- **Any other map**, and a URL with a `?load=` of any value (`0x100115ce`):
+  it compares the mission numbers, a `?load=`'s value read as well
+  (`0x10011736`-`0x1001178c`, its use not settled). Run: from Liberty Island
+  `01_NYC_UNATCOHQ?load=9` loads UNATCO HQ, and from there
+  `01_NYC_UNATCOIsland?load=01_NYC_UNATCOHQ` the island, so the map loaded,
+  from `Current` or `Maps`, is the URL's (DXEngine's `URLEdgesConsole` with
+  `Short`).
   - Within one mission, unless `?loadonly`: `PruneTravelActors`, then
     `SaveCurrentLevel` into `Current`; the destination loads from `Current`
     if it was saved there, else from `Maps`. From `Current` the URL is made

@@ -351,7 +351,13 @@ fields, after their properties (none):
   unless it climbs, a player's every tick, any other pawn's only when its
   rotation is not the desired one, the whole numbers compared, or its rate
   has a roll (turning, below); a pawn's `AvgPhysicsTime` follows; then the
-  pending touch's `PostTouch`.
+  pending touch's `PostTouch` (`0x103c9917`; a pawn's, `0x103c9c29`). Its
+  callers, the actor's tick (`0x103a275c`) and `AutonomousPhysics`
+  (`execAutonomousPhysics`, `0x103c8f30`), pass over an actor with no physics.
+  `AutonomousPhysics` first cuts the acceleration toward zero to a tenth, 0.1
+  times the integer part of 10 times each (`0x103c8f60`-`0x103c8fce`), physics
+  or not: the tenths a client's moves send the server (`ServerMove`'s
+  acceleration ten times over, in whole numbers).
 - **An actor's turn** (`AActor::physicsRotation`, `0x103ca1e0`): with
   `bRotateToDesired` or `bFixedRotationDir`, and not at `DesiredRotation`
   when turning to it, yaw, pitch and roll each turn by their rate × the
@@ -1671,7 +1677,8 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   5 s, or more than 1,200 units from the player; single player.
 - **What stasis does.** `AActor::Tick` does nothing else for an actor in stasis
   (no script tick, physics, animation or timers), and destroys one that is
-  `bTransient` (the rats a container lets out). The event manager treats a
+  `bTransient` (the rats a container lets out) and of a role of simulated proxy
+  or more (`0x103a1ad1`-`0x103a1ae7`), unforced. The event manager treats a
   listener in stasis as out of sight.
 
 ## Render iterators
@@ -1825,8 +1832,12 @@ properties:
   `input` float is scaled by 20 / the time.
 - With −1: each `input` float is set to 0. Its `input` bytes (the buttons) stay.
 
-Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
-`PlayerInput` alone, then sets each `input` float to 0 itself.
+Paused, `ULevel::Tick` (`0x103a51a0`) has each player pawn with a `Player` read
+its input through that `Player` with the time (`0x103a57f7`): a viewport's reads
+as above, a net connection's nothing (`UNetConnection::ReadInput`,
+`0x1030262b`), so a listen server's copy of a remote player keeps its input as
+it is. It runs `PlayerInput` alone, then sets each `input` float to 0 itself
+(the first element of each).
 
 ## A level's tick
 
@@ -1951,7 +1962,10 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   mark, again until a round ticks none. An owner that is never ticked -- a
   static one, or one in stasis, which keeps its old mark -- has what it owns
   ticked every other frame, when the level's flipping mark matches its own.
-- **Paused:** the players' input, and the actors with `bAlwaysTick`.
+- **Paused:** each dynamic actor in the list's order: a player pawn with a
+  `Player` its input ([a key's binding](#a-keys-binding)), whatever its roles or
+  class; any other actor with `bAlwaysTick`, a player pawn with no `Player`
+  among them, ticked (`0x103a57b8`-`0x103a58c2`).
 - **An actor's tick** (`AActor::Tick`, `0x103a1aa0`), as a standalone game's
   ([by role](network.md#replication)): nothing else in stasis (counted as
   ticked); the owner's test (above); the level's mark; its animation; then
@@ -1959,7 +1973,12 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   physics, in that order. The timer calls `Timer` once a tick, however many
   of its periods passed: the counter keeps what is left over them, and a
   timer that does not loop stops. With under 0.0001 s of `LifeSpan` left,
-  `Expired`, then the actor is destroyed and its tick ends. A player's pawn
+  `Expired`, then the actor is destroyed, and its tick ends there either way
+  (`0x103a2731`-`0x103a2757`): one without the authority, which
+  [`DestroyActor`](#destroyed-actors) refuses, stays, its life span below
+  0.0001, and expires again each tick, its timer and state code going on, its
+  physics never reached. The physics run only for an actor with physics
+  (`0x103a275c`), so one with none keeps its pending touch. A player's pawn
   with a player (not a camera) has, in place of `Tick`, its player's input
   read, `PlayerInput` and `PlayerTick`, and the input read again with −1
   (cleared); so its physics, later in the same tick, take the move
@@ -1987,9 +2006,18 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
 
 **`ULevel::DestroyActor(actor, bNetForce)`** (`0x10395ba0`):
 
-- It refuses a `bStatic` or `bNoDelete` actor (0), and returns 1 at once for
-  one already `bDeleteMe`. A client destroys only what it has authority over,
-  unless forced or the actor is `bNetTemporary`; a player pawn with a live net
+- It refuses a `bStatic` or `bNoDelete` actor (0), and returns 1 at once for one
+  already `bDeleteMe`. It refuses (0) an actor whose own `Role` is not the
+  authority, whatever the net mode, unless forced (`bNetForce`) or the actor is
+  `bNetTemporary` (`0x10395c32`-`0x10395c44`). Two callers force it: a client's
+  actor channel closing (`UActorChannel::Destroy`, `0x103fd2d6`-`0x103fd2ea`)
+  and a player going (`UPlayer::Destroy`, `0x103d7e3a`-`0x103d7e4e`). The others
+  read, in `Engine.dll` and `DeusEx.dll`, do not: the script's `Destroy`
+  (`0x103e38e2`), the life span's end ([a level's tick](#a-levels-tick)),
+  [stasis](#stasis-and-render-time), `PruneTravelActors` and a `bDisappear`
+  pawn's tick (DeusEx.dll `0x1000f9fd`, `0x1001967d`), and `LoadMap`'s destroy
+  of each viewport's actor (`0x1038c6ff`), which so leaves a client's own pawn,
+  an autonomous proxy, to go with its level. A player pawn with a live net
   connection has the connection closed instead.
 - Then, any step stopping once the script has destroyed the actor itself: the
   `EndState` of its state, if it probes it; its base cleared, and every actor
