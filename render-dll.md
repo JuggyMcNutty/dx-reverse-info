@@ -235,11 +235,13 @@ over one that is:
   surface, not here;
 - a brush: a mover goes to the level's brush tracker, the rest is the world.
   The tracker files a mover's polygons into the level's BSP, where the walk
-  takes them as the level's own surfaces (observed): a one-sided one seen
-  from behind is passed over, and a mirrored one opens a mirror's frame
-  ([a frame](#a-frame)), 24 movers on 15 of the game's maps having one --
-  Hong Kong's club glass, the Smuggler's, the intro's and the endings'
-  marble.
+  takes each fragment's node as one of the level's own: of its surface it
+  reads the flags (`0x10b17faa`) and the texture (`0x10b181a3`) alone, not
+  the actor, and draws it in its node's zone ([light maps](#light-maps)). A
+  one-sided one seen from behind is passed over, and a mirrored one opens a
+  mirror's frame ([a frame](#a-frame)), 24 movers on 15 of the game's maps
+  having one -- Hong Kong's club glass, the Smuggler's, the intro's and the
+  endings' marble.
 
 Each other actor gets one sprite. A light, hidden or not, with a type,
 brightness and radius, that is `bDynamicLight` or neither `bStatic` nor
@@ -680,18 +682,27 @@ palette's last entry never shows (`0x10b05d40`).
 - **The static map:** the zone's ambient light, and each static light through
   its shadow bits (smoothed as they are unpacked, `0x10b02650`). The zone is the
   one the surface is seen from: `OccludeBsp` (`0x10b173d0`) gives each draw its
-  node's zone on the side of the plane the view's origin lies, `iZone[1]` in
-  front and `iZone[0]` behind, the `LevelInfo` for zone 0, and a portal the
-  other side's. Each of a plane's coplanar nodes (its `iPlane` list) is
-  judged by its own plane, which may face the other way. The map is kept in
-  the global cache (`GCache`) under the model, the light map and the zone. It
-  is built again only when it is not there, when one of its lights has
-  `bLightChanged`, or, for a mover's surface, after the mover moves, turns or
-  changes leaf. A mover's surface is lit where the brush tracker filed it
-  ([`Engine.dll`](engine-dll.md#traces)), its static lights through the
-  shadow bits raytraced at its `BrushRaytraceKey`. Measured: a door moved
-  100 units off its place is lit there, by its own lights' fall-off and by a
-  moving light 48 units before it that reaches no further.
+  node's zone on the side of the plane the view's origin lies, the front only
+  when the origin is over 0 from it (`0x10b17d9f`), `iZone[1]` in front and
+  `iZone[0]` behind (`0x10b19561`), the `LevelInfo` for a zone with no zone
+  actor, zone 0 among them (`0x10b19577`), and a portal the other side's.
+  Each of a plane's coplanar nodes (its `iPlane` list) is judged by its own
+  plane, which may face the other way (`0x10b19b8c`). `SetupForSurf` starts
+  the map from that zone's ambient light (`0x10b06e83`, `0x10b07fa8`). The
+  map is kept in the global cache (`GCache`) under the model, the light map
+  and the zone. It is built again only when it is not there, when one of
+  its lights has `bLightChanged`, or, for a mover's surface, after the mover
+  moves, turns or changes leaf. A mover's surface is lit where the brush
+  tracker filed it ([`Engine.dll`](engine-dll.md#traces)), from its brush's
+  light map (`0x10b06e29`: for a surface the tracker owns, its actor's
+  `Brush` is the model), its static lights through the shadow bits
+  raytraced at its `BrushRaytraceKey`, and each fragment by its own node's
+  zone, not the mover's: a polygon the tracker split across two zones takes
+  each one's ambient light, pan speeds and fog on its own side of the split,
+  and a mover whose place lies in another zone than its faces takes their
+  zones'. Measured: a door moved 100 units off its place is lit there, by
+  its own lights' fall-off and by a moving light 48 units before it that
+  reaches no further.
 - **The fog map** ([`D3DDrv`'s fog](d3ddrv-dll.md#fog)), only when the render
   device takes fog maps and does volumetric lighting (`SupportsFogMaps`,
   `VolumetricLighting`) and the viewport's actor is in a fog zone

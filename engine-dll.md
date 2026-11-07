@@ -1312,13 +1312,20 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     empty. Where a way ends at no child, a fragment in empty space becomes a
     node (`AddPolyFragment`, `0x1037bb00`), and one in solid is dropped. The
     node takes the polygon's plane (its W the base's dot with the normal, y
-    and z first), its corners as new points, and its parent's zones and
-    leaves; it hangs from the parent as that child, or, in a node's plane, at
-    the end of that plane's chain (`iPlane`), so a line meets the level's
-    node of the plane first. It carries `NF_IsNew`, `NF_NotCsg` too for a
-    `PF_NotSolid` polygon, `NF_NotVisBlocking` for a `PF_Invisible` or
-    `PF_Portal` one, `NF_ShootThrough` for a `PF_Masked` one; once all the
-    mover's polygons are filed its nodes lose `NF_IsNew`.
+    and z first) and its corners as new points; it hangs from the parent as
+    that child, or, in a node's plane, at the end of that plane's chain
+    (`iPlane`), so a line meets the level's node of the plane first. Its
+    zones and leaves, both sides alike, are its parent's on its side
+    (`0x1037bd1b`); but one that ends at the very node whose plane it lies
+    in takes that plane chain's last node's, turned where its normal faces
+    against that node's (`0x1037bcc7`). The parent's zone mask takes both
+    (`0x1037bd35`). So a fragment takes the zone of the leaf it lies in, and
+    one hung in a node's plane there the zones on that plane's two sides,
+    which the renderer draws it by
+    ([`Render.dll`](render-dll.md#light-maps)). It carries `NF_IsNew`,
+    `NF_NotCsg` too for a `PF_NotSolid` polygon, `NF_NotVisBlocking` for a
+    `PF_Invisible` or `PF_Portal` one, `NF_ShootThrough` for a `PF_Masked`
+    one; once all the mover's polygons are filed its nodes lose `NF_IsNew`.
   - **Room**: the nodes, their vertices and their points are the level
     model's, past the map's own (the tracker's start, `0x1037ac40`): room for
     twice the map's nodes and 512 more, at most 65,536 nodes in all, and as
