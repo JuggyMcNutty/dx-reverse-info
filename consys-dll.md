@@ -91,7 +91,11 @@ level's list.
      `BarkBindName`, or its `BindName` when it has no bark name;
    - for any other: the actor's `BindName`, never its bark name.
 
-   Names compare without case. Each item adds one to the conversation's
+   Names compare without case (`appStricmp`, `0x10010be0` to `0x10010c77`),
+   an empty one as any other: a conversation with no owner is every actor's
+   with no `BindName`, and a bark with none every actor's with no
+   `BarkBindName`, named or not. No stock conversation has no owner, and no
+   stock script clears one. Each item adds one to the conversation's
    `ownerRefCount`, the number of actors that have it.
 
 So an actor's list runs from the mission list's last conversation to its

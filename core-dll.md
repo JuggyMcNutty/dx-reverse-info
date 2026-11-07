@@ -123,7 +123,11 @@ Its only users are `DeusExPlayer`'s debug console commands.
   and `!=` (`0x101303a0`, `0x101305a0`), member by member. By type: a string
   (`0x101676f0`) by `appStricmp`, an empty or missing one `""`, so strings
   apart in case alone are the same, where the script's `==` is `appStrcmp`
-  (`0x1013b560`); a struct (`0x101690d0`) each member; a fixed array
+  (`0x1013b560`); a float (`0x10166780`) by an `fcomp` and the x87's C3
+  flag, as the script's `==` ([the natives](#the-natives)), so a NaN is the
+  same as anything: a save and the travel leave one out, and a script
+  class's replication never sends one; a struct (`0x101690d0`) each member;
+  a fixed array
   (`0x10167d30`) and a dynamic one (`0x10168480`, the counts first) each
   element; a map (`0x10168d80`) always the same.
 - **An export for no context is never made** (`ULinkerLoad::CreateExport`,
@@ -200,7 +204,11 @@ Its only users are `DeusExPlayer`'s debug console commands.
   struct (`Property %s of %s struct type mismatch %s/%s`), a native or, on a
   persistent archive, transient property (`Property %s of %s is not
   serialiable`, sic); each skip logs `Skipping %i bytes of type %i`, but for
-  `XLevel`. A tag's name finds the class's own property before its supers'
+  `XLevel`. Before any of these, a String tag (type 7, the older fixed
+  string) of a Str property (13) is read into it, its bytes up to its size
+  (254 for a size of 0) or a NUL, each a character, with no bound or flag
+  checked. A tag's name
+  finds the class's own property before its supers'
   (the struct's property list): a `GameReplicationInfo`'s tag of `Actor`'s
   `Region`, a struct, meets the class's own int `Region` and is skipped, so
   every save's load logs `Type mismatch in Region of GameReplicationInfo:
@@ -768,6 +776,22 @@ The rest are UE1's own. The details:
     `/=` is left as it was;
   - `Rand(n)` is 0 for `n` of 0 or less, else the C library's `rand()`
     modulo `n`, which is below 32,768;
+  - a float compare is an `fcomp` and a test of the x87's flags, C3 for
+    equal and C0 for under, both of which a NaN on either side sets: `==`
+    180 and `!=` 181 (`0x10135620`, `0x10135700`) test C3, `<` 176
+    (`0x101352a0`) C0, `<=` 178 (`0x10135460`) either, `>` 177
+    (`0x10135380`) neither and `>=` 179 (`0x10135540`) not C0, so with a NaN
+    `==`, `<` and `<=` are true and `!=`, `>` and `>=` false; `~=` 210
+    (`0x101357e0`) makes the difference positive where C0 says under 0, then
+    tests C0 against 0.0001, true with a NaN; `bool(f)` (`0x10131be0`) is
+    false where C3 says equal to 0, and `bool(v)` (`0x10136cd0`) where each
+    axis does, so a NaN is false and a NaN axis 0; a vector's `==` 217 and
+    `!=` 218 (`0x10138430`, `0x10138530`) test each axis's C3; `Abs`
+    (`0x10135c60`) negates where C0 says under 0, so a NaN's sign turns over
+    and −0 stays −0; `FMax` (`0x10136400`) takes B where C0 says A is under
+    it and `FMin` (`0x10136320`) A where C0 or C3 does, so `FMax(NaN, 1)` is
+    1 and `FMax(1, NaN)` the NaN, `FMin` the first of the two either way;
+    `FClamp` (`0x101364e0`) takes a NaN to the lower bound;
   - `VRand` (`0x10139080`) draws points in the cube from −1 to 1 and takes
     the first inside the unit sphere, scaled to length 1: a direction with
     none favoured;
@@ -777,7 +801,8 @@ The rest are UE1's own. The details:
     that precision) and the root as a float. `Lerp` (`0x10136610`) is
     (B − A) × Alpha + A, stored once;
   - `Normal` (`0x10138de0`, `FVector::SafeNormal` `0x10144be0`) is zero
-    under a squared length of 1e-8, a length of 0.0001; otherwise the vector
+    under a squared length of 1e-8, a length of 0.0001, a NaN's among that
+    (C0, as above); otherwise the vector
     times one over the root, at the x87's precision (24 bits in a console's
     tick: [render-dll.md](render-dll.md#lighting), in floats), each axis
     stored as a float: the squares summed X's and Y's first, then Z's, the
@@ -800,7 +825,7 @@ The rest are UE1's own. The details:
   in floats), rounded to a float first (7 *= 3e9 is −474,836,992, 512 under
   the exact product's low bits: DXEngine's `OpsConsole`); in the level's
   tick, at 64, exact (−474,836,480: DXEngine's `PrecisionConsole`, an
-  actor's own tick); `/=` by 0.0 makes it 0.
+  actor's own tick); `/=` by 0.0, or by a NaN (its C3 test), makes it 0.
 - **`IsInState(S)`**: [events and probes](#events-and-probes).
 - **Rotators:**
   - `rotator(v)` (`FVector::Rotation`, `0x10144390`): yaw `atan2(Y, X)` and

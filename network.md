@@ -603,7 +603,8 @@ copy and is compared with its defaults.
 - **Properties:** those the native list gives (`GetOptimizedRepList`, for
   `Actor`, `Pawn`, `PlayerPawn`, `Mover`, `ZoneInfo`, the two replication infos
   and `Inventory`), and each replicated script property whose value is not
-  `Identical` to what the client last got, a string's without case
+  `Identical` to what the client last got, a string's without case and a
+  float's by the x87's compare, so a NaN never goes
   ([`Identical`](core-dll.md#packages-and-linkers)), and whose replication
   statement holds (the statement
   its `RepOwner` names, each evaluated once a call). The classes with a native
