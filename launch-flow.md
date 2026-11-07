@@ -16,9 +16,14 @@ holding one of the four words so (`D:\Server\`, not `D:\GameServer\`) skips forw
 
 Otherwise:
 
-1. Enumerate top-level windows of class **`WLog`** (`FindWindowEx`, `0x10908B31`).
-2. For each, read the window property **`IsBrowser`** (`GetProp`, `0x10908BC9`).
-3. On the first match, skip past argv[0] and send the rest as **`WM_COPYDATA` (`0x4A`)**:
+1. Find the first top-level window of class **`WLog`** (`FindWindowEx`, `0x10908B31`): the
+   topmost in the stacking order, where Windows puts a window as it is made, so the newest
+   instance's log window unless another has been raised since.
+2. Read its property **`IsBrowser`** (`GetProp`, `0x10908BC9`). Without it, a `-server`'s
+   window, the search goes on among that window's own children, not after it
+   (`FindWindowEx` given it as the parent, `0x10908B2A`), finds none, and the launch starts
+   as though no instance ran: only the topmost log window is ever asked.
+3. With it, skip past argv[0] and send the rest as **`WM_COPYDATA` (`0x4A`)**:
    `SendMessageTimeoutW` (`0x10908CBE`), `SMTO_ABORTIFHUNG|SMTO_BLOCK` (`3`), a
    **30 000 ms** timeout. Its `COPYDATASTRUCT` carries `WindowMessageOpen` as its data
    word and the rest of the command line as its payload, 4 × its length + 4 bytes.
