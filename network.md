@@ -338,35 +338,58 @@ A server moves its game to another map, and its clients follow:
 
 ## Addresses
 
-A URL names a server in what comes before its options (`?`) and portal (`#`)
-(the URL parser, `0x103f7b60`):
+A URL starts as the default one, `[URL]`'s (`FURL::StaticInit`, `0x103f6c50`:
+the protocol `deusex`, no host, the port 7,790, the map `Index.dx`, no portal),
+and its text is read in this order, past its leading spaces (its trailing ones
+stay in the map) (the URL parser, `0x103f7b60`):
 
-- a `:` as the second character makes it a file (a drive letter);
-- a `:` further on, before any `.`, ends a protocol;
-- `//` may come before the host;
+- the options (`?`) and a portal (`#`) first, each up to the next `?` or `#`,
+  in any order; a space in one makes no URL;
+- a `:` as the second character makes it a file (a drive letter): all of it
+  the map, at the default protocol and portal, with no host;
+- else a `:` further on, before any `.`, ends a protocol;
+- `//` may come before the host; a `/` there alone makes no URL;
 - the host is the text up to a `/`, when it has a `.` past its first character
-  not followed by the map's or a save's extension (`dx`, `dxs`);
-- after a `:` in the host comes the port (`[URL]`'s `Port`, 7,790, without one,
-  as any URL's port);
-- after the `/` comes the map (the default map without one), then a `/` and the
-  portal; a second `/`, a space in an option or the portal, or an empty option
-  make no URL, and `HasOption` matches a whole option (`0x103f9df0`).
+  not followed by the map's or a save's extension (`dx`, `dxs`); the map is
+  then the default one, none for another protocol;
+- after a `:` in the host comes the port (`appAtoi`), the default without one;
+- after the `/` comes the map; for the game's protocol, in any case
+  (`FURL::IsInternal`, `0x103f97b0`), a `/` in it marks a portal, up to a
+  second `/`, past which anything makes no URL:
+  `01_NYC_UNATCOIsland/tunnel_drop_nyc` is that map at that portal;
+- a space in the protocol, host or portal makes no URL either, and so does
+  no host, no map of the game's protocol and no option.
+
+A URL that is none is the default one, marked invalid. `HasOption` matches a
+whole option, in any case (`0x103f9df0`): `?listen=1` is not `?listen`;
+`GetOption` an option's start (`0x103f9ee0`), asked with its `=`.
 
 Built on a base, as a travel builds it: a relative travel's URL takes the
 base's protocol, host, map, portal and port, a relative or partial one the
 base's options but `PUSH`, `POP`, `PEER` and a bare `LOAD` (any case), and the
-text's over them: a partial travel, the console's `open`, keeps the player's
-options and none of the server. An absolute one of the game's protocol
-takes the base's player options it lacks or has empty -- `Name=`, `Team=`,
-`Class=`, `Skin=`, `Face=`, `Voice=`, `OverrideClass=` (any case) --, after its
-own, each logged (`URL: Adding default option Name=Player`): the console's
-`start`, a hosted game's, keeps the player's name.
+text's over them, each where it names one: a relative one naming a host
+without a port keeps the base's; a partial travel, the console's `open`, keeps
+the player's options and none of the server. An absolute one of the game's
+protocol takes the base's player options it lacks or has empty -- `Name=`,
+`Team=`, `Class=`, `Skin=`, `Face=`, `Voice=`, `OverrideClass=` (any case) --,
+after its own, each logged (`URL: Adding default option Name=Player`): the
+console's `start`, a hosted game's, keeps the player's name.
 
 As text (`FURL::String`, `0x103f9210`): the protocol and `:` only when it is not
-the default (or the URL is asked whole), `//` after them with a host; the host
-when it, or the port, is not the default, then `:port` only for a port not the
-default, then `/`; the map; `?` and each option; `#` and the portal when there
-is one.
+the default, in any case (or the URL is asked whole), `//` after them with a
+host; the host when it, or the port, is not the default, then `:port` only for
+a port not the default, then `/`; the map; `?` and each option; `#` and the
+portal when there is one.
+
+A travel to a URL that is none (`open DX.dx?Name=Two Words`): the game
+engine's browse (`0x1038ad30`) logs `Browse: Index.dx` and refuses it,
+`Invalid URL: Index.dx`, an error the travel's tick drops; Deus Ex's browse
+goes on with its map all the same
+([the game engine](deusex-dll.md#the-game-engine-travel-and-saving)):
+`Index.dx`, outside any mission, is not there, so `Current` is emptied and the
+level's own map is loaded again on that URL, with no option, the player
+logging in with no name (`Player`). A start URL that is none is fatal
+(`UGameEngine::Init`, `0x103891c0`: `Invalid URL: <url>`).
 
 The Join screens join with the console's `open` and the address typed or picked
 (Join LAN adds `?lan`).
