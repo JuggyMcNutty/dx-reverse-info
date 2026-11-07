@@ -176,8 +176,12 @@ Saves live under the ini's `SavePath`:
   of `Current` plus the level saved in, and `SaveInfo.<ext>`.
 - A map's mission number is its name's two leading digits
   (`GetNextMissionNumber`, `0x10011ef0`: `02_NYC_Street` is 2, anything else
-  -1). The current one is the loaded level's `DeusExLevelInfo.missionNumber`
-  (`GetCurrentMissionNumber`, `0x10011ed0`).
+  -1). The current one is the `missionNumber` of `GetDeusExLevelInfo`'s
+  (below), -1 with no level (`GetCurrentMissionNumber`, `0x10011ed0`): the
+  loaded level's once the levels left are collected, but a level left that
+  something still holds can come first in the object list and answer for
+  it (DXEngine's `URLEdgesConsole` with `Hold`, the menu map's `LevelInfo`
+  held: -2, the menu's, from Liberty Island and UNATCO HQ).
 
 **`Browse(url)`** (`0x10010b90`), after `XGameEngineExt::Browse` has had its
 turn:
@@ -197,33 +201,57 @@ turn:
   URL on the browse's, so the browse's player options after its own
   ([addresses](network.md#addresses)); the level keeps the URL the save
   holds, which then becomes the last URL.
-- **Any other map**, and a URL with a `?load=` of any value (`0x100115ce`):
-  it compares the mission numbers, a `?load=`'s value read as well
-  (`0x10011736`-`0x1001178c`, its use not settled). Run: from Liberty Island
-  `01_NYC_UNATCOHQ?load=9` loads UNATCO HQ, and from there
-  `01_NYC_UNATCOIsland?load=01_NYC_UNATCOHQ` the island, so the map loaded,
-  from `Current` or `Maps`, is the URL's (DXEngine's `URLEdgesConsole` with
-  `Short`).
+- **Any other map**, and a URL with a `?load=` of any value (`0x100115ce`),
+  which the game engine's browse leaves to this one, loading no save
+  ([addresses](network.md#addresses)): the map it tests is the `?load=`'s
+  value, whatever it is, in place of the URL's (`0x10011736`-`0x10011825`),
+  and the map it loads from `Maps` the URL's all the same. It logs `Doing
+  load, not loadgame` and `Current mission number is <n>, next is <m>`, the
+  current mission (above) and the tested map's, and compares them
+  (`0x10011928`-`0x100119b6`): `?load=9` is a map outside any mission. A
+  load from `Maps` leaves the option on the last URL, so the console's next
+  `open` and a map exit carry it, until a travel names another, an absolute
+  one drops it or a level comes from `Current` or a save, whose URL has
+  none: after `01_NYC_UNATCOHQ?load=9`, `open 01_NYC_UNATCOIsland` empties
+  `Current` again, HQ unsaved, and loads the island from `Maps`, its URL
+  `Index.dx` (the run below).
   - Within one mission, unless `?loadonly`: `PruneTravelActors`, then
-    `SaveCurrentLevel` into `Current`; the destination loads from `Current`
-    if it was saved there, else from `Maps`. From `Current` the URL is made
-    on the browse's as a relative travel's is
+    `SaveCurrentLevel` into `Current`, then the tested map's file in
+    `Current` if `FindFiles` finds it, else the URL's map from `Maps`,
+    `Current` kept, a map not there failing the browse. From `Current` the
+    URL is made on the browse's as a relative travel's is
     ([addresses](network.md#addresses)): its map
     `<SavePath>\Current\<map>.<ext>`
-    (`..\Save\Current\01_NYC_UNATCOIsland.dxs`), the map named cut at its
+    (`..\Save\Current\01_NYC_UNATCOIsland.dxs`), the tested map cut at its
     first `.dx`, with case (`appStrstr`, `0x100119dd`), so
     `14_OceanLab_Lab.dx ` loses its space there; its options the browse's,
-    its portal the browse's; the level takes that URL, which
-    then becomes the last URL. The screen shows `SAVING`, then
-    `LOADING` ([the loading screen](engine-dll.md#the-loading-screen)).
+    its portal the browse's; the level takes that URL, or with a `?load=`
+    keeps the one its file holds, and the browse makes the level's URL the
+    last URL (`0x10011c7e`-`0x10011c88`). The screen shows `SAVING`, then
+    `LOADING` ([the loading screen](engine-dll.md#the-loading-screen)). Run
+    (DXEngine's `URLEdgesConsole` with `Short`): from UNATCO HQ
+    `01_NYC_UNATCOHQ?load=01_NYC_UNATCOIsland` brings the island back from
+    `Current` as it was left, its URL the one it was entered by, HQ passed
+    over; from the island, with no HQ in `Current`,
+    `01_NYC_UNATCOIsland?load=01_NYC_UNATCOHQ` loads the island from `Maps`,
+    not its file just saved; then `01_NYC_UNATCOHQ?load=01_NYC_UNATCOIsland`
+    finds that file, HQ passed over, its URL `Index.dx`.
   - A new mission, a map outside any, or a player with `bStartingNewGame` set
-    (which it then clears): `Current` is emptied first, and the destination
+    (which it then clears): `Current` is emptied first, and the URL's map
     loads from `Maps`. The screen shows `LOADING` alone, as for a
     `?loadgame`. A destination that fails to load (not there) is followed by
-    the current level's map loaded again with the same travel info (`Dx.Dx`
-    with no level): the level starts afresh, the failure's message gone with
-    it. Within one mission a failed load leaves the level playing, pruned,
-    with the message ([the loading screen](engine-dll.md#the-loading-screen)).
+    the map of the current level's URL loaded again with the same travel
+    info (`Dx.Dx` with no level): the level starts afresh, the failure's
+    message gone with it, or plays on where that URL names no map there
+    (`Index.dx`, a file in the emptied `Current`). Within one mission a
+    failed load leaves the level playing, pruned, with the message
+    ([the loading screen](engine-dll.md#the-loading-screen)). Run: from
+    Liberty Island `01_NYC_UNATCOHQ?load=9` empties `Current` and loads HQ
+    from `Maps`, its URL `Index.dx`. The first browse, from the Entry level,
+    which holds no `DeusExLevelInfo`, always comes this way, `Current
+    mission number is -1`: a start empties `Current` whatever map it names
+    (DXEngine's `RevisitConsole` begun on UNATCO HQ twice: the second run's
+    island from `Maps`).
 
 **`SaveCurrentLevel(slot)`** (`0x1000fac0`):
 
@@ -279,7 +307,7 @@ and, with `SaveCurrentLevel`, the level.
   `Current`, -1 the quick save.
 - **`GetSaveInfo(pkg)`** (`0x10010850`): `Current`'s, or a new one in `pkg`.
 - **`GetDeusExLevelInfo`** (`0x100120a0`): the first `DeusExLevelInfo` among
-  all objects.
+  all objects, a level's left behind among them while anything holds it.
 - **`Exec`** (`0x1000ed70`): adds the console commands `SAVEGAME n` and
   `DELETEGAME n`. The Load and Save Game screens delete a save with the
   second.

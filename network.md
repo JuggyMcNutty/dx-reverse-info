@@ -418,13 +418,16 @@ level begins play (`ULevel::Listen`, `0x1039e7c0`): the net driver writes the
 address and port it bound into that URL
 ([`IpDrv.dll`](ipdrv-dll.md#the-net-driver)). At the end `LoadMap` keeps the
 URL as it was given, with no host, as the game engine's last URL
-(`UGameEngine` + 0x74). The last URL is what a travel is relative to -- the
-server's (`?RESTART` too) and a client's (`Tick`, `0x1038fe90`) -- and what the
-console's `open` and `start` build on and `reconnect` opens again (`Exec`,
-`0x1038a030`). So a server never travels to its own address. Before a
-viewport's travel `Tick` takes every `loadonly` option (the whole option, any
-case) and the portal off the last URL, in place: the travel after a restart
-carries no `?loadonly`.
+(`UGameEngine` + 0x74, `0x1038e05c`), once the level has begun play and the
+player has logged in; Deus Ex's browse then makes a level's own URL the last
+URL where the level came from `Current` or a save
+([the game engine](deusex-dll.md#the-game-engine-travel-and-saving)). The
+last URL is what a travel is relative to -- the server's (`?RESTART` too) and
+a client's (`Tick`, `0x1038fe90`) -- and what the console's `open` and
+`start` build on and `reconnect` opens again (`Exec`, `0x1038a030`). So a
+server never travels to its own address. Before a viewport's travel `Tick`
+takes every `loadonly` option (the whole option, any case) and the portal off
+the last URL, in place: the travel after a restart carries no `?loadonly`.
 
 The scripts' own addresses:
 
@@ -441,6 +444,14 @@ The scripts' own addresses:
   listen server's `0.0.0.0/DXMP_Cathedral?...` (its port the default, 7790).
 - **`LevelInfo.GetAddressURL()`** (`0x103dfa90`): the level's URL's host and
   port, `host:port`: a listen server's `0.0.0.0:7790`.
+- **`Actor.GetURLMap()`** (`0x103b8df0`): the last URL's map, the game
+  engine's (the level's engine + 0x90), not the level's own: after a load of
+  a URL with an option starting `load` from `Maps`, the map that URL named,
+  where the level's URL is its file's `Index.dx` (DXEngine's
+  `URLEdgesConsole`: `01_NYC_UNATCOHQ` and a URL of 8 characters after
+  `open 01_NYC_UNATCOHQ?load=9`). While a map loads, its level beginning
+  play and its player logging in, it is still the last level's. The
+  multiplayer map lists (`MapList`, `DXMapList`) find the map played by it.
 - **`PlayerPawn.UpdateURL(NewOption, NewValue, bSaveDefault)`** (`0x103b87c0`):
   `NewOption=NewValue` into the last URL's options, in place of one of that
   name (`FURL::AddOption`, `0x103f9960`, any case); with `bSaveDefault` written
