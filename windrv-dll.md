@@ -6,8 +6,8 @@ render device a viewport opens with. Read for the command-line flags it honours 
 the nine the launcher's safe mode emits
 ([`cli-flags.md`](cli-flags.md#flags-the-launcher-emits-safe-mode)), and `-safe` -- for
 how a key and a typed character reach the game and what losing the focus does, and for
-where the game's window opens, which viewport a frame draws and which render device a
-viewport opens with; not in full. Method:
+where the game's window opens, how it goes full screen and back, its window's commands, which
+viewport a frame draws and which render device a viewport opens with; not in full. Method:
 [working on the binaries](README.md#working-on-the-binaries).
 
 ## The binary
@@ -103,6 +103,15 @@ the engine's `Key` the character's code, one a message, as Windows sends it to t
 on a Unicode system its UTF-16, so an e acute is 0xE9 -- all but a carriage return, which
 Enter's own key carries. The console takes it first; in Deus Ex, the root window then
 ([the engine and the input](extension-dll.md#the-engine-and-the-input)).
+A `WM_SYSCHAR`, a character typed with Alt held, that neither of them takes (the root window
+takes every one while a modal window holds the keyboard:
+[what it takes](extension-dll.md#the-root-window)) goes on to `DefWindowProc`
+(`0x1110a4e1`-`0x1110a50d`), and Alt+Enter's carriage return always does. Windows makes it a
+command for the window's menu (`SC_KEYMENU`, [the window's commands](#the-windows-commands)):
+Alt+Space opens the menu, in a window or full screen, the window keeping its menu there
+([the window](#the-window)); any other character Windows takes for a menu's underlined
+letter, and with no menu bar to find it in, beeps. A `WM_CHAR` the engine leaves goes no
+further.
 
 **The focus** (`ViewportWndProc`): losing it (`WM_KILLFOCUS`, `0x1110a0a3`) lets the mouse's
 capture go (`SetMouseCapture`), runs `SETPAUSE 1` -- a command nothing in the game takes, so the
@@ -126,6 +135,33 @@ sizes it about a client area of `WindowedViewportX` by `WindowedViewportY`
 (`AdjustWindowRect` on the window's style, `WS_OVERLAPPEDWINDOW`, its caption
 and frame round the client area), the menu bar the editor's alone. A viewport
 already open is moved and sized with `SetWindowPos` instead.
+
+Going full screen (`UWindowsViewport::ResizeViewport`, `0x1110d640`) the window keeps its
+rectangle in a window (`GetWindowRect`, `0x1110d89c`; kept at `0x1110da99`-`0x1110dab9`), drops
+its menu bar and takes off its caption and sizing frame but keeps its window menu
+(`WS_SYSMENU`; `0x1110db71`), and asks Windows for Alt+Esc, Alt+Tab, Ctrl+Esc and Ctrl+Tab as
+its hot keys (`RegisterHotKey`, `0x1110e11a`-`0x1110e168`), whose messages it takes and drops.
+Back in a window it gives the hot keys back (`0x1110da29`-`0x1110da77`), puts its caption and
+frame back (`0x1110e1ac`) and moves to the rectangle's corner it kept, at its new size
+(`MoveWindow`, `0x1110e29f`).
+
+## The window's commands
+
+The window's commands (`WM_SYSCOMMAND`, `0x1110b149`), from its caption, its window menu or
+Windows:
+
+- the screen saver and the monitor's power saving are refused, each logged (`SC_SCREENSAVE`,
+  `SC_MONITORPOWER`), in a window or full screen;
+- Maximize -- the caption's box, a double click on the caption, the window menu's -- toggles
+  full screen, as Alt+Enter does (`SC_MAXIMIZE`, `0x1110b172`);
+- full screen, the switches to another window and the task list are refused (`SC_NEXTWINDOW`,
+  `SC_PREVWINDOW`, `SC_TASKLIST`, `SC_HOTKEY`; `0x1110b18c`-`0x1110b1af`);
+- every other goes to `DefWindowProc`: the window's menu (`SC_KEYMENU`, from Alt+Space and the
+  other characters [the keys](#the-keys) leave), Move, Size, Minimize and Close.
+
+While the window's menu is open (`WM_ENTERMENULOOP` to `WM_EXITMENULOOP`, `0x1110b626`,
+`0x1110b70c`) the viewport takes no mouse move, its opening ending a drag. Windows runs the
+menu inside the message, so the game's loop waits until the menu closes.
 
 ## Drawing a frame
 
