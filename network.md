@@ -489,8 +489,8 @@ its heritage list, its one generation its counts.
 | string | its length (with the terminator, as a compact index) and characters |
 | vector | each coordinate rounded, in as many bits as the largest needs (given first, 4 bits), offset to be positive |
 | rotator | each component's top byte, after a bit for whether it is not zero |
-| plane | four 16-bit numbers |
-| any other struct | member by member |
+| plane | four 16-bit numbers, X, Y, Z, W, each rounded |
+| any other struct | member by member, its own members first, then those of the struct it extends, each one the package map numbers (`UStructProperty::NetSerializeItem`, Core.dll `0x101691e0`) |
 
 ## Replication
 

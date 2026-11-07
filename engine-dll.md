@@ -1698,6 +1698,16 @@ adds the BSP model, the reach specs, the level's time as a float, the first
 deleted actor, 16 text blocks, and the travel info: a count, then each key and
 value (package versions 61 and 62 hold the keys and the values as two lists).
 
+A model's load (a map's or a save's) clears its nodes' `NF_IsNew`,
+`NF_IsFront` and `NF_IsBack` (`FBspNode`'s `<<`, `0x103aa780`) and its
+surfaces' and brush polygons' `PF_Highlighted` (`FBspSurf`'s, `0x103aa3a0`;
+`FPoly`'s, `0x103aa510`). A save writes the node bits play set on the level's
+own nodes (a Liberty Island save: 209 of the level's 13,212 flagged in front,
+146 behind), and ten of the game's maps carry some (00_Intro, 03_NYC_Hangar,
+06_HongKong_Helibase, 08_NYC_Street, 10_Paris_Metro, 12_Vandenberg_Tunnels,
+14_Oceanlab_Silo, 14_OceanLab_UC, 15_Area51_Page, 99_Endgame3); none has
+`NF_IsNew` or a highlighted surface or polygon.
+
 ## Starting the game engine
 
 - **`UGameEngine::Init`** (`0x103891c0`): after the client, the renderer and the

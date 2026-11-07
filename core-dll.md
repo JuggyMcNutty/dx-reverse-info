@@ -143,10 +143,13 @@ Its only users are `DeusExPlayer`'s debug console commands.
   | the save info | 0x70004 (public) |
   | the event manager's parts | 0x70000 |
 
-  No object flagged `RF_Transient` is written (`SavePackage`, `0x10155980`),
-  and `StaticAllocateObject` (`0x101579c0`) flags so every object of a class
-  with `CLASS_Transient`: a reference to one reads as None. A level's mission
-  script (`MissionScript` is transient) is in no save.
+  No object flagged `RF_Transient` is written (`SavePackage`, `0x10155980`:
+  its export tagger, `0x1015e5f0`, passes one over), and `StaticAllocateObject`
+  (`0x101579c0`) flags so every object of a class with `CLASS_Transient`: a
+  reference to one reads as None; one of another package is still an import
+  when it is also public (the import tagger, `0x1015e7b0`). A level's mission
+  script (`MissionScript` is transient) is in no save, nor an object a
+  script's `new` flags transient.
 
 - **A string's bytes** (`FString`'s `<<`, `0x101459b0`): a compact count
   with the terminator, then the characters; on a save, negative and 16-bit
@@ -197,7 +200,15 @@ Its only users are `DeusExPlayer`'s debug console commands.
   struct (`Property %s of %s struct type mismatch %s/%s`), a native or, on a
   persistent archive, transient property (`Property %s of %s is not
   serialiable`, sic); each skip logs `Skipping %i bytes of type %i`, but for
-  `XLevel`. A struct's binary (`UStruct::SerializeBin`, `0x10126610`) is every
+  `XLevel`. A tag's name finds the class's own property before its supers'
+  (the struct's property list): a `GameReplicationInfo`'s tag of `Actor`'s
+  `Region`, a struct, meets the class's own int `Region` and is skipped, so
+  every save's load logs `Type mismatch in Region of GameReplicationInfo:
+  file 10, class 2`. A tag's element index (`FPropertyTag`'s `<<`,
+  `0x1012a840`) is one byte up to 127, two up to 16,383 (the first's top bits
+  10), and four past it (11); its size one of the five fixed sizes or a byte,
+  a word up to 65,536 (65,536 itself written 0) or a dword. A struct's binary
+  (`UStruct::SerializeBin`, `0x10126610`) is every
   member of it, its own first, then those of the structs it extends (no Plane
   case in `SerializeItem`, `0x101691b0`: a Plane's W, X, Y, Z), native members
   left out and transient ones on a persistent archive, every element of a static
