@@ -356,7 +356,7 @@ stay in the map) (the URL parser, `0x103f7b60`):
 - after the `/` comes the map; for the game's protocol, in any case
   (`FURL::IsInternal`, `0x103f97b0`), a `/` in it marks a portal, up to a
   second `/`, past which anything makes no URL:
-  `01_NYC_UNATCOIsland/tunnel_drop_nyc` is that map at that portal;
+  `open 01_NYC_UNATCOIsland/tunnel_drop_nyc` is that map at that portal;
 - a space in the protocol, host or portal makes no URL either, and so does
   no host, no map of the game's protocol and no option.
 
