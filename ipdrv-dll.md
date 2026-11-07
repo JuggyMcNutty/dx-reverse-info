@@ -101,7 +101,11 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
     read a tick of up to 999 bytes, raised whole as `ReceivedText`, `ReceivedLine` or
     `ReceivedBinary` by the link mode; by hand, it only marks `DataPending`. Then it sends
     what the FIFO holds (`FlushSendBuffer`); a pending close, once all is sent, shuts the
-    sending side (`ShutdownConnection`);
+    connection (`ShutdownConnection`: `shutdown`'s `SD_BOTH`, `0x1070808e`, `0x107080b8`).
+    Under Wine the closing link raises nothing for what the peer sends after, and the check
+    below closes it as the peer's end comes: its peer reads the end, sends, and is not reset
+    (DXEngine's `LingerConsole`: the link closed 2.02 s after opening, a second after its
+    `Close`, as the peer's end came);
   - in any state, a connection that reads as ended (a peek of one byte finding nothing, or
     an error other than would-block) is closed, the link goes back to initialized unless it
     is still listening, and `Closed` is raised.

@@ -705,24 +705,35 @@ number, passes this first.
   bit for whether it is not zero, then its value), reliable as the function is
   marked; an unreliable one is dropped when the connection has no room.
 
-**Ticking by role** (`AActor::Tick`, `0x103a1aa0`):
+**Ticking by role** (`AActor::Tick`, `0x103a1aa0`), by the roles alone, whatever
+the net mode -- no test of the net mode or of the kind of a player's `Player`:
 
-- a pawn whose own `Role` is `ROLE_SimulatedProxy`, whatever the net mode
-  (`0x103a1fd2`), on a client another player's pawn, moves smoothly along its
-  velocity (a player's, off the ground by a trace 8 units down and not flying or
-  in water, gaining half the zone's gravity) and runs its `Tick`: no state code,
-  timers or physics;
-- a dumb proxy only falls;
-- the local player's pawn runs its input, `PlayerInput`, `PlayerTick`, state
-  code and timers, but its physics only in its moves (`AutonomousPhysics`);
-- a client's pawn on the server (remote role autonomous) runs its state code and
-  timers, and, as any pawn with authority, its sight and its pain and speech
-  timers ([the senses](engine-dll.md#the-senses)): it moves by the client's
-  `ServerMove`s;
-- anything else ticks as a standalone game's.
+- a pawn whose own `Role` is `ROLE_SimulatedProxy` (`0x103a1fd2`), on a client
+  another player's pawn, moves smoothly along its velocity (a player's, off the
+  ground by a trace 8 units down and not flying or in water, gaining half the
+  zone's gravity) and runs its `Tick`: no state code, timers or physics;
+- else an actor whose remote role is autonomous (`0x103a23ce`), on a server a
+  client's pawn, runs its state code and timers, and, as any pawn with
+  authority, its sight and its pain and speech timers
+  ([the senses](engine-dll.md#the-senses)): no `Tick`, life span or physics, it
+  moves by the client's `ServerMove`s. A player pawn of them viewing a pawn
+  first takes that pawn's view rotation, eye height and, when it holds a weapon,
+  the weapon's `PlayerViewOffset` into its `TargetViewRotation`,
+  `TargetEyeHeight` and `TargetWeaponViewOffset` (`0x103a23e6`-`0x103a249c`),
+  which go to its client, whose `PlayerCalcView` puts them on its copy of the
+  pawn viewed. With any role but the authority such an actor runs none of it
+  (`0x103a23de`);
+- else a dumb proxy, or an actor of no role, only falls (`0x103a2524`);
+- anything else ticks as a standalone game's: a player pawn with a `Player` its
+  input, `PlayerInput` and `PlayerTick`, any other its `Tick`; its state code,
+  timers, life span and physics -- but an autonomous proxy, on a client the
+  local player's pawn, has its physics only in its moves (`AutonomousPhysics`,
+  `0x103a2763`), and a proxy's state code runs, and its latent action counts
+  down, in a simulated state alone (`AActor::ProcessState`, `0x103e5b9c`).
 
 A viewport's own player is spawned with the remote role simulated
-(`UGameEngine::Init`, `LoadMap`), a client's with autonomous.
+(`UGameEngine::Init`, `LoadMap`, `0x1038bf92`), a client's with autonomous (the
+`JOIN`'s, `0x103a00c7`); no stock class or map gives an actor that remote role.
 
 ### The native lists
 
