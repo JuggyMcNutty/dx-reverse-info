@@ -1584,8 +1584,9 @@ rest): head turns (`PlayTurnHead`), lip sync (`LipSynch`), blinking.
   Past `AnimLast`: a looping animation goes on to 1.0 in the same pass, wrapping
   to frame 0 with the time past 1.0 kept, or stops short of 1.0 with the
   frame where the step took it and no time left; `AnimEnd` is sent when the
-  pass crossed `AnimLast` from below, `bAnimFinished` set (`0x103a1e20`), so a
-  `FinishAnim` waiting on it is let go at its poll (`0x103e00a0`).
+  pass crossed `AnimLast` from below, `bAnimFinished` set first if a
+  `FinishAnim` waits (the state frame's `LatentAction` 385, `0x103a1e20`), so
+  that its poll lets it go ([latent functions](#latent-functions)).
   A non-looping one stops at `AnimLast` with `AnimRate` 0, `bAnimFinished` and
   `AnimEnd`, `SimAnim`'s frame and rate packed for a client that does not
   simulate the actor, a weapon aside ([replication](network.md#replication)),
@@ -1676,6 +1677,16 @@ on); `APawn`'s `MoveTo` 501, `MoveToward` 503, `StrafeTo` 505, `StrafeFacing`
   `0x103e0020`) takes the tick's time off it and ends the sleep once under
   half the tick is left. `Pawn.StopWaiting` (`0x103ba590`) sets a sleeping
   pawn's `LatentFloat` to -1, so the next poll ends it.
+- **`FinishAnim()`** (`0x103dff60`) unloops a looping animation, clearing
+  `bAnimLoop` and `bAnimFinished`, and waits unless there is no sequence,
+  nothing plays or tweens, or the frame is at `AnimLast` or past; its poll
+  (`PollFinishAnim`, `0x103e00a0`) ends the wait once `bAnimFinished` is set.
+  `ProcessState` polls (`0x103e5bfb`) after the tick's animation, its
+  `AnimEnd` and the script's `Tick`, so the code after the wait runs in the
+  tick the animation finished; a `PlayAnim`, `LoopAnim` or `TweenAnim` in
+  between clears `bAnimFinished` (`0x103e024d`, `0x103e085f` and `0x103e0743`,
+  `0x103e0c56`), and the wait goes on for that animation, a loop's ending at
+  its next pass over `AnimLast`.
 
 ## A saved level
 
