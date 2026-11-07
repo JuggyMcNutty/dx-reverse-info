@@ -2077,6 +2077,16 @@ and it stays on the screen until the next frame is drawn.
   `PostRenderFlash`, where Deus Ex's `PlayerPawnExt` draws the windows (the
   HUD, the menus); the render device's `EndFlash`; the player's
   `PostRender`; the console's `PostRender`; the viewport unlocked and shown.
+- **The console's time** is the viewport's: `UViewport::Lock` (`0x10373750`)
+  stamps the frame's time, and `Unlock` (`0x10373920`) keeps it as the last
+  update when it shows the frame, so the console's `Tick` takes the time
+  between two frames shown, whole (`0x10379d3f`), where the level's actors
+  take 0.4 s of a frame at most ([a level's tick](#a-levels-tick)). Its
+  first tick after a map's load takes in the load from the frame
+  `PaintProgress` painted: a console's wait of 1 s from a travel ends at the
+  level's first tick when the load takes longer, as Liberty Island's does
+  under Proton, the pawns' `StartUp` code still in its sleep (DXEngine's
+  `PatrolStartConsole`).
 - **So the frame `PaintProgress` paints**, with the client's `ScreenFlashes`
   on (the game's ini has it on) or in a net game, has the view and the
   windows at a tenth of their brightness, and what the player's and the
