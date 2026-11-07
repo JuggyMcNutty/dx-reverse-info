@@ -287,10 +287,14 @@ fields, after their properties (none):
     (`0x103e3030`) is this move with the actor's own rotation, nothing
     passed over and failing allowed (`bTest`, `bIgnorePawns`,
     `bIgnoreBases` and `bNoFail` all 0), its answer given straight.
-  - No move (each axis of the delta under 0.0001) and no turn does nothing
-    (true). A turn alone, with nothing standing on the actor, only sets its
-    rotation (true), but for a brush that is not static, which turns as a
-    move does, below. Such a brush traces nothing.
+  - No move (each axis of the delta under 0.0001, the double 0.0001) and no
+    turn does nothing (true), the hit it was given left as it was
+    (`0x1039915a` to `0x10399228`); any other move first sets the hit to
+    none, time 1. `walkMove`, `flyMove` and `swimMove` pass one hit to all
+    their test moves, and `jumpLanding` one a step, so a test move of nothing
+    keeps the hit of the move before it. A turn alone, with nothing standing
+    on the actor, only sets its rotation (true), but for a brush that is not
+    static, which turns as a move does, below. Such a brush traces nothing.
   - Unless a test: what stands on the actor moves first, each by a
     `MoveActor` of the delta plus its turn round the actor by the change of
     yaw (each yaw to a multiple of 4), what it stands on passed over, its own
@@ -876,8 +880,19 @@ shape, Deus Ex's numbers):
   test moves, held off 2 units, passing pawns and decorations that are not
   static, the pawn moved to where it lands). That jump: the time in the air for
   its upward speed to come down to the destination's height, in steps of 0.05 s
-  under the zone's gravity (-100 where it points up), and the speed across that
-  covers the distance in it, at most `GroundSpeed`. It counts where it lands
+  under the zone's gravity (-100 where it is not under 0), and the speed across
+  that covers the distance in it, at most `GroundSpeed`. Worked out on the x87
+  (`0x103c2c80`): each step the upward speed plus the gravity times 0.05 (a
+  double), stored as a float, the time plus 0.05 stored as a float, and the
+  height risen by the speed as the x87 held it times 0.05, never stored; with
+  the speed then over 1 either way, the time less the height past the
+  destination's over the speed, stored. The speed across is the root
+  (`appSqrt`, of the sum stored as a double) of the level distance's squares,
+  Y's then X's, held unstored: the distance's axes each times one over it,
+  stored as floats, then by that root over the time, or by `GroundSpeed` where
+  that is no more, each stored; a time of 0 or less goes at `GroundSpeed`
+  along `FVector::SafeNormal` of the distance. The upward speed is kept as
+  given. It counts where it lands
   more than 8 units nearer (the distance from its start, a float, less the
   distance from where it lands), less than 350 below its start, out of a pain
   zone its feet do not resist and out of water unless it can swim. A fall of
@@ -1128,6 +1143,15 @@ test with `noCheck`; Deus Ex's particle iterator moves its proxy with neither
   in no leaf (-1) and zone 0, wherever it stands.
   `forceRefresh` first puts the actor (and a pawn's feet and head) in the
   level's zone, with no events.
+- The zone at its location (`UModel::PointRegion`, `0x103f5db0`): down the
+  BSP from the root, the place's side of each node's plane by its distance --
+  the Z, Y and X products summed in that order on the x87, less W, compared
+  with 0 unstored: in front at 0 or more, behind under it or for a NaN (C0) --
+  to the child on that side until there is none; the region is that last
+  node's leaf and zone on that side (a node's back side first, then its
+  front), its zone actor the model's for that zone, else the `ZoneInfo` given
+  (the level's info); a model with no zones puts it in zone 0, and one with
+  no nodes in the zone given, no leaf (-1) and zone 0.
 - The zone at its location replaces the old. When they differ, unless a test, in
   order: the old zone's `ActorLeaving`; the actor's `ZoneChange`, while `Region`
   still holds the zone being left (scripts compare it with the new: a
@@ -1387,7 +1411,8 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   slot is None already), of the class, whose location lies strictly within
   `Radius` of `Loc` -- its squared distance, summed z, y, x on the x87, under
   `Radius` squared (`0x103e53d0`), so a negative radius reaches as far as a
-  positive one; a radius of 0, the default, no limit --, with
+  positive one; a radius of 0, the default, no limit, and a NaN none either,
+  its test against 0 taking the C3 a NaN sets (`0x103e53c3`) --, with
   `FastLineCheck` clear from `Loc` to it (`0x103e544f`, the actor's place the
   line's end). The caller is not passed over: a player's call finds the
   player where it stands. To an actor at `Loc` the line has no length, and
