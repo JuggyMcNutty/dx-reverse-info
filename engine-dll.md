@@ -795,14 +795,21 @@ shape, Deus Ex's numbers):
   its eye (`FastLineCheck`) unless the caller knows; the spot fitted for the
   pawn's size (`FarMoveActor` as a test, and back); then `Reachable` within 15
   units.
-- **`ActorReachable`'s exec** (`execactorReachable`, `0x103bc1a0`): asked of a
-  navigation point by a pawn of radius 115 or less in a level with reach
-  specs, standing at a node (its `MoveTarget` first, then the level's list:
-  within max(radius, 48) across and its height up or down), true only for
-  that node or one `CanMoveTo` reaches from it, else false unless the pawn
-  flies, before any walk; a pawn at no node is walked (`actorReachable`).
-  Partly read: one of DXEngine's `NavReachConsole`'s Liberty Island answers,
-  Gunther Hermann's, it does not explain.
+- **`ActorReachable`'s exec** (`execactorReachable`, `0x103bc1a0`): an
+  `Inventory` with a marker (`myMarker`, `0x398`) is asked by its marker. A
+  navigation point, asked by a pawn of radius 115 or less in a level with
+  reach specs, is answered from the path network when the pawn stands at a
+  node: its `MoveTarget` first, then each node of the level's list, within
+  max(radius, 48) across and the pawn's own height up or down. True when one
+  such node is the goal or `CanMoveTo` reaches the goal from it (a spec of
+  its `Paths` or `PrunedPaths` ending there, which the pawn fits and nothing
+  it cannot open blocks); else false, unless the pawn flies, before any walk.
+  Otherwise -- a pawn at no node, a flyer no spec takes, any other actor --
+  it is walked (`actorReachable`), an item itself. Every answer of
+  `NavReachConsole` on Liberty Island fits it: each node the console logs as
+  unlinked (it reads `Paths` alone) that the original reaches is a pruned
+  spec's end, Gunther Hermann's `PathNode547` by `PathNode24`'s of radius 24,
+  his 24.2 cut to 24.
 - **`actorReachable(Other, bKnowVisible)`** (`0x103c0630`): a non-pawn no
   further than 800 units and not in a pain zone the pawn does not resist, a pawn
   not with its feet in one; not in water unless the pawn can swim; a line from
