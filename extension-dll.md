@@ -1085,10 +1085,13 @@ as the window is made.
   blink and the fades stop while the game is paused, unless the window was
   made during a pause: its first tick in one sets `bGamePaused` and
   `bPauseProcessing` and goes no further, and the game going on clears both.
+  `bPauseProcessing` alone, which a script may set, stops the clock, the
+  typing and `FadeOutText`'s fade; the blink and the fades in go on.
 - **Starting.** Shown, the window is marked to start (`VisibilityChanged`,
-  `0x1000ee70`), and its next tick past the first sends `ComputerStart` to
-  it and to each parent in turn until one takes it (`0x1000ef10`), paused
-  or not.
+  `0x1000ee70`), and its next tick past the first -- and past a first tick
+  in a pause, which goes no further -- sends `ComputerStart` to it and to
+  each parent in turn until one takes it (`0x1000ef10`), paused or not,
+  shown by then or not.
 - **Placing a character** (`CalculateCharDisplayPosition`, `0x10010710`): in
   the current cell, which then moves on a column. One that would go in the
   last column starts the next row instead and goes first in it, but for a

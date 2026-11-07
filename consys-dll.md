@@ -81,9 +81,12 @@ the conversations of a mission list; `ConBindEvents` calls it with the
 level's list.
 
 1. It deletes the actor's old list (`PurgeBoundConversations`,
-   `0x10010cf0`), taking one off each conversation's `ownerRefCount`.
+   `0x10010cf0`), taking one off each conversation's `ownerRefCount`: each
+   item is freed at once, whatever still refers to it.
 2. Each conversation of the list, in order, goes to the front of the actor's
-   `ConListItems` when its owner is:
+   `ConListItems`, in a new item made in the list's own package, named
+   after its class and a number (`ConListItem0`, the engine's unique name)
+   and public, when its owner is:
    - for a bark (`_Bark` in its name, case sensitive): the actor's
      `BarkBindName`, or its `BindName` when it has no bark name;
    - for any other: the actor's `BindName`, never its bark name.
@@ -182,7 +185,13 @@ reaches it, it jumps to one of them.
 
 - **`GetRandomLabel()`** (`0x1000a270`):
   - with `bCycleEvents` off, a random label;
-  - with it on, the labels in turn, from `cycleIndex`;
+  - with it on, the labels in turn, from `cycleIndex`: the label at
+    `cycleIndex` modulo the count, the remainder of a signed division, so an
+    index a script sets below 0 takes a label's twelve bytes from before the
+    array and copies the string they describe -- whatever the allocator
+    left there: none where those bytes are zero, else stray text or a
+    fault, the game crashing at -1 on 01_NYC_UNATCOIsland's
+    `BoatWaitingForBriefing` (DXEngine's `RandomLabelBelowConsole`);
   - with `bCycleOnce` too, the last label once it is reached, from then on, whether
     `bCycleRandom` is set or not, `bLabelsCycled` never set (`0x1000a270`);
   - with `bCycleRandom` alone, random once every label has had its turn.
@@ -196,7 +205,8 @@ reaches it, it jumps to one of them.
 ## Small
 
 - **`CreateConCamera()`** (`0x100106f0`) makes a new camera in package
-  `DeusEx`; `ConPlay` makes one for a third-person conversation.
+  `DeusEx`, named after its class and a number and public; `ConPlay` makes
+  one for a third-person conversation.
 - **`CreateFlagRef(name, value)`** (`0x10010600`) does the same for a flag
   reference. Only `Conversation.AddFlagRef` calls it, and nothing calls that.
 - **The history.** `DConHistory::Destroy` (`0x1000ca20`) deletes its events,
