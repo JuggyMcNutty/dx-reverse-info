@@ -393,8 +393,9 @@ fields, after their properties (none):
   left, its right and its back, each ending 0 to 32 units higher in steps of 4
   (flags 6), look for a wall whose texture is in a group named `Ladder`, the
   name as spelled; the texture last met is the answer (`0x103ccc40`), a ladder
-  if its group is `Ladder` in any case. A line that meets a mover first meets
-  no texture.
+  if its group is `Ladder` in any case. The search also stops at a texture
+  with no outer, which none is: one in no group has its package. A line that
+  meets a mover first meets no texture.
   - On one, its `WalkTexture` event is given that texture (with the hit's
     place and normal) and it climbs: with an acceleration, `bIsWalking` is set
     and the velocity's Z becomes half `GroundSpeed` × the Z of its view's

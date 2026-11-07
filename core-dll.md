@@ -596,8 +596,12 @@ How the original runs UnrealScript.
     argument that is also the variable assigned ends with the parameter's
     value, through a `return` of the call too (the return steps the call
     into its caller's buffer), and of two `out` arguments given one variable
-    the first's. A native writes its `out` arguments through their addresses
-    in its own order: the post-increment and post-decrement natives
+    the first's. Each is copied by the parameter's property, a static array
+    every element (a bool would be copied by the parameter's own bit,
+    `UBoolProperty::CopySingleValue` `0x101665f0`, into the first of the
+    variable's word, but UCC takes no `out bool`: "Booleans may not be out
+    parameters"). A native writes its `out` arguments through their
+    addresses in its own order: the post-increment and post-decrement natives
     (`0x101347e0`, `0x101348a0`, the byte ones `0x10133290`, `0x10133350`)
     write their result before they step the variable, so `I = I++` ends
     stepped. Strings and arrays among the locals are freed.
@@ -668,7 +672,8 @@ How the original runs UnrealScript.
   class's own name never one; none found is no state, the class the node.
   Into another state, its name compared, it first sends `EndState`, if its
   probe is on, under `RF_InEndState` (`0x2000`; not from within one),
-  `RF_StateChanged` (`0x1000`) cleared before and tested after: a `GotoState`
+  `RF_StateChanged` (`0x1000`) cleared before and tested after, all only
+  when it sends it, the flag otherwise as it was: a `GotoState`
   finished during it sets the flag, and this one then returns preempted (2),
   its state and label never taken. The node set, its code cleared, the mask
   that of the node and the class. One to no state, or to a state the class
