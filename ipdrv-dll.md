@@ -78,10 +78,19 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
   the line end answered, `0x10708870`; 0 only with WinSock down or the link's `Socket` 0,
   which a failed `BindPort` alone leaves, a link never bound or whose connection went
   holding -1 and queuing as any, `0x10706960`, `0x10702480`), `SendBinary`, `ReadText`
-  (255 bytes at most), `ReadBinary`. `Open` and `Listen` empty the send FIFO; `Listen`'s
-  backlog is 1. A link whose `BindPort` failed, its `Socket` 0, logs a second `BindPort`
-  as already bound and answers 0, answers true at `Open` and `Listen`, which do nothing,
-  and 0 at `SendText` and `ReadText`. Its tick (`0x10706fb0`) goes by its state:
+  (255 bytes at most), `ReadBinary`. `BindPort` turns address reuse on and makes the
+  socket's close abortive (`SO_LINGER` on, 0 s), and logs each failure (`BindPort: bind
+  failed` and the like). `Open` and `Listen` empty the send FIFO; `Listen`'s backlog is 1,
+  and it listens from `Ready` alone, or again from `ListenClosing` with no new `listen`
+  (`0x10706df0`). `Open` connects the socket `BindPort` made: a link never bound, its
+  `Socket` -1, fails the connect, logs `Open: An error occured while attempting to
+  connect: <error>` and answers 0 (`0x10707c90`). `ReadText` and `ReadBinary` read only
+  while listening or connected (`0x107081b0`, `0x10708b40`), and a `ReadText` that reads
+  nothing leaves its string as it was. `Close` sets a listening link closing and any
+  other `ConnectClosePending` (`0x10707fb0`). A link whose `BindPort` failed, its `Socket`
+  0, logs a second `BindPort` as already bound and answers 0, answers true at `Open`,
+  `Listen` and `Close`, which do nothing, and 0 at `SendText`, `SendBinary`, `ReadText`
+  and `ReadBinary`; its tick does nothing. Its tick (`0x10706fb0`) goes by its state:
   - listening: it accepts a queued connection (`CheckConnectionQueue`) into a new actor of
     its `AcceptClass`, connected and in the listener's link mode, or with none into itself
     (its `RemoteSocket`), and raises `Accepted` on the one that took it;

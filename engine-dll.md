@@ -1821,7 +1821,9 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   node changed by a `GotoState`), the fifth ending the tick's.
 
 - **The travel's export** (`0x10391740`, from `UGameEngine::Tick` for a travel
-  that takes the items): a list from the player, each entry's travel properties
+  that takes the items, keyed by the player's `PlayerReplicationInfo.PlayerName`,
+  read unchecked, `0x10390951`: a player without one faults): a list from the
+  player, each entry's travel properties
   read the class's own first, then each super's (its field iterator,
   `0x10392830`), so `Actor`'s `Inventory` chain last; each object a written
   entry names joins the list. An entry is written only when it is no actor, or
@@ -1841,9 +1843,13 @@ Paused, `ULevel::Tick` (`0x103a51a0`) reads input with the time and runs
   keeps the saved player, unoccupied, and Deus Ex's leaves it as saved); the
   player's `Possess` (`APlayerPawn::SetPlayer`, `0x10368c90`), in which
   Extension's `PlayerPawnExt` makes its root window, so the HUD and its belt
-  are there for what follows; the player's `TravelPreAccept`; its travelling items' `TravelPreAccept`, none
-  for `?loadonly`, which takes nothing of the travel info, the player's own
-  properties nor its items; the game's `AcceptInventory`; the items'
+  are there for what follows; the player's `bAdmin` set when the level has no net
+  driver, or with `-alladmin` on the command line; the player's `TravelPreAccept`; its
+  travelling items' `TravelPreAccept`, none for `?loadonly` (the whole option,
+  `FURL::HasOption`, `0x103f9df0`), which takes nothing of the travel info, the player's
+  own properties nor its items, whatever the travel -- the level's entry of the URL's
+  `Name=` (the default name where it has none), whole and in any case, or standalone
+  with none found the first; the game's `AcceptInventory`; the items'
   `TravelPostAccept`, then the player's; the game's `PostLogin`. Deus Ex's
   player spawns the level's mission script in its `TravelPostAccept` when none
   runs: a save holds none

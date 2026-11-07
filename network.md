@@ -60,13 +60,22 @@ the machine's (Windows' computer name).
 The control channel carries lines of text: the server's side is
 `ULevel::NotifyReceivedText` (`0x1039f780`), the client's the pending level's
 (`UNetPendingLevel`, `0x1040a880`). A line's command is Core's `ParseCommand`'s
-(`0x10147a20`) and each `KEY=` value its `Parse`'s, as the command line's
+(`0x10147a20`): past any spaces and tabs, the word in any case with no ASCII
+letter or digit straight after it, the rest of the line past the spaces and
+tabs after it, so `<tab>FAILURE<tab><tab>text` is a `FAILURE` of `text`. Each
+`KEY=` value is its `Parse`'s, as the command line's
 ([`cli-flags.md`](cli-flags.md)): a key in any case, but not straight after a
 letter or digit, so `HELLO`'s `VER=` is not `MINVER=`'s. A text value is in
 double quotes, or up to a space, tab, CR, LF or comma, so a login's
-`Name=JC(1)` comes whole; `URL=` holds 1,023 characters, `PKG=` 63. A number
-is `Parse`'s int form, `appAtoi` of what follows, so `VER= 1100` is 1100;
-`LONE=` is true for `On`, `True` or `1` alone (`ParseUBOOL`).
+`Name=JC(1)` comes whole; `URL=` holds 1,023 characters, `PKG=` 63, `LEVEL=`
+4,095 (`Parse`'s `FString` form, `0x10146dc0`). A number is `Parse`'s int
+form, `appAtoi` of what follows, so `VER= 1100` is 1100, `FLAGS=` its DWORD
+form, `wcstoul`'s (`0x10147270`); `LONE=` is true for `On`, `True` or `1`
+alone (`ParseUBOOL`). A line goes in one reliable bunch of 4,015 bits at
+most (`FOutBunch`, `0x103fa3b0`: a packet's 512 bytes less 81 bits), and one
+longer is not sent, `Control channel bunch overflowed` logged
+(`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of 8-bit
+text, so `URL=`'s and `LEVEL=`'s limits are never reached.
 
 1. **Client:** `HELLO REVISION=0 MINVER=1100 VER=1100`.
 2. **Server:** `UPGRADE MINVER=1100 VER=1100`, and the connection closed, when
@@ -250,8 +259,18 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   pending.
   - The server's `FAILURE`: first `Rejected By Server` and its text for 10 s,
     the error `Rejected By Server: <text>`, the connection closed.
-  - `UPGRADE` with a `MINVER` of 1,100 or less: `Connection failed` and
-    `Server's version is outdated` for 6 s; above, the upgrade menu.
+  - `UPGRADE` with a `MINVER` of 1,100 or less (a missing one counts as 0
+    here): `Connection failed` and `Server's version is outdated` for 6 s;
+    above, the upgrade menu, `SetProgress`'s -1 s: the player's
+    `ShowUpgradeMenu`, which `PlayerPawn` leaves empty and no Deus Ex class
+    fills. Nothing else: no error and no close (`0x1040a908` to
+    `0x1040a9c3`). The server closed its side, which sends nothing more,
+    a closed connection's channels closing silently (`UChannel::Close`,
+    `0x103fa800`), and the client's later packets open it a new connection
+    that answers them ([the net driver](ipdrv-dll.md#the-net-driver)): so
+    the join stays pending, its `Connecting` lines back once those run out,
+    until the player cancels it, another join replaces it, or no packet
+    comes for `InitialConnectTimeout`.
   - No net driver for the URL (`UGameEngine::Browse`, `0x1038ad30`):
     `Networking Failed` and the error for 6 s.
 - **Lost.** A client level whose server connection closes
