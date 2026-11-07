@@ -2195,7 +2195,10 @@ none for any other (0) -- raised to the render device's `RecommendedLOD`
 Medium 1, Low 2, UltraLow 3 (`UClient::StaticConstructor`, `0x10375010`). The
 device gets the mips from that one down, that mip's size as the texture's, and
 the scale grown by the top mip's size over that one's, so a texel lands where
-it would.
+it would. Given a time, as every frame's draw gives it the viewport's
+`CurrentTime`, it steps the texture it locks (`Update`, `0x103ececd`;
+[stepping](fire-dll.md#stepping)), not its current frame: an animation's frame
+drawn, or a detail or macro texture, steps by its own clock.
 
 ## Small
 

@@ -117,11 +117,16 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   speed × the level's `TimeSeconds` × 35 texels, wrapping at 1,024: × 256
   made an int, truncated (`_ftol`, `0x10b278a4`), its low 18 bits, ÷ 256,
   `0x10b1a628`-`0x10b1a652`, V `0x10b1a6f6`; the level's time running on
-  while paused, so a sky's auto-panned clouds drift then too), a wave of 8
-  and 4 units on the
-  level's time for
-  `PF_SmallWavy`. Its detail and macro textures go as `UTexture::Lock` leaves
-  them: not panned, at their own scale (`DrawScale`, times the mip's shrink).
+  while paused, so a sky's auto-panned clouds drift then too), and for
+  `PF_SmallWavy` a wave on the level's `TimeSeconds` t, 8 sin t + 4 cos 2.3t
+  texels on U and 8 cos t + 4 sin 2.3t on V (`0x10b1a72a`-`0x10b1a82f`),
+  each by the surface's own flags, not its texture's. The surface's texture
+  is stepped (`Update`) and its current frame locked; the detail and macro
+  textures are that frame's own, each locked as it is, not a frame of its
+  own animation (`0x10b1a8df`-`0x10b1a965`), and the lock steps each texture
+  it locks ([a texture's mips](engine-dll.md#a-textures-mips)). They go as
+  the lock leaves them: not panned, at their own scale (`DrawScale`, times
+  the mip's shrink).
 - **The viewer's `Sprite`**, when a player views with one set (the Matrix
   cheat's), stands in for every surface's texture current frame, the
   Sprite's own current frame then giving the detail and macro textures; for
@@ -679,6 +684,22 @@ palette's last entry never shows (`0x10b05d40`).
   (its owner given), every light is a moving one, but the actor itself. With
   the client's `NoDynamicLights` on (an ini setting, off by default),
   animated lights count as static and moving ones are left out.
+- **A mover with `bDynamicLightMover`** (`0x10b06efe`): its surface takes the
+  lights of the mover's leaf in front of the surface's plane, with no owner
+  and no shadow bits (`0x10b06f63`-`0x10b06fca`), and the moving lights over
+  it with the mover for their owner (`0x10b06ffc`): so those are moving
+  lights, an `LE_OmniBumpMap` one too, which lights the mover's surface.
+- **No light map at all** when the viewer's `RendMap` is not `REN_DynLight`
+  (5) or the client's `NoLighting` is on: `DrawFrame` asks for a surface's
+  maps only when it has a light map, the level has light maps, and neither
+  (`0x10b1aa3a`-`0x10b1aa99`), so it goes with no light map and no fog map.
+  `SetupForActor` takes no light then, nor for a `bUnlit` actor or one in no
+  leaf, the lights kept under the actor left as they were
+  (`0x10b08e40`-`0x10b08e98`), and the actor's flags make it unlit
+  ([sprites](#sprites)). `DrawWorld` (`0x10b1cc20`-`0x10b1cc62`), before
+  each frame, puts a viewer's `RendMap` back at 5 and the client's
+  `NoLighting` off, when the viewer is no admin (`bAdmin`), its level has
+  `bNoCheating` and the game is not the editor.
 - **The static map:** the zone's ambient light, and each static light through
   its shadow bits (smoothed as they are unpacked, `0x10b02650`). The zone is the
   one the surface is seen from: `OccludeBsp` (`0x10b173d0`) gives each draw its
@@ -727,11 +748,20 @@ palette's last entry never shows (`0x10b05d40`).
     waver, 40% for a watery shimmer. Its illumination i becomes `i × (1 − a +
     a × r) − 0.5`, cut down. The draws r are taken in turn from 0 over the
     texels of the light's rectangle on the map, row by row, round a table of
-    256. **The light's rectangle** (`SetupLight`, `0x10b066a2`-`0x10b06865`):
-    the texels within |axis| × √(max(0, 1.05 r² − h²)) of the light's
-    foot on the surface's plane, h its height over it, held to the map; every
-    shape runs over those alone, so a cylinder light high over a surface
-    lights a square.
+    256.
+- **The light's rectangle** (`SetupLight`, `0x10b0660e`-`0x10b06865`): the
+  texels within |axis| × √(max(0, 1.05 r² − h²)) of the light's foot on the
+  surface's plane, h its height over it, along each of the map's axes: each
+  edge, the foot's U less or plus that, over the map's `UScale` (V by
+  `VScale`), rounded to the nearest texel (`fistp`), the first edge held at
+  0 and the last, which is left out, at the map's size. Every light's shape
+  runs over those texels alone and is merged over them alone, a static
+  light's into the static map too: so a light 1.025 r or more off the plane
+  lights none of the map, a cylinder light high over a surface lights a
+  square, and a texel on or past the last edge none, within the light's
+  radius or not. The two roots are the light manager's
+  (`FLightManager::Init`'s table, `0x10b0225d`-`0x10b022ce`, read at
+  `0x10b06681`): of the value with its significand cut to its top 10 bits.
 - **The random tables** (`TickRandoms`, `0x10b13080`, each frame from the
   level's time, at the end of `PreRender`):
   - 256 fresh draws: the flicker's, the torch's and fire's;
@@ -766,7 +796,8 @@ palette's last entry never shows (`0x10b05d40`).
     Times the shadow byte, rounded.
   - **The spotlight's** (`SpatialSpotlight`, `0x10b04f80`): the same times
     `((cos − c) ÷ (1 − c))²` inside its cone, `c = 1 − LightCone ÷ 256`,
-    rounded down.
+    rounded down; the cone about the light's rotation, a pawn's view
+    rotation (`0x10b04f89`-`0x10b04fa9`).
   - **Each effect's** (a table of a function, whether the shape changes each
     frame, and whether it wavers, at `0x10b2a0f0`): the plain shape for
     `LE_None`, the wavers, `LE_Warp` and `LE_Unused` (`LE_OmniBumpMap`'s,
@@ -917,9 +948,11 @@ palette's last entry never shows (`0x10b05d40`).
     space, times the frame's `Mirror`, under 0. A face the actor's flags or
     its material's make two-sided (`PF_TwoSided`) need not face the eye
     (`0x10b0ff9e`, and `0x10b10320` in its second face loop).
-  - `DrawMesh`, for a plain mesh, culls a face turned away only when its own
-    flags are `PF_Flat` without `PF_TwoSided` or `PF_Invisible`
-    (`0x10b0dc8a`).
+  - `DrawMesh`, for a plain mesh, culls a face turned away only when its
+    flags with the actor's (`0x10b0dbac`) are `PF_Flat` without
+    `PF_TwoSided` or `PF_Invisible` (`0x10b0dc8a`): the actor's flags give
+    `PF_Flat` unless `bMeshCurvy`, so a face turned away is culled unless it
+    is two-sided or invisible, or the actor `bMeshCurvy`.
   - The actor's flags (`0x10b26230`, [sprites](#sprites)) make no face
     two-sided.
   - `D3DDrv` draws with culling off, so only this keeps a translucent mesh's
