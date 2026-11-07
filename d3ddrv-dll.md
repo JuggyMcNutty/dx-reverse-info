@@ -23,6 +23,15 @@ The fixed state it draws with (`SetRes`): no culling, Z at less-equal,
 dithering on, and the masked alpha test at reference 127 with GREATER, so a
 masked texel shows when its alpha is above half.
 
+## The display
+
+`SetRes` (`0x1000a639`-`0x1000a80c`) lists DirectDraw's drivers by
+`DirectDrawEnumerateExA` with no flags, which leaves out every monitor but
+the primary one, logs them ("DirectDraw drivers detected:") and creates the
+one whose name holds "Primary", or with `Use3dfx` the last of the others, an
+add-in 3D card. Full screen, and its modes, are the primary display's
+wherever the window was.
+
 ## Gamma
 
 Brightness is a display gamma ramp, not arithmetic in the frame.
