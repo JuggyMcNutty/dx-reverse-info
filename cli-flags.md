@@ -33,7 +33,27 @@ the terminator:
 | `EXEC=`, `-consolecommand=`, `-testrendev=` | `0x1090947a`, `0x1090a635`, `0x1090a756` | 4,096, `Parse`'s `FString` form (Core.dll `0x10146dc0`) |
 | `MULTIHOME=` | IpDrv.dll `getlocalhostaddr` `0x10703fbd` | 256 |
 
-An `INI=` or `USERINI=` found empty is used as it is, the file's name empty (`appInit`).
+An `INI=` or `USERINI=` found empty is used as it is, the file's name empty (`appInit`), which
+no file is: the file manager opens a name as given (`CreateFileW`, `DeusEx.exe` `0x10905d40`,
+`0x10907000`), so `appInit`'s copy of `Default.ini` or `DefUser.ini` to it writes nothing, its
+failure unchecked (Core.dll `0x10149b35`, `0x10149c66`), and the config cache reads nothing
+from it and writes nothing back ([configuration](core-dll.md#configuration)). Its `Find`
+(`DeusEx.exe` `0x10915e30`) adds `.ini` to a name under five characters, or with no `.`
+fourth or fifth from its end, before it takes `System.ini` and `User.ini` for the two inis'
+names as given, so an `INI=` of such a name is two files: `System`, the class configs' and
+`ini:` names' (`ResolveName`, Core.dll `0x10154be0`), the name as given; a read or write
+naming no file -- the launcher's own keys (`FirstRun`, the wizard's, `CdPath`), `appInit`'s
+`Language` -- the name and `.ini`. An empty `INI=`'s are the empty name and `System\.ini`;
+`INI=MyMod`'s `MyMod` and `MyMod.ini`. So an empty `USERINI=` plays with no key bindings and
+the classes' defaults for the player's settings, none saved; an empty `INI=` reads no paths
+and no game engine class, and `InitEngine`'s load of `ini:Engine.Engine.GameEngine`
+(`0x1090bb21`) ends in a critical error, Core.int's `ConfigNotFound`, "Can't find
+'ini:Engine.Engine.GameEngine' in configuration file" (`StaticLoadClass`, Core.dll
+`0x10155229`), `.ini` written at the exit that follows (`appExit`, Core.dll `0x10149f20`) when
+the run set a key in it. A `LOG=` found empty names
+the base directory itself, an `ABSLOG=` nothing: the log's writer is not made, the device
+goes dead (`0x10903971`) and the game runs without a log; a `LOG=` found decides, an
+`ABSLOG=` after it unread.
 
 `PORT=` (IpDrv.dll `0x1070aece`) and `PktLoss=`, `PktOrder=`, `PktDup=` and `PktLag=`
 (Engine.dll) are `Parse`'s int form (Core.dll `0x10147730`): `appAtoi` of the text straight
