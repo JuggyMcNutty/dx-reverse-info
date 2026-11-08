@@ -2721,18 +2721,61 @@ harness's `OldVerConsole` loads `vergen.py`'s version-62 copies of
 - **`AttachDecal`** (`execAttachDecal`, `0x103e7250`) attaches nothing and
   returns false while the client's `Decals` (the Display menu's Decals) is
   off or there is no client: the game's decals then destroy themselves as
-  they are made (`Decal.PostBeginPlay`). Otherwise its line meets the level's
-  model, the movers filed into it among its nodes, passing what is
-  shoot-through and not vis-blocking (flags 6), and refuses only an
-  auto-panned surface (`0x600`); on a mover's face it bases the decal on the
-  mover, keeping its rotation (`MoverDecalConsole`). The decal covers every
-  node of the surface hit (`0x103e9090`, `0x103e9340`), each surface taking
-  it into its list before the first decal there of its texture, else at the
-  end (`0x103e7922`-`0x103e798a`), and a grid of
-
-  `MultiDecalLevel` squared lines, 4 for every stock decal, adds the surfaces
-  it finds; a `DecalDir` of zero takes a random direction from within the
-  unit sphere.
+  they are made (`Decal.PostBeginPlay`). Without a texture it logs
+  `AttachDecal: No Texture`. It holds `MultiDecalLevel` to 4 at most, writing
+  it back.
+  - **The line**, `TraceDistance` units along the decal's back (its
+    rotation's X axis turned round), meets the level's model with no
+    extent, the movers filed into it among its nodes, passing what is
+    shoot-through and not vis-blocking (flags 6): a masked, invisible or
+    portal polygon stops none. The surface is the one of the first node down
+    the crossed plane's chain whose polygon holds the point where the line
+    meets the crossed node's surface's plane (`0x103e9090`: inside while,
+    edge by edge, the side the point lies on by the surface's normal never
+    turns); with none, nothing. The point is then where the line meets that
+    surface's plane. Refused: a decal facing along it (its X axis square to
+    the normal), a point more than 0.001 off its plane, an auto-panned
+    surface (`0x600`, its own flags).
+  - **The square**: `USize` times `DrawScale` on a side, the texture's
+    `VSize` not read, about the point. With a `DecalDir` whose part in the
+    surface's plane is 0.0001 or more on some axis, its sides lie along that
+    part and across it; with one along the normal, the direction to the
+    surface's base is taken instead, and the corners lie along it and across
+    it; a `DecalDir` of zero, each axis exactly 0, takes a direction from
+    within the unit sphere (each axis twice `appFrand` less 1, drawn again
+    while its length's square is over 1), normalized, the corners along it
+    and across it. The texture's U runs from the first corner toward the
+    second, its V toward the last, over the draw scale (`ClipDecal`).
+  - **Where it lies**: in the surface's list before its first decal of the
+    same texture, else last (`0x103e7922`-`0x103e798a`), the surface in the
+    decal's `SurfList`, its corners kept relative to the surface's base. It
+    lies on each of the surface's nodes (the BSP's nodes of the surface,
+    which `UModel::PostLoad`, `0x103ace90`, lists at the model's load) that
+    its corners cover, clipped in the surface's plane by the node's edges
+    (`0x103e9340`); one that lists none is drawn on every polygon of its
+    surface, as one on a mover's face is: the tracker's surfaces list no
+    nodes.
+  - **A mover's face**: with a mover the surface's actor, the decal keeps
+    the mover's `Rotation` (Deus Ex's `MoverRotation`) and is based on its
+    own `Owner` (`SetBase`, `0x103e79fe`): the mover for the game's bullet
+    holes, which `DeusExWeapon` spawns owned by the actor hit
+    (`MoverDecalConsole`).
+  - **The grid**: from each of `MultiDecalLevel` squared points of the
+    square, (i + 1) / n of its first corner's two sides each way, a line
+    from 16 units before the point to 16 past it along the decal's back. A
+    surface it meets as above, not in `SurfList` already, not auto-panned,
+    whose normal lies within an angle of cosine 0.7 of the first's either
+    way, takes the decal too (`0x103e7ea2`-`0x103e8910`): each corner taken
+    onto its plane square on, then moved back toward where the first
+    surface's normal takes it by the two distances' difference over that
+    cosine, its nodes listed as above; it keeps no rotation and sets no
+    base (`0x103e8553`-`0x103e8585`), so on a mover's face `ClipDecal` turns
+    it by the mover's whole rotation.
+  - **`DetachDecal`** (`0x103e9a30`) takes the first decal of the actor's
+    off each surface in `SurfList`, from the last, and empties it. A new
+    tracker (a save's) makes the movers' surfaces anew (inferred: `AddActor`
+    adds them at each start), so the decals on the old ones are drawn no
+    more.
 - **`LevelInfo`'s clock** (`Year`, `Month`, `Day`, `DayOfWeek`, `Hour`,
   `Minute`, `Second`, `Millisecond` at `ALevelInfo+0x47c` to `0x49c`;
   `transient` in `Engine.u`; the script's one reader is `StatLog`'s date string)

@@ -416,7 +416,22 @@ The renderer keeps it; the engine and the scripts read it
   `0x10b1bda0`; a decal that lists its nodes, only to theirs). Its corners
   are lifted 0.75 units along the surface's normal (`0x10b2b304`) and cut by
   the planes through the eye and the polygon's edges, so on screen it fits
-  the surface's drawn outline; no span buffer is asked. It is drawn and
+  the surface's drawn outline; no span buffer is asked. On a mover's face
+  its corners are first turned by the mover's rotation less the one it was
+  laid at, each of the three numbers apart (`0x10b1bfa3`-`0x10b1c0e4`),
+  about the face's base; a decal that lists no nodes is clipped to every
+  saved polygon of its surface (`0x10b1b1d8`). Yet once the mover has
+  moved the decal is drawn on its face no more: DXEngine's harness's
+  `MoverDecalConsole`, a bullet hole on Liberty Island's `DeusExMover10`,
+  gone from the face once the door has turned, the decal actor left where
+  it was laid, its base None (why is not read: the tracker's filing of the
+  moved polygons is the lead). Its texture, the level's default one where it has none
+  (`0x10b1b154`), runs from its first corner, U toward the second and V
+  toward the last, over the actor's `DrawScale` as it is drawn
+  (`0x10b1c8e0`); it is drawn modulated, its colour the actor's
+  `AmbientGlow` over 256 plus half its `ScaleGlow`, held to 0 to 1
+  (`0x10b1c554`), which `D3DDrv` does not use (a modulated draw is
+  untinted). It is drawn and
   stamped where some of it is left: a decal behind nearer geometry, on a
   node that shows elsewhere, is stamped, the depth buffer hiding it
   (DXEngine's `DecalSeenConsole`: of 29 marks the eye's line to is blocked,
