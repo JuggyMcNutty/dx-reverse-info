@@ -312,7 +312,14 @@ fields, after their properties (none):
     a client's smoothing (`PostNetReceive`, `0x103684e4`) are tested so
     too (below). `walkMove`, `flyMove` and `swimMove` pass one hit to all
     their test moves, and `jumpLanding` one a step, so a test move of nothing
-    keeps the hit of the move before it. A turn alone, with nothing standing
+    keeps the hit of the move before it. The physics hand theirs on alike:
+    `physFalling` one through the tick's steps and slides (`0x103d0e38`),
+    `physRolling` (`0x103d4dd5`), `physFlying` (`0x103d3297`),
+    `physSwimming` through `Swim` (`0x103d3f4e`), `physWalking` its own to a
+    step's move (the trace ahead of a sloped wall writing it first,
+    `0x103cb0d8`) and to `stepUp`, whose moves share it: a slide of nothing
+    along a wall met head on reads the wall's hit again (`WallHitConsole`).
+    A turn alone, with nothing standing
     on the actor, only sets its rotation (true), but for a brush that is not
     static, which turns as a move does, below. Such a brush traces nothing.
   - Unless a test: what stands on the actor moves first, each by a
@@ -483,7 +490,9 @@ fields, after their properties (none):
     tick² / (2 × that friction, at least 0.025), less its part along the
     floor's normal.
 - **Walking** (`APawn::physWalking`, `0x103ca540`), the whole tick at once,
-  after the ladder check; in no zone, `FellOutOfWorld`; its floor line a
+  after the ladder check; in no zone, `FellOutOfWorld`, the server logging
+  "%s fell out of the world!" with the pawn's name first (`0x103ca5ae`); its
+  floor line a
   `SingleLineCheck` with flags 23 (`0x1039aed0`), the first colliding hit
   whether it blocks or not:
   - The speed (`calcVelocity`, below), the velocity and acceleration made level
@@ -633,6 +642,28 @@ fields, after their properties (none):
     walking player's is 0.3 of it, 0.6 in a net game (`NetMode` not
     standalone), and comes down to that no faster than to (1 − 2 × that
     friction × the tick) of its speed a tick.
+  - **Its float order**: each step a float where it is stored, the rest as
+    the x87 holds it. A braking slice is the float 0.03, the time left the
+    float less the double 0.03, compared unrounded with the double, the
+    last slice the float left; a slice takes ((2 × the velocity) × the
+    slice) × the friction off it, and one still pointing the old way (its
+    dot with the old, Z's product first, over 0) adds (itself × the slice) ×
+    the x87's reciprocal of the tick (`0x103cda14`, `0x103cdb44`). The speed
+    is the root of the squares' sum (X's and Y's first) stored as a double;
+    an acceleration is cut when its squared size is over `AccelRate` squared
+    (a walking player's × the double 0.09), to the direction × `AccelRate`
+    (then × the float 0.3); the turn takes ((the velocity − the direction ×
+    the speed) × the tick) × the friction off it. The fluid's factor, 1 −
+    (`bFluid` × the tick) × `friction`, is not stored (`0x103cde9d`); the
+    buoyancy is (the tick × the gravity) × (1 − `Buoyancy` / `Mass`, stored)
+    (`0x103cdf3a`-`0x103cdfb1`). A walking player's cap compares `maxSpeed`
+    squared × the double 0.09 (0.36) with the squared speed stored as a
+    float, takes the velocity times one over its size (Core's
+    `FVector::operator/`, `Core.dll` `0x10117800`) and then times the more
+    of `maxSpeed` × the float 0.3 (0.6) and (1 − 2 × (the friction × the
+    tick)) × the size, compared unrounded; the cap to `maxSpeed` compares
+    its square with the squared speed stored as a float. DXEngine's
+    `tools/calcvel` runs these instructions natively against its own.
 - **The next node** a pawn takes after a search: [the search](#the-search)
   ("after a search", "the second way").
 - **`RandomBiasedRotation(centralYaw, yawDistribution, centralPitch, pitchDistribution)`**
@@ -729,8 +760,9 @@ fields, after their properties (none):
     `DeusExPlayer`), and push off a decoration that cannot be a base
     (`DeusExDecoration`).
 - **Falling** (`physFalling`, `0x103d0a50`), for an actor in a zone (in none:
-  `FellOutOfWorld`, logged on the server for an inventory item, a decoration
-  or a pawn), after the ladder check:
+  `FellOutOfWorld`, the server logging "%s fell out of the world!" first for
+  an inventory item, a decoration or a pawn, `0x103d0b60`), after the ladder
+  check:
   - A pawn's air control is its `AirControl`, cut to 0.05 when over 0.15 and
     a box of its size meets the world (flags 6) along its velocity + its
     acceleration's direction × that × `AccelRate`, over the tick, level. Its
@@ -782,8 +814,9 @@ fields, after their properties (none):
   has not stepped yet, and the part of this step the move did not take; unless
   `bJustTeleported`, the velocity becomes the move's own, the distance gone
   over the time it took, when the hit's time is over 0.1 and the time it took
-  over 0.003 s. A floor met sliding along a wall lands with neither: no
-  velocity taken, the step's time spent. Then:
+  over 0.003 s. A floor met sliding along a wall, or the ditch of two, lands
+  with neither: no velocity taken and none of the tick left (0, `0x103d20b3`,
+  `0x103d220f`), so no walk follows in that tick. Then:
   - a non-pawn in a `bBounceVelocity` zone with a velocity is thrown again: the
     zone's velocity and 80 up;
   - a pawn with nothing under 0.9 of its box within its radius × 0.2 + 8 down
@@ -868,7 +901,8 @@ fields, after their properties (none):
   - With over 0.01 s left, `physFalling` or `physFlying` takes it, as the
     physics now is.
 - **Flying** (`APawn::physFlying`, `0x103d3040`): out of the world (zone 0) a
-  flyer that collides with the world goes, unless a player, and nothing moves.
+  flyer that collides with the world logs "%s flew out of the world!", on a
+  client too (`0x103d309d`), and goes, unless a player, and nothing moves.
   Otherwise the speed (`calcVelocity`, above), then one move a tick by (the
   velocity + the zone's velocity) × the tick: the zone's velocity for a player,
   and for another pawn in a zone moving over 300. A wall hit (its normal's Z
