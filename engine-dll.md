@@ -64,9 +64,10 @@ calls the listeners' script.
   `LevelInfo.PreBeginPlay`) makes a `UEventManager` (0x43c bytes) in the level's
   package unless `LevelInfo.EventManager` holds one. It is saved with the level
   ([saved](#saved)), so a save keeps every listener and event.
-- **Ticked by the level.** `ULevel::Tick` calls `UEventManager::Tick`
-  (`0x103828f0`) after the actors, on a full tick, unpaused (`LevelInfo.Pauser`
-  empty): `AIProcess`, then `CleanupEvents`.
+- **Ticked by the level.** Each level's `ULevel::Tick` calls its own
+  LevelInfo's `UEventManager::Tick` (`0x103828f0`, from `0x103a5a2b`) after
+  the actors, on a full tick, unpaused (its `Pauser` empty), the Entry
+  level's too (`0x103a598d`-`0x103a5a2b`): `AIProcess`, then `CleanupEvents`.
 - **Told of destroyed actors.** [`ULevel::CleanupDestroyed`](#destroyed-actors)
   passes each to `DestroyActor` (`0x10382760`): its events are marked for
   deletion, and it stops being any listener's best sender.
@@ -84,15 +85,19 @@ calls the listeners' script.
 - **Deleting is deferred.** `SafeDelete` (`0x10383780`) marks an event;
   `CleanupEvents` (`0x10383d80`) unlinks and deletes the marked ones outside
   `AIProcess`. Event types last as long as the level.
-- **The natives** find it through the level's `LevelInfo`; with none they do
-  nothing.
+- **The natives** find it through the actor's own level's `LevelInfo`, its
+  `XLevel`'s first actor (`execAISendEvent`, `0x1036d7f6`-`0x1036d863`), as
+  `ULevel::CleanupDestroyed` finds its level's (`0x1039672c`); with none they
+  do nothing.
 
 ### Listening
 
 `AISetEventCallback(eventName, callback, scoreCallback, bCheckVisibility, bCheckDir, bCheckCylinder, bCheckLOS)`
 (`0x10382990`; defaults: no score callback, true, true, false, true) makes or
-finds the actor's receiver for that event (a new one at the ring's end) and sets
-the callback, the score callback and the four checks.
+finds the actor's receiver for that event (a new one at the ring's end, its
+next turn weighing from the current slot, `0x10382a4a`) and sets the callback,
+the score callback and the four checks; for no actor or a None event name it
+does nothing (`0x103829b5`-`0x103829c8`).
 `AIClearEventCallback(eventName)` (`0x10382b90`) marks it for deletion.
 
 ### Raising
@@ -112,23 +117,33 @@ off.
   become 0.
 
 The type is `EAIEventType`: visual, audio or olfactory. An actor's first raise
-of an event makes its sender; an actor being destroyed raises 0.
+of an event makes its sender; an actor being destroyed raises 0, its sender
+made all the same (`0x10382ca7`-`0x10382cb5`). For no actor or a None event
+name the four do nothing (`0x10382c86`-`0x10382c9d`, `0x10383206`,
+`0x103832e6`), nor does `AIClearEventCallback` (`0x10382bb6`).
 
 ### Each frame: `AIProcess` (`0x10384080`)
 
 1. **Whose turn.** Receivers in ring order from where the last frame stopped,
    until all have had a turn or 2 ms have passed. The clock is read only after a
    receiver that had a sender to weigh, so one such receiver has its turn each
-   frame. A receiver whose actor is being destroyed is dropped.
-2. **Which senders count.** The event type's, not the receiver's own. A receiver
-   drawn in the last 5 s or within 1,200 units of the player
-   (`DistanceFromPlayer`), and not in stasis, weighs all; any other only those
-   within 400 units.
-3. **Scores.** A sender's score is its distance² + 1, or what the receiver's
-   `scoreCallback(receiver, sender, score)` returns (`AIComputeScore`,
-   `0x10383f50`). A score ≤ 0, or not a number, drops the sender. From the 256th
-   sender a warning ("Greater than 255 objects emitting event") names the event
-   and the rest are ignored (`0x1038426f`).
+   frame. A receiver whose actor is being destroyed is dropped. One linked
+   during the walk, by a score callback, goes in at the ring's end and has its
+   turn at the walk's end.
+2. **Which senders count.** The event type's, not the receiver's own, in its
+   list's order, one a score callback raises meanwhile among them. A receiver
+   drawn in the last 5 s, 5 itself among them (`0x10384189`), or within 1,200
+   units of the player (`DistanceFromPlayer`), and not in stasis, weighs all;
+   any other only those within 400 units, the squared distance summed on the
+   x87, X's square and Y's, then Z's, and stored as a float (`0x103841ec`).
+3. **Scores.** A sender's score is its distance² + 1, summed on the x87 as
+   above, or what the receiver's `scoreCallback(receiver, sender, score)`
+   returns, stored as a float (`AIComputeScore`, `0x10383f50`). A score ≤ 0, or
+   not a number, drops the sender. Once 256 senders are taken the rest are
+   ignored, and a warning is logged at that turn (`0x1038426f`): "*** WARNING:
+   Greater than 255 objects emitting event "%s"! (Some events will be
+   dropped)", the name the event type's own object's (`AIEventType<n>`, its
+   object name, `0x1038427b`), not the event's.
 4. **The best sender:** by score, lowest (by default the nearest) first, the
    first the receiver senses (`ComputeSenseDetection`, `0x103837b0`). Its actor,
    score and three senses go into the receiver's `XAIParams`. Every turn sets the
@@ -138,14 +153,13 @@ of an event makes its sender; an actor being destroyed raises 0.
    slots since the receiver's last turn (`0x10383bc0`), then:
    - **visibility:** a pawn's
      `AICanSee(sender, visual, bCheckVisibility, bCheckDir, bCheckCylinder, bCheckLOS)`;
-     for another actor, the visual number if a trace to the sender meets no wall
-     or mover;
+     for another actor, the visual number if one line check (`SingleLineCheck`,
+     `TRACE_Movers | TRACE_Level`, no node flags) from it to the sender meets
+     no wall and no mover, whether that blocks sight or not (`0x103839a1`);
    - **volume:** a pawn's `AICanHear(sender, audio, radius)`; for another actor,
-     the audio number within the radius;
+     the audio number where the squared distance, as the x87 holds it, is
+     under the radius's square (`0x10383a1c`-`0x10383a51`);
    - **smell:** a pawn's `AICanSmell` (always 0); else 0.
-
-   For a pawn, an inventory item with an owner counts as its owner, its
-   visibility × √(its collision height × radius / the owner's).
 6. **The state** (`EAIEventState`) to call with. Event on: `ChangeBest` for a
    new best sender, `End` for none. Event off: `Begin` for a best sender with a
    current level in some sense (turning the event on); `Pulse` for one with
@@ -153,9 +167,10 @@ of an event makes its sender; an actor being destroyed raises 0.
 7. **The ring moves on.** Each sender's next slot starts at its current levels
    (0 for an actor being destroyed); a sender with nothing left in its 16 slots
    is deleted. Then each live receiver whose next slot is the new current one,
-   one that had its turn this frame among them, is moved on a slot, and one line
-   warns of the events dropped ("Event manager not cycling quickly enough.  %d
-   events have been dropped.", `0x1038462d`-`0x10384681`).
+   one that had its turn this frame among them, is moved on a slot, and two
+   lines warn of the events dropped, counting them: "*** WARNING: Event manager
+   not cycling quickly enough.  %d events have been dropped." and "There may
+   be too many events occurring on this level." (`0x1038462d`-`0x10384681`).
 8. **The calls** (`0x10384980`): each receiver that had its turn and has a state
    gets its callback function (`AIEvent` when none) with the event's name, the
    state and the `XAIParams`.

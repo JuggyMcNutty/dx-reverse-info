@@ -96,7 +96,12 @@ The Windows keys and the menu key are `Unknown5B`, `Unknown5C` and `Unknown5D`, 
 `IK_PrintScrn` (`VK_SNAPSHOT`), the keypad's operators `GreyStar`, `GreyPlus`, `GreyMinus`
 and `GreySlash`, its Enter `IK_Enter`. No shipped ini sets `UseDirectInput`, so the stock
 game never starts DirectInput (`UWindowsClient::Init`'s gate, `0x11101d20`) and moves the
-mouse by the window's mouse moves from its middle (`0x11109b30`). DirectInput is the mouse's alone
+mouse by the window's mouse moves from its middle (`0x11109b30`): a `WM_MOUSEMOVE` while the
+window holds the mouse takes every one queued behind it (`PeekMessage`, `PM_REMOVE`), each one's
+move from the one before, the first's from the client area's middle, and sends their sums as one
+`MouseX` and one `MouseY` axis event, the Y's sign turned so that up is positive, none for an
+axis that did not move, then puts the pointer back in the middle (`SetCursorPos`;
+`0x1110ae57`-`0x1110b04a`). DirectInput is the mouse's alone
 (`UWindowsViewport::diSetupKeyboardMouse`, `0x1110c700`: `GUID_SysMouse`, the mouse's data
 format, exclusive in the foreground): its buttons `LeftMouse`, `RightMouse` and
 `MiddleMouse`, its moves `MouseX` and `MouseY`, and its wheel's movement since the last
@@ -253,7 +258,13 @@ destroyed instead, and the tick ends there. The viewport's `Repaint`
 3. `WindowedRenderDevice` fullscreen, if `StartupFullscreen`;
 4. `WindowedRenderDevice` in a window.
 
-With none, it asserts. The device opens (`TryRenderDevice`, `0x1110d150`) in full screen at the
+With none, it asserts. `-nohard` passes over the second (`0x1110796c`); the third and fourth
+are `0x111079a3` and `0x111079c2`. The device is an object of the class its key names, so it
+holds that class's config, its section of the ini: `SoftDrv`'s in the game's `DeusEx.ini` has
+`Coronas` and `ShinySurfaces` off and no `DetailTextures`, which its class leaves 0, so the
+software renderer in `GameRenderDevice`'s place draws no coronas, no shiny surfaces and no detail
+textures (DXEngine's harness's `CoronaConsole` with `-nohard`: no glow in any of its six shots).
+The device opens (`TryRenderDevice`, `0x1110d150`) in full screen at the
 client's `FullscreenViewportX` and `Y` and `FullscreenColorBits` ÷ 8 bytes a pixel; in a window
 at `WindowedViewportX` and `Y` and the desktop's depth, as the viewport's constructor reads it
 (`GetDeviceCaps`' `BITSPIXEL`, `0x111069b7`): 4 bytes on a desktop of 24 or 32 bits, 2 on any
