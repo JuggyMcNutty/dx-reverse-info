@@ -71,11 +71,17 @@ double quotes, or up to a space, tab, CR, LF or comma, so a login's
 4,095 (`Parse`'s `FString` form, `0x10146dc0`). A number is `Parse`'s int
 form, `appAtoi` of what follows, so `VER= 1100` is 1100, `FLAGS=` its DWORD
 form, `wcstoul`'s (`0x10147270`); `LONE=` is true for `On`, `True` or `1`
-alone (`ParseUBOOL`). A line goes in one reliable bunch of 4,015 bits at
-most (`FOutBunch`, `0x103fa3b0`: a packet's 512 bytes less 81 bits), and one
-longer is not sent, `Control channel bunch overflowed` logged
-(`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of 8-bit
-text, so `URL=`'s and `LEVEL=`'s limits are never reached.
+alone (`ParseUBOOL`). A `GUID=` is `Parse`'s GUID form (`0x101478e0`): its
+text into 256 characters, then four words of 0, and where the text is 32
+characters long each word the base-16 `wcstoul` of its eight (`appStrtoi`,
+`0x101235e0`), the last eight the last word; a `USES` line without one keeps
+its package's 0 (`FPackageInfo`, `0x1012b8b0`). What the client does with it
+-- the cache's name, the file asked for, `HAVE` -- is the words, written back
+as `%08X` each, never the server's text. A line goes in one reliable bunch
+of 4,015 bits at most (`FOutBunch`, `0x103fa3b0`: a packet's 512 bytes less
+81 bits), and one longer is not sent, `Control channel bunch overflowed`
+logged (`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of
+8-bit text, so `URL=`'s and `LEVEL=`'s limits are never reached.
 
 1. **Client:** `HELLO REVISION=0 MINVER=1100 VER=1100`.
 2. **Server:** `UPGRADE MINVER=1100 VER=1100`, and the connection closed, when

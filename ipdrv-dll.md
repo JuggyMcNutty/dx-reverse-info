@@ -74,8 +74,9 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
     a port it fails), the port 0.
   - `ParseURL`, `GetLocalIP` (the first address of the machine's own name), `GetLastError`,
     `IsDataPending`, and `Validate` ([below](#the-master-server)).
-- **`TcpLink`:** `BindPort` (any port when given none; with `bUseNextAvailable`, the first
-  free of the 20 from the one given), `Listen`, `Open`, `Close`, `IsConnected`, `SendText`
+- **`TcpLink`:** `BindPort` (at the local bind address, as the net driver's socket,
+  `0x10706a51`; any port when given none; with `bUseNextAvailable`, the first free of the
+  20 from the one given), `Listen`, `Open`, `Close`, `IsConnected`, `SendText`
   (a line end added in line mode, everything queued in the send FIFO, the whole length with
   the line end answered, `0x10708870`; 0 only with WinSock down or the link's `Socket` 0,
   which a failed `BindPort` alone leaves, a link never bound or whose connection went
@@ -88,12 +89,17 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
   `Socket` -1, fails the connect, logs `Open: An error occured while attempting to
   connect: <error>` and answers 0 (`0x10707c90`). `ReadText` and `ReadBinary` read only
   while listening or connected (`0x107081b0`, `0x10708b40`), and a `ReadText` that reads
-  nothing leaves its string as it was. `Close` sets a listening link closing and any
-  other `ConnectClosePending` (`0x10707fb0`), and answers true: a closing listener
-  goes on listening, raises nothing, and `Listen` answers true again; a link neither
-  connected nor listening stays pending, its tick's shutdown of the unconnected socket
-  failing each tick ("Close: Error while attempting to close socket", `0x10708040`), a
-  `BindPort` then refused as already bound. `IsConnected` (`0x10706cb0`) asks whether
+  nothing leaves its string as it was. `Close` sets a listening link closing --
+  `ListenClosing` at once, or with a connection accepted into itself
+  `ListenClosePending`, whose shutdown is of that connection -- and any other
+  `ConnectClosePending` (`0x10707fb0`), and answers true: a closing listener goes on
+  listening, raises nothing, and `Listen` answers true again; a link neither connected
+  nor listening stays pending, its tick's shutdown of the unconnected socket failing
+  each tick ("Close: Error while attempting to close socket.", and with no socket
+  "Close: Tried to close an invalid socket." too, `0x10708040`), a `BindPort` then
+  refused as already bound. A closing listener's own socket is never closed: the end
+  of the connection accepted into it closes that connection alone, the link
+  `Initialized` and its port held. `IsConnected` (`0x10706cb0`) asks whether
   the socket is writable, in any state but initialized: true while a close is pending,
   false on a connected link whose send buffer is full. `GetLastError` answers WinSock's
   last error of the thread, any call's (`0x10703490`). DXEngine's harness's
