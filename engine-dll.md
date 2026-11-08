@@ -2857,6 +2857,27 @@ harness's `OldVerConsole` loads `vergen.py`'s version-62 copies of
   CR; with no font it, `DrawTextClipped` (`0x10378890`) and `TextSize` log
   `DrawText: No font` (each its own name) and do nothing, `TextSize` leaving
   its outputs as they were.
+- **The canvas's tiles**: `DrawTile` (`execDrawTile`, `0x10377ba0`) and
+  `DrawTileClipped` (`0x10378450`) with no texture log a script warning,
+  `DrawTile: Missing Texture` (`DrawTileClipped: Missing Texture`), and move
+  nothing. Otherwise `DrawTile` draws the tile at `OrgX` + `CurX`, `OrgY` +
+  `CurY` in any style but `STY_None`, its flags two-sided, `STY_Translucent`'s
+  translucent bit, `STY_Modulated`'s modulated one and `bNoSmooth`'s, any other
+  style none (`0x10377ccd`), so `STY_Masked` masks only a texture masked
+  itself; then, drawn or not and whatever its size, `CurX` becomes `SpaceX` +
+  `CurX` + its width and `CurYL` the larger of it and its height, `SpaceY` no
+  part of it. `DrawTileClipped` does nothing for a tile of no width or height;
+  a `CurX` not at least 0 takes as much off the tile's width and its texels'
+  (`UL` × `CurX` ÷ `XL` off `U`, onto `UL`) and becomes 0, `CurY` the same,
+  then a tile past `ClipX` or `ClipY` from the cursor is cut there, its texels
+  in proportion (`0x1037859d`-`0x10378655`); it is drawn so, with
+  `DrawTile`'s flags, and the cursor moves as `DrawTile` moves it, by the cut
+  tile. The canvas's own `DrawTile` (`UCanvas::DrawTile`, `0x10376160`)
+  passes over a tile of no width or height, or one wholly off the frame,
+  before the texture's animation is stepped or it is locked; it clips one
+  in part off to the frame, its texels in proportion, adds the frame's own
+  masked bit, and hands it to the render device (DXEngine's harness's
+  `TileEdgeConsole`).
 - **`ScriptedTexture.ReplaceTexture(Tex)`** (`execReplaceTexture`,
   `0x103eb1e0`): with a texture whose USize and VSize are the scripted
   texture's, that texture is updated to the scripted texture's LocalTime,
