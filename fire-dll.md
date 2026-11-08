@@ -85,10 +85,21 @@ pass blurs and cools it, and the palette colours it.
   It turns the sum of four heats (0 to 1,020) into an index:
   sum/4 + 1 − (255 − `RenderHeat`)/16, held to 0..255. So `RenderHeat` is
   how slowly the fire cools.
-- room for `SparksLimit` sparks (held to 4..8,192).
+- room for `SparksLimit` sparks: `Serialize` grows the sparks it reads to
+  `SparksLimit` (`0x10508300`), and `PostLoad` holds `SparksLimit` to
+  4..8,192 only when the array is then another size, more sparks saved
+  than the limit (`0x10507e07`): a limit outside that range stands, one of
+  0 leaving the fire no sparks, its pass going on. Over the limit, the
+  sparks they let go go first, from the last down, each taking the last
+  one's place, until the count fits; the array is cut to the limit.
 
 The package holds the sparks placed in the editor, after the empty mips
-(`Serialize`, `0x10508300`).
+(`Serialize`, `0x10508300`). A save writes the properties first, `NumSparks`
+as it stands, then drops the sparks they let go (31 on) from the texture
+itself: from the last down, each takes the last one's place and the count
+drops; the array is cut to the count, written, and grown back to
+`SparksLimit`. So the placed sparks are saved in that order, and the fire
+goes on without what it let go.
 
 **A step** (`ConstantTimeTick`, `0x10507ff0`), for a texture of 8 by 8 or
 more:
@@ -224,8 +235,12 @@ a pixel along the row of one by the other's value there.
   `0x105061e0`).
 - The panning (`MoveIcePosition`, `0x10505b10`) goes by `HorizPanSpeed` and
   `VertPanSpeed` (offset by 128): along a line, a circle, a wobbling circle,
-  or waving along X or Y by `Amplitude` and `Frequency`. It is redrawn only
-  when the position moves a whole pixel.
+  or waving along X or Y by `Amplitude` and `Frequency`, a circle's or a
+  wave's offset made a whole pixel by `fistp`, to the nearest, as it is
+  added (`0x10505c26`-`0x10505e10`), its constants floats. It is redrawn
+  only when the position, rounded to the nearest pixel the same way
+  (`RenderIce`, `0x1050a18b`; `BlitTexIce` `0x10505ecd`, `BlitIceTex`
+  `0x1050624d`), moves.
 - `TIME_RealTimeScroll` pans by the time between the frames that draw it;
   `TIME_FrameRateSync` by 1/120 s a step, stepped as any texture.
 - A source or glass not of the texture's size leaves a scaled-up copy of the

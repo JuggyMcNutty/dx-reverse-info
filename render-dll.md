@@ -113,7 +113,10 @@ warp zones and the sky. [The overlays](#the-overlays) come last.
   ones the third: glass blends over a mesh behind it. A span-based one (the
   software renderer) draws them all after the third. A surface's decals are
   drawn only while the client's `Decals` is on and the render device is not
-  span-based. A surface goes to the device with a detail texture only when
+  span-based, in their order on the surface, each in its texture's current
+  frame, one whose texture is `None` in the level's `DefaultTexture`
+  (`0x10b1b154`), the texture locked once for a run of decals that share it.
+  A surface goes to the device with a detail texture only when
   its texture's current frame (`AnimCurrent`) has one, it is no portal, and
   the client's `TextureDetail` is High, the client read through the static
   `UBitmap::__Client`, which a `UClient`'s constructor sets and its `Destroy`
@@ -570,7 +573,9 @@ faces, nothing culled or lit:
 `DrawMesh` (`0x10b0d1a0`) draws a plain mesh's triangles the same, but a line
 only from the corner of the greater X, so an edge two triangles share is
 drawn once, and every line of a two-sided triangle. The outcodes are worked
-out on those world-axis vertices against the view's sides, so a corner is
+out on those world-axis vertices against the view's sides, their slopes the
+frame's `PrjXM`, `PrjXP`, `PrjYM` and `PrjYP`, each positive (`Engine.dll`
+`FSceneNode::ComputeRenderSize`, `0x10372980`), so a corner is
 out by where it lies from the world's origin: the weapon triangle is nearly
 always wholly out past one side, and what the pawn holds is not drawn
 ([a pawn's attachments](#a-pawns-attachments)). `URenderDevice::Draw3DLine`
@@ -766,20 +771,33 @@ palette's last entry never shows (`0x10b05d40`).
   device takes fog maps and does volumetric lighting (`SupportsFogMaps`,
   `VolumetricLighting`) and the viewport's actor is in a fog zone
   (`bFogZone`): then `OccludeBsp` gathers the volumetric lights listed for
-  each leaf it walks (`LeafVolumetricLighting`, `0x10b170e0`), and each draw
-  keeps those whose sphere, (`VolumeRadius` + 1) × 25 units, reaches the view
-  through its polygon, each lit as it is that frame, a moving one where it is:
-  DXEngine's harness's `FogTintConsole`, 02_NYC_Bar's `Light90` turned to full
+  each leaf it walks (`LeafVolumetricLighting`, `0x10b170e0`) -- the
+  leaf's own, and its moving lights that `SetupDynamics` made volumetric,
+  those in a fog zone with a `LightRadius`, a `VolumeRadius` and a
+  `VolumeBrightness` whose sphere is not wholly outside the view
+  (`0x10b232d8`) -- and each draw keeps those whose sphere,
+  (`VolumeRadius` + 1) × 25 units, reaches the view through its polygon,
+  each lit as it is that frame, a moving one where it is: DXEngine's
+  harness's `FogTintConsole`, 02_NYC_Bar's `Light90` turned to full
   brightness and red, the fog bright red at once. Its colour is the light
   map's record of the light (`FGetHSV` of its hue and saturation at full
   value, times its brightness shaped by its type, `GlobalLighting`
   `0x10b05e90`, and the level's), its density K = `VolumeBrightness` ×
   brightness / 64 (`0x10b06bf7`-`0x10b06c03`): a table of 256 entries, d ×
   the colour and d × `VolumeFog`/255, each held to 127 (`0x10b06a35`-
-  `0x10b06b60`), each texel the entry of 255 × min(3K ∫(1 - r²/R²) ds / R, 1)
-  for the first light (`0x10b07830`), and each later one, farthest first by
-  depth (`0x10b06c60`), dimming the map by its own and adding its colour
-  (`0x10b020e3`-`0x10b02105`). `SetupForSurf` (`0x10b06c90`) then makes a fog map for
+  `0x10b06b60`), each texel the entry of d = 255 × min(3K ∫(1 - r²/R²) ds / R, 1)
+  rounded (`0x10b07830`). The line of sight from the eye to the texel
+  passes the light by when the eye is outside the sphere and the light
+  behind the line, or when the line misses the sphere; else the integral
+  runs over the part of it within the sphere, from the eye or the sphere's
+  near side to the texel or its far side, its lengths in the light
+  manager's square roots (`0x10b075dc`-`0x10b07824`). The lights go in
+  farthest first by their depth along the view (`appQsort`, `0x10b073ad`,
+  by `0x10b06c60`): the first's entries are the map; each later one, where
+  its density is not 0, takes each channel to its entry's plus (127 − its
+  entry's alpha) × the channel / 127, cut to a whole number, and the alpha
+  to the two alphas' sum, each held to 127 (`0x10b07b47`, the table
+  `FLightManager::Init` makes, `0x10b020e3`-`0x10b02105`). `SetupForSurf` (`0x10b06c90`) then makes a fog map for
   a draw with any, not translucent, whose zone (the one the surface is seen
   from, above) is a fog zone too.
 - **The dynamic map**, only when an animated or moving light reaches the
@@ -1001,6 +1019,24 @@ palette's last entry never shows (`0x10b05d40`).
   - The fog's alpha gains f × `VolumeFog` ÷ 255, at most 1, and its colour
     is f × the light's colour plus the colour so far × 1 − that gain, each
     channel at most 1.
+- **Particles.** A `bParticles` mesh (`DrawLodMesh` and `DrawMesh`, after
+  the wire test) draws no face. Each vertex within the detail budget (a
+  plain mesh's every vertex) that lies within the view's four sides and
+  deeper than a unit is drawn with `DrawIcon` as a tile of the actor's
+  `Texture` at its current frame: its size × the draw scale, about the
+  vertex's projection (about `FX15`, as a polygon's corner is projected),
+  through the actor's span buffer at the vertex's depth, its flags the
+  actor's with the texture's and `PF_TwoSided`, its colour the unlit level
+  (`AmbientGlow` / 256 + `ScaleGlow` / 2, held to 0-1) × `ScaleGlow` when
+  that is not 1, each channel at most 1. With `bRandomFrame` the tile's
+  texture is the `MultiSkins` entry ⌈⌊88 i / 32⌋ / 3⌉ mod 8 for vertex i
+  (its byte offset in the vertex pool over 32, a third of it rounded up),
+  at the frame of its animation the actor's life has reached, `Count` × (1 −
+  `LifeSpan` / its class's `LifeSpan`) − 0.5, held to the chain; an entry of
+  `None` is passed over (and in `DrawMesh` its pass then writes through the
+  null texture). With no `Texture`, `DrawLodMesh` fails its assertion
+  (`Owner->Texture`) and `DrawMesh` draws nothing. A span-based device has
+  the tiles sorted by depth first.
 
   The vertex goes to the render device with its fog beside its light;
   `D3DDrv` draws it only with `UseVertexFog`, which the game's ini has off

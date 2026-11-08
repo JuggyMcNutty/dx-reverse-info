@@ -2496,13 +2496,71 @@ and it stays on the screen until the next frame is drawn.
   (`PrintActionMessage`), a half pixel for an odd size: `LOADING` is 150 by
   39 in a 1024 by 768 frame, at 437, 364.5. `UCanvas::WrappedPrint`
   (`0x10376790`) draws a line from its X and the canvas's `CurY` each
-  truncated to a whole pixel, so the word's top is at 364.
+  truncated to a whole pixel ([the canvas's text](#the-canvass-text)), so
+  the word's top is at 364.
+
 - **`PRECACHING` never shows** with the game's ini. `Draw` gives a frame that
   level action while the render device's `PrecacheOnFlip` is set (and the
   viewport's `bSuspendPrecaching` is not), puts the old one back after it,
   clears the flag and, unless the level's `bNeverPrecache`, precaches the
   level. `D3DDrv` sets the flag only with its `UsePrecache` on
   ([`D3DDrv.dll`](d3ddrv-dll.md#the-rest-of-a-frame)), which the ini has off.
+
+## The canvas's text
+
+How `Canvas.DrawText`, `StrLen`, `DrawTextClipped` and `TextSize` lay text
+out (DXEngine's harness's `CanvasTextConsole`).
+
+- **A glyph** is found on page c / `CharactersPerPage` at c %
+  `CharactersPerPage` (`WrappedPrint` `0x10376790`, `TextSize`
+  `0x10378be0`, the line drawer `0x10376d20`): one past the pages, or past
+  its page's characters, has no size, and a character the font has at no
+  width, a tab or a no-break space in the game's fonts, takes none. No
+  other character stands in for it.
+- **`UCanvas::WrappedPrint`** (`0x10376790`), with a style, the bCenter
+  flag and the text, gives the lines' furthest end and their heights:
+  nothing at all with `ClipX` or `ClipY` under 0. A line runs from `CurX`'s
+  whole pixels, each glyph stepping by its width and `SpaceX` truncated,
+  its height its tallest glyph's and `SpaceY` truncated, and stops at a
+  glyph whose step passes `ClipX`, a line feed or the text's end. It ends
+  where it last could: after a glyph followed by a space, a line feed or
+  the end, or, before any such glyph, after any glyph, so that a word
+  wider than the room breaks after its last glyph that fits; a space the
+  line stops at stays out of its width. A line with nothing in it ends the
+  print (`0x103768ca`): a line feed, the text after it never laid out, or
+  a first glyph wider than the room. With a style, a line whose top lies
+  above the frame's bottom and whose bottom below its top is drawn through
+  the line drawer, unclipped, from `CurX`, or with bCenter `CurX` plus half
+  of `ClipX` less the line's end (`0x10376a58`), and `CurY`, each
+  truncated. Then `CurX` is 0, `CurY` moves down by the line's height, the
+  spaces after it are passed over, and the next line begins, from 0.
+- **The line drawer** (`0x10376d20`) draws each glyph at its place plus the
+  canvas's origin, truncated, its step its width and `SpaceX` truncated; a
+  glyph not found, or on a page with no texture, draws nothing and takes no
+  step. Clipped, a glyph wholly left of 0 or right of `ClipX` (or above,
+  or below `ClipY`) is not drawn, and one across the clip is cut to it, its
+  texels with it; the rest go on. With hot keys, an & takes the character
+  after it for one: the character is drawn, then the font's `_` at the same
+  place, as wide as it at most, and the step is the character's; an & at
+  the end ends the line, and && draws an & and makes the next & a hot
+  key's.
+- **`execDrawText`** (`0x103778f0`): with a font and a style, the text
+  through `WrappedPrint`; then `CurX` moves on by the lines' furthest end,
+  which, `CurX` being 0 after the lines, leaves it there, from the first
+  line's start (`0x103779fe`), `CurYL` the greater of it and the lines'
+  heights, and with a CR `CurY` moves down by `CurYL`, `CurX` and `CurYL`
+  0. No font: `DrawText: No font`.
+- **`execStrLen`** (`0x10377650`): the text through `WrappedPrint` with no
+  style from `CurX` and `CurY` at 0, the furthest end and the heights its
+  answers, and `CurX` and `CurY` put back truncated (`0x10377721`). No
+  font asserts.
+- **`execDrawTextClipped`** (`0x10378890`): one line through the line
+  drawer, clipped, hot keys as asked, from `CurX` and `CurY` truncated,
+  never centred; first, with `LargeFont` or `BigFont` and a language not
+  `int`, the canvas's `Font` becomes `MedFont`, and stays so
+  (`0x1037894c`).
+- **`execTextSize`** (`0x10378be0`): the glyphs' widths summed and the
+  tallest, with no `SpaceX` or `SpaceY`.
 
 ## Sounds
 
@@ -2621,7 +2679,10 @@ harness's `OldVerConsole` loads `vergen.py`'s version-62 copies of
   shoot-through and not vis-blocking (flags 6), and refuses only an
   auto-panned surface (`0x600`); on a mover's face it bases the decal on the
   mover, keeping its rotation (`MoverDecalConsole`). The decal covers every
-  node of the surface hit (`0x103e9090`, `0x103e9340`), and a grid of
+  node of the surface hit (`0x103e9090`, `0x103e9340`), each surface taking
+  it into its list before the first decal there of its texture, else at the
+  end (`0x103e7922`-`0x103e798a`), and a grid of
+
   `MultiDecalLevel` squared lines, 4 for every stock decal, adds the surfaces
   it finds; a `DecalDir` of zero takes a random direction from within the
   unit sphere.
