@@ -207,6 +207,24 @@ Its only users are `DeusExPlayer`'s debug console commands.
   - On the paths the name alone finds it, whatever its GUID: a different
     file of the same name there fails the join as a version mismatch
     ([downloads](network.md#downloads)).
+- **An import is checked as its package opens.** The linker's constructor
+  (`0x10160000`) runs `Verify` (`0x10160d80`) unless `LOAD_NoVerify`, which
+  looks up every import, used or not (`VerifyImport`, `0x10160fd0`): one its
+  package lacks is found in memory only as a public, native, transient class
+  (the C++ ones), is None without a word when its class is
+  `CLASS_SafeReplace`'s (a texture, palette, sound or song, or a subclass),
+  and else throws `FailedImport` with its class and full name
+  (`FailedImportPrivate` for a private export), the linker dropped: so a
+  map's load (`LoadMap`, flags `0x1A`), a join's packages and a save's.
+  DXEngine's harness's `LocalMapConsole` on 02_NYC_Bar with `Mission02`
+  renamed (`badpackage.py --rename`): "Can't find Class in file 'Class
+  DeusEx.Mission0X'", the start on Dx.Dx.
+- **A package's generations.** `GetPackageLinker` (`0x10154530`), given a
+  GUID, as a join's load is, compares it (`0x101548c3`-`0x101548e8`), then
+  refuses a linker whose summary holds more than one generation
+  (`0x1015491a`) with `PackageVersion`, "Package '%s' version mismatch": a
+  client with Revision's New Vision `CoreTexSky`, the game's GUID in two
+  generations, refuses the server's map.
 - **The cache's files.**
   - `appCreateTempFilename` (`0x10149790`): `<path>\` and `%04X.tmp` of a
     counter that runs through the session, the first that holds nothing (a
@@ -440,7 +458,12 @@ it walks every property instead and calls `Modify` before each change.
   - The class is found by its name in any package loaded (the menus name
     `DeusExMPGame`, `DXMapList`, `Player`, not their packages); the property
     by its name, once, on that class, its own before its base's
-    (`0x10143fd0`), else `Unrecognized class/property` is logged.
+    (`0x10143fd0`), else `Unrecognized class %s` or `Unrecognized property
+    %s` is the command's output (DXEngine's harness's `EngineWordsConsole`).
+    `StaticExec` also takes `MEM`, `DUMPNATIVES`, `GTIME` (to the log alone)
+    and `OBJ`'s `GARBAGE`, `MARK`, `MARKCHECK`, `REFS`, `HASH`, `CLASSES`,
+    `DEPENDENCIES`, `LIST`, `VFHASH` and `LINKERS`, each a table to the
+    command's output.
   - `GET` gives the class default's first element as the ini writes it,
     with no quotes: a string bare; an object its class and path name
     (`Texture'Engine.S_Actor'`) or `None`; a bool `True` or `False`; an enum
@@ -561,7 +584,9 @@ must be put there.
 
 ## RELAUNCH
 
-`USystem::Exec` (`0x1016b790`), beside `EXIT` and `QUIT`, takes `RELAUNCH`
+`USystem::Exec` (`0x1016b790`), beside `EXIT` and `QUIT` (which answer
+"Closing by request"), `MEMSTAT` (the memory's figures) and `CONFIGHASH` (the
+config cache's dump, the executable's), takes `RELAUNCH`
 with the rest of the line:
 
 1. It logs `Relaunch: <rest>`.

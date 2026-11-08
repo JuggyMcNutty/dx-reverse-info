@@ -68,11 +68,18 @@ the rest to the engine's input:
   (`IK_Alt`).
 - **A poll of every code** at the end of `UWindowsViewport::UpdateInput` (`0x11109280`, its
   loop at `0x11109880`): each code from 0 to 255 that is not a joystick's or the mouse's this
-  poll is released when the game has it down and `GetKeyState` says it is up, and, while the
-  window has the focus, pressed when the game has it up and `GetKeyState` says it is down. So
-  a side's own code is pressed too, once, after the code of both: `VK_LSHIFT` (`IK_LShift`),
+  poll is released when the game has it down and `GetKeyState` says it is up; and, only when
+  the call is asked to reset (its argument set, `0x11109853`-`0x111098c2`), as
+  `UInput::ResetInput` asks (`Engine.dll` `0x10394a55`) and the frame's read never does
+  (`0x103749e9`-`0x103749ef`), pressed while the window has the focus when the game has it up
+  and `GetKeyState` says it is down. So at a map load, a join and a focus each key held is
+  pressed again for the new pawn, and a side's own code with it: `VK_LSHIFT` (`IK_LShift`),
   `VK_RSHIFT`, `VK_LCONTROL`, `VK_RCONTROL`, and `VK_LMENU` and `VK_RMENU`, which `EInputKey`
-  names `UnknownA4` and `UnknownA5`.
+  names `UnknownA4` and `UnknownA5`; a shift, control or alt tapped in play presses its code of
+  both sides alone. DXEngine's harness's `SideKeyConsole` beside a uinput keyboard: each tap
+  `IK_Shift`, `IK_Ctrl` or `IK_Alt` alone; Left Shift, W, X and Space held over a reload of
+  Liberty Island pressed again with `IK_LShift` at the load, the new pawn's `bRun` and `bDuck`
+  1.
 
 The keypad's digits and point are `VK_NUMPAD0` to `VK_NUMPAD9` and `VK_DECIMAL` (`NumPad0` to
 `NumPadPeriod`) while Num Lock is on and, with it off, the keys they move by, as Windows' layouts
@@ -97,7 +104,7 @@ poll, whatever its size, one press and release of `MouseWheelUp` or `MouseWheelD
 sign (`UpdateInput` reads the device's state once a poll, `GetDeviceState`; its buffered
 data serves the buttons alone). A `WM_MOUSEWHEEL` the window gets likewise presses and
 releases once by the delta's sign, whatever the delta, after handing the delta to the
-`MouseW` axis (`0x1110b2bd`). The joystick (`joyGetPosEx`) gives `Joy1` up, its axes and its
+`MouseW` axis (`0x1110b2bd`); a delta of 0 presses nothing (`0x1110b2a7`). The joystick (`joyGetPosEx`) gives `Joy1` up, its axes and its
 hat.
 
 **Typed characters** come apart from the keys: `WM_CHAR` and `WM_SYSCHAR` (`0x11109b30`) hand
@@ -116,7 +123,12 @@ letter, and with no menu bar to find it in, beeps. A `WM_CHAR` the engine leaves
 further.
 
 **The focus** (`ViewportWndProc`): losing it (`WM_KILLFOCUS`, `0x1110a0a3`) lets the mouse's
-capture go (`SetMouseCapture`), runs `SETPAUSE 1` -- a command nothing in the game takes, so the
+capture go (`SetMouseCapture`, `0x11108e40`, which in taking it puts the pointer in the
+window's middle, takes the capture and clips the pointer to the client rectangle,
+`0x1110908d`-`0x1110909a`, and while it holds it sets `SPI_SETMOUSE` from the client's
+capture mouse settings, the normal ones back after, `0x11108f8d`, `0x11109041`: `wincheck.exe`
+beside a run in play finds the clip the client rectangle and the capture the window's), runs
+`SETPAUSE 1` -- a command nothing in the game takes, so the
 game goes on -- ends a drag and resets the engine's input (`UInput::ResetInput`, `Engine.dll`
 `0x10394910`): its table of the keys held cleared and every `input` property of the player's
 zeroed, with no release sent, so the root window keeps its marks of the keys held and an Alt held
@@ -202,7 +214,9 @@ Windows, each read without the four low bits Windows keeps for itself (`0x1110b1
 double click on the caption, whose Maximize has them set, is Maximize too:
 
 - the screen saver and the monitor's power saving are refused, each logged (`SC_SCREENSAVE`,
-  `SC_MONITORPOWER`), in a window or full screen;
+  `SC_MONITORPOWER`; `0x1110b157`-`0x1110b238`), in a window or full screen: "Received
+  SC_SCREENSAVE" and "Received SC_MONITORPOWER" (DXEngine's harness's `wincheck.exe` sending
+  each to the window in play);
 - Maximize -- the caption's box, a double click on the caption, the window menu's -- toggles
   full screen, as Alt+Enter does (`SC_MAXIMIZE`, `0x1110b172`), and goes no further, so the
   window is never maximized (`0x1110b177`). Full screen the window keeps its maximize box with

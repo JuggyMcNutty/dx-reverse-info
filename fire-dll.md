@@ -58,7 +58,9 @@ a frame: they run faster at a higher frame rate.
 Built once, by the first fractal texture's constructor (`0x10501020`):
 
 - **A sine** of 256 steps as bytes: 127.5 + 127.5 × sin(i/256 × 2π), through
-  a float, truncated: 0 to 255 about the middle. Beside it, the same raised
+  a float, rounded to the nearest (`fistp` at `0x1050106a`; no module of the
+  game changes the FPU's rounding, Core's `appEnableFastMath`, `0x1016e050`,
+  setting its precision alone): 0 to 255 about the middle. Beside it, the same raised
   by 32 (capped at 255) and by 128 (wrapped).
 - **The random bytes** every fractal texture draws from in turn: 512 bytes,
   each the low byte of a call to `appRand`, the C runtime's `rand`, so they
@@ -77,7 +79,9 @@ pass blurs and cools it, and the palette colours it.
 
 - its masks, from its size;
 - its `bMasked` cleared: a fire is never masked;
-- the colour table (`RenderTable`, from `RenderHeat` whenever that changed).
+- the colour table (`RenderTable`, from `RenderHeat` whenever that changed;
+  the constructor, `0x10507840`, sets the old heat -1, so the first load
+  always builds it, a `RenderHeat` of 0 too, `0x10507dc6`-`0x10507dea`).
   It turns the sum of four heats (0 to 1,020) into an index:
   sum/4 + 1 − (255 − `RenderHeat`)/16, held to 0..255. So `RenderHeat` is
   how slowly the fire cools.

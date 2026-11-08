@@ -326,7 +326,13 @@ and, with `SaveCurrentLevel`, the level.
   all objects, a level's left behind among them while anything holds it.
 - **`Exec`** (`0x1000ed70`): adds the console commands `SAVEGAME n` and
   `DELETEGAME n`. The Load and Save Game screens delete a save with the
-  second.
+  second. Each acts only when the text after the word begins with a digit
+  (`0x1000edc2`-`0x1000edd3`, `0x1000ee8a`-`0x1000ee9a`), its slot `appAtoi`
+  of it, so neither takes a sign, and takes any other form doing nothing;
+  `SAVEGAME`'s description is always empty, the save taking the level's
+  Title, and it saves inside the command (`0x1000ee5b`). DXEngine's
+  harness's `SaveWordsConsole`: `SAVEGAME 71 DxDesc` and `SAVEGAME 72 Two
+  Words` save, `+73`, `-74` and `DELETEGAME +71` do nothing.
 - **`Init`** (`0x1000ecf0`): registers the name `JoltView`, then
   `XGameEngineExt::Init`.
 

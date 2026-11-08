@@ -89,16 +89,31 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
   connect: <error>` and answers 0 (`0x10707c90`). `ReadText` and `ReadBinary` read only
   while listening or connected (`0x107081b0`, `0x10708b40`), and a `ReadText` that reads
   nothing leaves its string as it was. `Close` sets a listening link closing and any
-  other `ConnectClosePending` (`0x10707fb0`). A link whose `BindPort` failed, its `Socket`
+  other `ConnectClosePending` (`0x10707fb0`), and answers true: a closing listener
+  goes on listening, raises nothing, and `Listen` answers true again; a link neither
+  connected nor listening stays pending, its tick's shutdown of the unconnected socket
+  failing each tick ("Close: Error while attempting to close socket", `0x10708040`), a
+  `BindPort` then refused as already bound. `IsConnected` (`0x10706cb0`) asks whether
+  the socket is writable, in any state but initialized: true while a close is pending,
+  false on a connected link whose send buffer is full. `GetLastError` answers WinSock's
+  last error of the thread, any call's (`0x10703490`). DXEngine's harness's
+  `LinkEdgesConsole`: a link closed then asked `IsConnected` true, an unconnected one's
+  state 6 after its `Close` and its error each tick, a closed listener's state 7 and
+  `Listen` true again. A link whose `BindPort` failed, its `Socket`
   0, logs a second `BindPort` as already bound and answers 0, answers true at `Open`,
   `Listen` and `Close`, which do nothing, and 0 at `SendText`, `SendBinary`, `ReadText`
   and `ReadBinary`; its tick does nothing. Its tick (`0x10706fb0`) goes by its state:
-  - listening: it accepts a queued connection (`CheckConnectionQueue`) into a new actor of
-    its `AcceptClass`, connected and in the listener's link mode, or with none into itself
-    (its `RemoteSocket`), and raises `Accepted` on the one that took it;
+  - listening: it accepts a queued connection (`CheckConnectionQueue`, `0x10707260`) into
+    a new actor of its `AcceptClass`, connected and in the listener's link mode, or with
+    none into itself (its `RemoteSocket`), and raises `Accepted` on the one that took it;
+    the accepted `RemoteAddr` has its address in host order and its port as it lies in
+    the sockaddr (`0x107074da`-`0x107074e5`), 7891 reading 54046 (`LinkEdgesConsole`); a
+    second connection while one is held is left open ("Discarding redundant connection
+    attempt"), and an `AcceptClass` that fails to spawn is used regardless;
   - connecting: it waits for the socket to turn writable (`CheckConnectionAttempt`) and
-    raises `Opened`. On Windows a failed connection never does; the script's own timer
-    gives up;
+    raises `Opened`, then reads in the same tick, so text that came with the connection
+    is raised at once (`LinkEdgesConsole`: the greeting read at the opening tick). On
+    Windows a failed connection never does; the script's own timer gives up;
   - connected, and while a close is pending: it reads (`PollConnections`). By events, one
     read a tick of up to 999 bytes, raised whole as `ReceivedText`, `ReceivedLine` or
     `ReceivedBinary` by the link mode; by hand, it only marks `DataPending`. Then it sends

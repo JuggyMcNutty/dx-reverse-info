@@ -300,8 +300,11 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
 - **The connection's** (`UNetConnection::Exec`, `0x10401c50`): `GETPING`
   answers a float of the connection times 1000 as an int and `GETLOSS`
   another float as an int, each after a blank (`" %i"`), which
-  `DeusExServerPing` strips -- by UT's `UnNet.h` layout its best lag of the
-  stats period and its incoming packet loss in percent -- then
+  `DeusExServerPing` strips -- its lag, the stats period's mean of each
+  ack's round trip less half the connection's frame time, no least kept
+  (`0x10403240`-`0x10403261`, the frame time `0x10404c03`-`0x10404c69`, set
+  each period `0x10404dc6`-`0x10404deb`), and its incoming packet loss in
+  percent -- then
   `UPlayer::Exec`. A pawn's `ConsoleCommand` goes to its own player
   (`APlayerPawn::execConsoleCommand`, `0x103ba200`): on a server a remote
   player's connection answers so, which `PlayerReplicationInfo.Timer` takes
@@ -499,7 +502,8 @@ many bits as the maximum needs (`FBitWriter::WriteInt`).
 - **Merging** (`UChannel::SendBunch`, `0x103fb6b0`): a channel's bunch goes into
   the last one sent, one header for both, when that one is the same channel's
   and still ends the packet being built (no ack written since, which `SendAck`
-  stops, and no `FlushNet`), and the two fit the packet with 9 bytes to spare; a
+  stops, and no `FlushNet`), and the two fit the packet with 9 bytes to spare
+  (`0x103fb7f9`); a
   reliable one keeps its record and sequence number. Actor updates, text and
   remote calls may merge; a file's bunches and a channel's close never do.
 - **Acks:** a packet is acknowledged as soon as its number is read, before its
@@ -579,7 +583,9 @@ what to send (`ULevel::ServerTickClient`, `0x103a3500`):
 
 - **The viewer:** where the player's view is (`PlayerCalcView`); every other
   tick, where it will be in 0.9 s (0.4 s every fourth tick) at its and its
-  base's velocity, up to a wall.
+  base's velocity, up to a wall: the model's line check passing nodes that
+  do not block sight (`NF_NotVisBlocking`, `0x103a37d8`, the call at
+  `0x103a3880`).
 - **The candidates:** each actor with a remote role, once a tick (every dynamic
   actor, and a static one if `bAlwaysRelevant`), when its `NetUpdateFrequency`
   says an update is due: the whole number of updates since the connection's last

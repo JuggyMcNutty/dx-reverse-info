@@ -250,7 +250,12 @@ over one that is:
   The tracker files a mover's polygons into the level's BSP, where the walk
   takes each fragment's node as one of the level's own: of its surface it
   reads the flags (`0x10b17faa`) and the texture (`0x10b181a3`) alone, not
-  the actor, and draws it in its node's zone ([light maps](#light-maps)). A
+  the actor, and draws it in its node's zone ([light maps](#light-maps)). An
+  opaque fragment fills its zone's span buffer as a wall does (`OccludeBsp`,
+  `0x10b173d0`), so a sprite or a zone portal behind a closed door finds no
+  span: DXEngine's harness's `DoorHideConsole`, a crate behind Liberty
+  Island's `DeusExMover10`, not drawn for 13.5 s and on while the door is
+  shut, drawn each frame once it is open. A
   one-sided one seen from behind is passed over, and a mirrored one opens a
   mirror's frame ([a frame](#a-frame)), 24 movers on 15 of the game's maps
   having one -- Hong Kong's club glass, the Smuggler's, the intro's and the
@@ -382,10 +387,18 @@ The renderer keeps it; the engine and the scripts read it
 - **A zone's** (`Zones[i].LastRenderTime` in the level's model) is stamped by
   `OccludeBsp`: the frame's first zone, and each zone seen through a portal.
   `InStasis` reads it.
-- **A decal's own `LastRenderedTime`** is stamped when `DrawFrame` draws it:
-  the decal is clipped to each piece of its surface that is drawn
-  (`ClipDecal`, `0x10b1bda0`; a decal that lists its nodes, only to theirs),
-  and drawn and stamped only where some of it is left. `LastRendered()`
+- **A decal's own `LastRenderedTime`** is stamped when `DrawFrame` draws it
+  (its loop `0x10b1b0e6`-`0x10b1b2f0`): the decal is clipped to each of its
+  surface's saved polygons, a node's polygon cut to the view's sides, which
+  `OccludeBsp` saves for each node any span of which shows (`ClipDecal`,
+  `0x10b1bda0`; a decal that lists its nodes, only to theirs). Its corners
+  are lifted 0.75 units along the surface's normal (`0x10b2b304`) and cut by
+  the planes through the eye and the polygon's edges, so on screen it fits
+  the surface's drawn outline; no span buffer is asked. It is drawn and
+  stamped where some of it is left: a decal behind nearer geometry, on a
+  node that shows elsewhere, is stamped, the depth buffer hiding it
+  (DXEngine's `DecalSeenConsole`: of 29 marks the eye's line to is blocked,
+  15 stamped). `LastRendered()`
   does not read it: it reads `LastRenderTime`, which a decal never gets. So
   a decal, and Deus Ex's `Shadow`, never counts as drawn. When an NPC moves,
   its shadow is laid again only if the NPC was drawn in the last second,
@@ -499,7 +512,13 @@ factor = 430 × (0.3 + 0.7 × width / 640) × DrawScale × LODBias × MeshScaleM
 
 **The settings** are `URender`'s. `Init` sets the shape LOD to 0.25, its
 adjustment to 1 (nothing changes it), the mode to 1 and the fixed factor
-to 1. Console commands set them (`URender::Exec`):
+to 1. Console commands set them (`URender::Exec`, `0x10b147b0`, which also
+toggles a statistics panel a `STAT` word: Net, Fps, Global, Mesh, Actor,
+Filter, Reject, Span, Zone, Light, Occlusion, Game, Soft, Cache, PolyV,
+PolyC, Illum, Hardware, each drawn every frame by `DrawStats`, `0x10b13a50`;
+`STAT FPS` the line "FPS=... Frame=... MSEC Render=... MSEC Nodes=...
+Polys=... Tex=... TexMem=...K" 10 pixels above the view's bottom, and `STAT
+RENDER` none):
 
 | Command | Sets |
 |---|---|
@@ -738,7 +757,18 @@ palette's last entry never shows (`0x10b05d40`).
   (`bFogZone`): then `OccludeBsp` gathers the volumetric lights listed for
   each leaf it walks (`LeafVolumetricLighting`, `0x10b170e0`), and each draw
   keeps those whose sphere, (`VolumeRadius` + 1) × 25 units, reaches the view
-  through its polygon. `SetupForSurf` (`0x10b06c90`) then makes a fog map for
+  through its polygon, each lit as it is that frame, a moving one where it is:
+  DXEngine's harness's `FogTintConsole`, 02_NYC_Bar's `Light90` turned to full
+  brightness and red, the fog bright red at once. Its colour is the light
+  map's record of the light (`FGetHSV` of its hue and saturation at full
+  value, times its brightness shaped by its type, `GlobalLighting`
+  `0x10b05e90`, and the level's), its density K = `VolumeBrightness` ×
+  brightness / 64 (`0x10b06bf7`-`0x10b06c03`): a table of 256 entries, d ×
+  the colour and d × `VolumeFog`/255, each held to 127 (`0x10b06a35`-
+  `0x10b06b60`), each texel the entry of 255 × min(3K ∫(1 - r²/R²) ds / R, 1)
+  for the first light (`0x10b07830`), and each later one, farthest first by
+  depth (`0x10b06c60`), dimming the map by its own and adding its colour
+  (`0x10b020e3`-`0x10b02105`). `SetupForSurf` (`0x10b06c90`) then makes a fog map for
   a draw with any, not translucent, whose zone (the one the surface is seen
   from, above) is a fog zone too.
 - **The dynamic map**, only when an animated or moving light reaches the

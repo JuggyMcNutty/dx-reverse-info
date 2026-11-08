@@ -196,7 +196,10 @@ fields, after their properties (none):
 - **`AIGetLightLevel(Location)`** (`0x1036b980`), the light at a location, 0..1:
   - from lights, 1 for a `bUnlit` actor; otherwise half the sum, over every
     light of the level's actors, walked at each call, before the level's first
-    frame too (a light type, a brightness, not the actor itself) whose
+    frame too and a light turned on or moved that tick (DXEngine's harness's
+    `LightTreeConsole`: 0.504307 and 0.530198 at once), in the list's order,
+    each term rounded once (`0x1036baea`-`0x1036bafb`) (a light type, a
+    brightness, not the actor itself) whose
     `WorldLightRadius` takes in the location, of its luminance × (1 − distance /
     radius), a static light only with no wall or mover between;
   - plus 2 × the luminance of the ambient light of the actor's own zone;
@@ -2006,7 +2009,12 @@ depends on what the key did:
   Info` and each texture format's pools under it), the viewport's own words
   (`GETPING`, `INJECT`, `NETSPEED`, `LANSPEED`, `SHOWALL`, `REPORT`, `SHOT`,
   `SHOWACTORS`, `HIDEACTORS`, `RMODE`, `EXEC`; `NETSPEED` and `LANSPEED`
-  save the player's config, `0x10373bb3`, `0x10373c44`), the console's exec
+  save the player's config, `0x10373bb3`, `0x10373c44`; `RMODE n` sets the
+  player's `RendMap` to n from 1 to 19, which `DeusExPlayer.Matrix()` sends
+  for the credits' egg, 6 drawing no light map and every actor unlit;
+  `HIDEACTORS` and `SHOWACTORS` clear and set the player's `ShowFlags` 8;
+  `SHOWALL` clears every actor's `bHidden`: DXEngine's harness's
+  `ViewWordsConsole`), the console's exec
   functions, then `UPlayer::Exec`. The window's own words come after all of
   them ([`WinDrv.dll`](windrv-dll.md#the-window)). Each word of the input's, the viewport's and the engine's
   is Core's `ParseCommand`'s (`0x10147a20`): past spaces and tabs, the word
@@ -2023,8 +2031,14 @@ depends on what the key did:
   and one, through `ClientMessage`. No PRECACHING frame follows it, nor a
   console's `FLUSH`, run with `UsePrecache` on: only a map's load shows one
   ([`D3DDrv.dll`](d3ddrv-dll.md#the-rest-of-a-frame)).
-- **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`,
-  the exec functions of the game, the HUD, the player pawn and each item of its
+- **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`
+  (`ULevel::Exec`, `0x1039dfe0`: its net driver's words, `SOCKETS` among them,
+  then its demo driver's, `DEMOREC`, `DEMOPLAY` and `STOPDEMO` while a demo
+  runs (`UDemoRecDriver::Exec`, `0x104083c0`), then its own `DEMOREC` and
+  `DEMOPLAY`: a name given `.dem`, "You must specify a filename" without one,
+  and in single player a CLIENTDEMO with an `Engine.DemoRecSpectator`
+  (`InitListen`, `0x10407870`); DXEngine's harness's `DemoWordsConsole`, 370
+  frames recorded on Liberty Island), the exec functions of the game, the HUD, the player pawn and each item of its
   inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest). An
   exec function's parameters are each imported by its property's `ImportText`
   from where the last one stopped, a first one that is an object of the
@@ -2202,6 +2216,20 @@ it is. It runs `PlayerInput` alone, then sets each `input` float to 0 itself
 
 ## Touches
 
+- **The collision hash's order**, which a touch's and a check's lists follow:
+  `FCollisionHash::AddActor` (`0x103580b0`) puts each link at its bucket's
+  head, so a cell gives its newest-filed actor first; `ActorRadiusCheck`
+  (`0x103589e0`), `ActorEncroachmentCheck` (`0x10358d50`) and `ActorLineCheck`
+  (`0x10359160`) walk the cells X outermost, then Y, then Z, the radius and
+  line checks putting each find at their list's head, the encroachment check
+  appending; `FarMoveActor` (`0x10398ba0`) takes the actor out of the hash first
+  and files it again at the end, a refused move too; `MultiLineCheck`
+  (`0x1039b220`) sorts by MSVCRT's `qsort`. `CheckEncroachment` (`0x1039a350`)
+  begins a touch with everything at the spot that does not block, an actor
+  based on the one moved among them, and `FarMoveActor` unbases riders in the
+  level's order. DXEngine's harness's `HashOrderConsole`, five marks on
+  Liberty Island: `VisibleCollidingActors` C D A B F; a mover's touches B, A,
+  C, its slots C A B; a mover onto a rider touching it.
 - **`AActor::BeginTouch(Other)`** (`0x10369570`): each side links on its own
   (`0x10369630`), this actor's side first, then the other's unless this
   side's `Touch` event undid the link. A side already touching the other
@@ -2281,7 +2309,17 @@ cleanup deletes it they point at the deleted decal.
 
 - **The old level.** Its loaders are reset, its brush tracker, net driver and
   demo driver deleted; with `?push` it is cleaned (`CleanupDestroyed(1)`) and
-  saved as `Game%04i.dxs`. `GLevel` is then None; nothing flags the old
+  saved as `<SavePath>\Game%04i.dxs`, numbered by its `HubStackLevel`
+  (`0x1038c825`-`0x1038c88c`). The new level's `HubStackLevel` is the old
+  one's plus one on `?push`, less one, not under 0, on `?pop`, the same on
+  `?peer`, its file's own with an option beginning `load`, else 0 (from
+  `0x1038e5b0`); a level entered from Current has no such option (the URL
+  drops `PUSH`, `POP`, `PEER` and `LOAD`, `0x103f7f31`-`0x103f7faf`). The
+  base `Browse`'s `?pop` builds a `Game%i.usa` URL that nothing loads
+  (`0x1038b303`). DXEngine's harness's `HubConsole`: 0, 1 and 1 at Liberty
+  Island, UNATCO HQ (`?push`) and Battery Park (`?peer`), `Game0000.dxs`
+  written; the next `?push`, from Battery Park, asserts in
+  `UStruct::CleanupDestroyed` (`BarkManager`) as the old level is cleaned. `GLevel` is then None; nothing flags the old
   level's objects.
 - **The new level, once loaded,** unless its package is `Entry`, before its
   actors' collision, game info, `BeginPlay` and the player's login: the
@@ -2476,6 +2514,11 @@ carries the change to the render device, which makes its copy again
 ([one copy a texture](d3ddrv-dll.md#textures)), and every later lock finds
 the texture unchanged. `UTexture::Unlock` (`0x103ed070`) does nothing.
 
+A sound's, a song's and each mip's data is a lazy array (`0x10371140`), whose
+skip offset is read from package version 62 on (`0x1037118c`): DXEngine's
+harness's `OldVerConsole` loads `vergen.py`'s version-62 copies of
+`MoverSFX.uax` and `CoreTexStucco.utx` as their sources.
+
 ## Small
 
 - **A rotator's turn** is the sine table's wherever the engine turns by one,
@@ -2599,7 +2642,18 @@ the texture unchanged. `UTexture::Unlock` (`0x103ed070`) does nothing.
   and its Y `CurY`, each truncated (`_ftol`); each glyph's step its width
   plus `SpaceX`, truncated, its height plus `SpaceY` truncated; the line
   wraps where `CurX`'s whole pixels and its glyphs pass `ClipX`, and `CurX` is
-  then the line's X plus its width. `DrawTextClipped` draws one line from
+  then the line's X plus its width, but after a `DrawText` with no CR, when it
+  is `XL`, the widest line from `CurX`'s whole pixels (`0x10376bab`,
+  `0x103779fe`): "ABC" centred leaves 18. A line feed ends the print
+  (`0x103768ca`); a word wider than the room is broken at the last glyph that
+  fits, and a first glyph that does not fit stops it (`0x10376978`-
+  `0x103769b8`); a glyph the font has at no width takes no room (a tab, a
+  no-break space); a wrapped line's width leaves out the space the wrap falls
+  on; a centred line is placed at (`ClipX` less its room) / 2 plus `CurX`, its
+  room counting `CurX`'s whole pixels (`0x10376a58`); `StrLen` leaves `CurX`
+  and `CurY` truncated (`0x10377721`, `0x1037772c`). DXEngine's harness's
+  `CanvasTextConsole`, MedFont: `StrLen("AB\nCD")` 12 by 11, a long word 97 by
+  22, "A", a no-break space and "B" 12 wide, a wrap on a space 30. `DrawTextClipped` draws one line from
   `CurX` and `CurY` truncated and never centres: its line drawer
   (`0x10376d20`) takes the place it is given and reads no `bCenter`. Each
   character a tile, with the style's

@@ -561,7 +561,11 @@ and 32.4 dB, and its peak 0.5 dB down, as the original's is.
   off Aureal's splash screen in the registry.
 - **CPU extensions:** `Init` turns off the mixer's MMX, KNI and 3DNow!
   routines where Core recorded none, as `-nommx`, `-nokni` and `-nok6` make
-  it do ([Core](core-dll.md#the-platforms-start)).
+  it do ([Core](core-dll.md#the-platforms-start)): its own CPUID flags masked
+  with Core's (`0x10605693`-`0x106056c1`). Without MMX the mix takes the plain
+  routines, stereo too (`0x10623578`, chosen at `0x10614080`), with 64-level
+  gains (`0x1062357c`-`0x106235a9`) and one interleaved buffer; without SSE the
+  integer MMX routine, all but alike.
 - **Console commands** (`Exec`, `0x10607070`):
   - `CDTRACK`, `CDVOLUME`;
   - `MUSICORDER`: a jump to an order, logged as "Galaxy order";
