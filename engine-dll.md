@@ -556,6 +556,34 @@ fields, after their properties (none):
   `Destination` by `SuggestJumpVelocity` ([reaching](#reaching)), its Z
   velocity kept. Deus Ex's `ScriptedPawn` aims with it the jump its
   `FallingState` gives a pawn that walked off a ledge (`AdjustJump`).
+- **`PickWallAdjust`** (`0x103c4150`), which no stock script calls: a way
+  round what blocks the pawn's way to its `Destination`; every test a box of
+  the pawn's size against the world and movers, the pawn's own, but where
+  said:
+  - none falling. With the `Destination` under the pawn's height above it:
+    none within its radius across; a swimmer or flier within two heights
+    across tries a step of its height -- up with the `Destination` no higher,
+    down with it higher (`0x103c430a`) -- and its radius on toward it from
+    there, the `Destination` then the step's end (true);
+  - the way level, its direction; none with no distance across. The eyes'
+    line to the `Destination` blocked by the world (`FastLineCheck`): a
+    swimmer or flier under it with two heights clear above takes its height
+    up; a walker's side step is a radius longer, and none for one over 256
+    above;
+  - a side whose line, no box, from 1.42 radii aside the eyes reaches the
+    `Destination`, its right first, else its left, else none;
+  - a walking player (`bIsPlayer`) that can jump, with over half of 48 clear
+    above and 14 clear on from there: a jump (below);
+  - a step aside of `AdjustDist` (the radius + 16, a player's half a radius
+    more) with 14 clear on from it is the `Destination` (true); else the
+    other side, its eyes' line clear too;
+  - last a walker that can jump, and has not tried, with 48 clear above and
+    14 on: a jump; a swimmer or flier its height up and 14 on, then down,
+    but the way it tried first;
+  - a jump: the way level × `GroundSpeed` the velocity, × `AccelRate` the
+    acceleration, a player's half the time (`appFrand` under 0.5) straight
+    off what a box meets 14 on; the velocity's Z `JumpZ`, `bJumpOffPawn`,
+    the physics `Falling` (true). The `Destination` stays.
 - **Turning** (`APawn::physicsRotation`, `0x103c9f30`), after the physics each
   tick (`APawn::performPhysics`, `0x103c9a70`). A pawn that is not a player is
   set to rotate to `DesiredRotation` (`bRotateToDesired` on,
@@ -855,6 +883,52 @@ fields, after their properties (none):
   Then it goes down `MaxStepHeight`, sliding the rest of the way down along a
   floor steeper than 0.5 (normal) it meets, if not turned back -- unless it
   is falling after the first case, the second, or the third's second hit.
+- **Climbing** (`APawn::physSpider`, `0x103d6370`), `PHYS_Spider`, which no
+  stock script sets; the pawn holds to its `Floor`, the normal of the face it
+  climbs:
+  - the speed: with no acceleration (each axis equal to 0) the velocity less
+    twice itself × the tick × the zone's ground friction, the acceleration
+    (none) where that turned it about; otherwise the acceleration cut to
+    `AccelRate` along its `SafeNormal`, and the velocity less (itself − that
+    direction × its size) × the tick × the friction. Then + the acceleration ×
+    the tick, held to `GroundSpeed` × `DesiredSpeed` (its `SafeNormal` × that);
+  - the move: the velocity, + the zone's velocity where that is over 300, its
+    direction the move × one over its size (no `SafeNormal`);
+  - the floor: with none (each axis under 0.0001), or none a box of the
+    pawn's size meets from it to `MaxStepHeight` + 4 beyond the floor (the
+    world and movers, no actor of its own), `findNewFloor` from where it
+    stands, and with none found it stops there. `DesiredRotation` is the
+    floor's rotation, its pitch less 16384, no roll. A floor whose Z is under
+    0.6 with the acceleration's direction over 0.9 along it lets go: the
+    floor none, `Falling`, the physics `Falling`, `physFalling` for the tick;
+  - the steps: the direction less its part along the floor, its
+    `SafeNormal`, × the move's size; `OldLocation` and `bJustTeleported` as
+    walking's; steps of the time left as walking's (over 0.05 s: half of it,
+    at most 0.05), up to 8 with the one counted already. A step of nothing
+    (each axis under 0.0001) is not made; any other is a `MoveActor` turned to
+    `DesiredRotation`. A hit whose normal's Z is under 0 (a ceiling): the
+    move's first direction heading into it, `HitWall` straight; else heading
+    over 0.7 out of the floor, `Falling`, and from Spider the physics
+    `Falling`, the velocity the move so far over its time (its Z kept),
+    `physFalling` for the time left over 0.005. Any other hit: `HitWall`
+    straight where the direction heads into both it and the floor, or over
+    0.9 along their sum's `SafeNormal`; it is the floor. Then `stepUp` with
+    the floor's opposite for gravity, a fall ending the tick as above.
+    Each step ends with a `MoveActor` to `MaxStepHeight` + 4 beyond the
+    floor: a hit is the floor, its actor the base (`SetSupportBase`) unless
+    a pawn or the base already; none is `findNewFloor` from `OldLocation`,
+    which ends the tick where it finds none;
+  - after the steps the velocity is the tick's move over the tick, unless
+    `bJustTeleported`. `PHYS_Spider` and walking take a base alike
+    (`setPhysics`, below).
+- **A climber's floor** (`APawn::findNewFloor(OldLocation, deltaTime,
+  remainingTime, Iterations)`, `0x103d5db0`): a box of the pawn's size
+  `MaxStepHeight` down from it, then toward -Y, +Y, -X and +X (the last
+  `checkFloor`, `0x103d5c80`), the world and movers, no actor of its own:
+  the first it meets is the floor (true). None: `Falling`, and from Spider
+  the physics `Falling`; falling, the velocity (Location − `OldLocation`) /
+  (deltaTime − remainingTime) unless `bJustTeleported` or no time went, its
+  Z kept, then `physFalling` for remainingTime over 0.005 (false).
 
 ### Reaching
 
@@ -1896,10 +1970,15 @@ depends on what the key did:
   with the same action, a flag held meanwhile so that an alias inside it
   (`Fire`'s `Button bFire | Fire`) is not expanded again.
 - **`UViewport::Exec`** (`0x10373a60`), the first taker wins: the input's
-  `Exec`, the render device's, the viewport's own words (`GETPING`, `INJECT`,
-  `NETSPEED`, `LANSPEED`, `SHOWALL`, `REPORT`, `SHOT`, `SHOWACTORS`,
-  `HIDEACTORS`, `RMODE`, `EXEC`), the console's exec functions, then
-  `UPlayer::Exec`. Each word of the input's, the viewport's and the engine's
+  `Exec`, the render device's (`URenderDevice::Exec`, `0x10371b8a`:
+  `GETDETAILTEXTURES`, and `TOGGLEDETAILTEXTURES`, which saves the device's
+  config; `D3DDrv`'s first takes `GETRES`, its own list of modes, `LODBIAS`
+  and `SHOWPOOLS`, `D3DDrv.dll` `0x100061b0`), the viewport's own words
+  (`GETPING`, `INJECT`, `NETSPEED`, `LANSPEED`, `SHOWALL`, `REPORT`, `SHOT`,
+  `SHOWACTORS`, `HIDEACTORS`, `RMODE`, `EXEC`; `NETSPEED` and `LANSPEED`
+  save the player's config, `0x10373bb3`, `0x10373c44`), the console's exec
+  functions, then `UPlayer::Exec`. The window's own words come after all of
+  them ([`WinDrv.dll`](windrv-dll.md#the-window)). Each word of the input's, the viewport's and the engine's
   is Core's `ParseCommand`'s (`0x10147a20`): past spaces and tabs, the word
   in any case with no ASCII letter or digit straight after it, then the
   spaces and tabs after it, so `exec"x.txt"` runs `x.txt` and `shot.` takes a
@@ -2189,10 +2268,20 @@ and it stays on the screen until the next frame is drawn.
   `SetViewport` with its own viewport (`GetViewport`), which stops the sounds
   and leaves the music playing
   ([`Galaxy.dll`](galaxy-dll.md#playing-a-sound)); then `LevelAction` 0,
-  whatever it was. Then the new map's package is checked (`LOAD_Verify`): a
-  map that is not there fails the load here, its progress lines Core's
-  `UrlFailed` ("Failed launching URL") over the error ("Can't find file
-  '<map>'") for 6 s (`SetProgress`), the old level playing on. Then the
+  whatever it was. Then the new map's package is checked (`LOAD_Verify`, a
+  load of `MyLevel` that throws, `0x1038c6a0`): a map that is not there
+  fails the load here, its progress lines Core's `UrlFailed` ("Failed
+  launching URL") over the error ("Can't find file '<map>'") for 6 s
+  (`SetProgress`, the catch at `0x1038e62c`), the old level playing on, and
+  so does a file that is not a package: the linker (Core.dll `0x10160000`)
+  gives `GWarn` Core's `BinaryFormat` ("The file '<file>' contains
+  unrecognizable data") for a tag not the package's and fails with
+  `Aborted`; one older than version 60 asks `OldVersion` (`GWarn`'s yes or
+  no), no failing with `Aborted`. Each failure is logged as a warning,
+  Core's `FailedLoad` ("Failed to load '<map>': <error>",
+  `UObject::SafeLoadError`, `0x10154430`). A file cut short within its
+  header or tables is read past its end by the linker's reader, made with
+  `GError`, which stops the game ("ReadFile beyond EOF"). Then the
   game engine's `NotifyLevelChange` sends the first viewport's console its
   event of that name, each viewport's player is destroyed, the old level goes
   ([the map load's collection](#the-map-loads-collection)) and the new one is

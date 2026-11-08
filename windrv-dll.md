@@ -38,7 +38,7 @@ the code agrees:
 |---|---|---|
 | `-nohard` | `UWindowsViewport::OpenWindow` (`0x11107590`) | the viewport skips `GameRenderDevice` and opens with `WindowedRenderDevice` (`SoftDrv.SoftwareRenderDevice` in the game's `DeusEx.ini`), fullscreen first if `StartupFullscreen`, then windowed |
 | `-noddraw` | `UWindowsClient::Init` (`0x11101d20`) | no DirectDraw, so no fullscreen modes for a renderer that goes through the client's DirectDraw: the software renderer. With Glide or Direct3D as `GameRenderDevice` the client never starts DirectDraw anyway |
-| `-defaultres` | `UWindowsClient::Init` | the windowed and fullscreen viewport sizes become 640×480 for the run; the colour depths are left alone |
+| `-defaultres` | `UWindowsClient::Init` | the windowed and fullscreen viewport sizes become 640×480; the colour depths are left alone. The viewport's first resize keeps the size it opens at and saves the client's config ([the window](#the-window)), so the ini holds 640×480 from then on (read, not run) |
 | `-nojoy` | `UWindowsClient::PostEditChange` (`0x111030f0`) | joystick 0 is not opened, so a pad gives no input even with `UseJoystick` |
 | `-safe` | `UWindowsClient::Init` | no DirectInput even with `UseDirectInput`: the mouse comes through window messages, as the keyboard always does ([the keys](#the-keys)) |
 | `HWND=` | `UWindowsViewport::OpenWindow` | the window to open the viewport inside, when the caller gives none |
@@ -156,25 +156,40 @@ is a child window's (the editor's), it logs `AttemptFullscreen` and opens the fi
 of `GameRenderDevice` full screen, `WindowedRenderDevice` full screen and `WindowedRenderDevice`
 in a window (`TryRenderDevice`, `0x1110d150`), full screen at `FullscreenViewportX` by `Y`.
 `EndFullscreen` is the console's `ENDFULLSCREEN` too, in any state (`0x11106dcf`-`0x11106dea`):
-the viewport's `Exec` (`0x11106d90`) takes its own words, this one, `TOGGLEFULLSCREEN` and the
-rest, only once Engine's `UViewport::Exec` has taken nothing, so after the input's, the render
-device's, the viewport's, the exec functions and the engine's
-([a key's binding](engine-dll.md#a-keys-binding)). It logs `EndFullscreen`; a device that runs
+the viewport's `Exec` (`0x11106d90`) takes its own words -- `ENDFULLSCREEN`,
+`TOGGLEFULLSCREEN`, `GETCURRENTRES`, `GETCURRENTCOLORDEPTH`, `GETCOLORDEPTHS`,
+`GETCURRENTRENDERDEVICE`, `GETRES`, `SETRES` and `PREFERENCES`, in that order -- only once
+Engine's `UViewport::Exec` has taken nothing, so after the input's, the render device's (`D3DDrv`'s
+own `GETRES` among them), the viewport's, the exec functions and the engine's
+([a key's binding](engine-dll.md#a-keys-binding)): an exec function named as one of them runs in
+its place. It logs `EndFullscreen`; a device that runs
 full screen alone (`FullscreenOnly`) gives way to `WindowedRenderDevice` in a window; else
 D3DDrv's (`BLIT_Direct3D`) is set to `WindowedViewportX` by `Y` in a window, OpenGLDrv's
 (`BLIT_OpenGL`) asked for -1 by -1 in a window, and any other viewport resized in a window
 (`BLIT_DibSection`, -1 by -1); then the window's frame is updated. `ResizeViewport`
-(`0x1110d640`) takes -1 for the client's size of the mode (`0x1110d93b`-`0x1110d967`), and keeps
-each size it takes as the client's for its mode (`WindowedViewportX`, `Y` and
-`WindowedColorBits`, or the full screen ones), saving the client's config at once (`SaveConfig`,
-`0x1110e2f3`-`0x1110e35b`): the ini written, a window sized by hand's too (`WM_SIZE`, below). So
-in a window the windowed size is the window's own, and `ENDFULLSCREEN` there logs its line and
-sizes the window at the size it has; full screen it is the toggle's way back. `PREFERENCES` and
-the window's `WM_DESTROY` end full screen first (`0x111072bb`, `0x11109c3e`).
+(`0x1110d640`) takes -1 for the client's size of the mode (`0x1110d93b`-`0x1110d967`) and makes
+the width even, one more where it is odd, the height as it comes (`0x1110d9a8`-`0x1110d9ab`); in
+a window it sizes the window about that client area (`AdjustWindowRect`, `MoveWindow`,
+`0x1110e29f`), unless asked to leave the window alone (`BLIT_NoWindowChange`) or the viewport is a
+child window's. With a render device, outside the editor, it keeps a size of something as the
+client's for its mode -- `WindowedViewportX`, `Y` and `WindowedColorBits` (8 × the bytes a
+pixel), or the full screen ones -- and saves the client's config whatever the size
+(`SaveConfig`, `0x1110e2f3`-`0x1110e35b`), the config cache flushed, every changed ini written
+([configuration](core-dll.md#configuration)): a window sized by hand's too (`WM_SIZE`, below).
+So in a window the windowed size is the window's own, and `ENDFULLSCREEN` there logs its line
+and sizes the window at the size it has; full screen it is the toggle's way back. `PREFERENCES`
+and the window's `WM_DESTROY` end full screen first (`0x111072bb`, `0x11109c3e`).
 
-In a window, `WM_SIZE` (`0x11109f82`) gives the viewport or its render device the client area's
-new size, so a maximize that no command carries leaves the window maximized and the game drawn
-at its size. As it is dragged the window is held to 640 by 480 at least, the whole window, its
+`WM_SIZE` (`0x11109f82`), with the client area's new size: full screen, a restore moves the
+window back over the rectangle full screen took (`0x11109fa7`-`0x11109fdb`). In a window, the
+restore after the focus is lost goes full screen again ([the focus](#the-keys)); any other gives
+a Direct3D or OpenGL device the size by its `SetRes` (`0x1110a04b`), which `D3DDrv`'s answers by
+starting again at that size and resizing the viewport (`D3DDrv.dll` `0x1000a4d0`, its
+`ResizeViewport` call), and any other viewport is resized, its window left alone
+(`BLIT_NoWindowChange`, `0x1110a05a`-`0x1110a060`). So through `D3DDrv` a drag of the frame to
+1001 by 701 leaves the window's client area 1002 by 701, the client's windowed size, and the ini
+holding it at once; a minimize, 0 by 0, keeps nothing. A maximize that no command carries leaves
+the window maximized and the game drawn at its size. As it is dragged the window is held to 640 by 480 at least, the whole window, its
 frame and caption too: `WM_GETMINMAXINFO`'s least tracking size (`0x1110a812`), whatever the
 window's state.
 

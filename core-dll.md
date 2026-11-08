@@ -383,8 +383,19 @@ it walks every property instead and calls `Modify` before each change.
   - A write that fails fails quietly. `Write` clears the file's changed mark
     before it writes, and writes no file `Detach` (`0x10915d60`) marks not to
     be saved; its answer goes nowhere: `Flush` (`0x10915250`) writes each
-    changed file and goes on -- `SaveConfig`'s at its end, the files kept in
-    the cache, and the exit's (`Exit`, `0x10918cc0`), which then drops them.
+    changed file and goes on -- every file in the cache, whichever class's
+    config was saved: `SaveConfig`'s at its end (`0x1015193c`) and
+    `RELAUNCH`'s before the game starts again (`USystem::Exec`,
+    `0x1016b8b5`), the files kept in the cache, and the exit's (`Exit`,
+    `0x10918cc0`), which then drops them. Nothing else flushes it:
+    `ResetConfig` sets the keys and leaves them to the next flush, as
+    `UpdateURL`'s saved default does. A `SaveConfig` comes of every `SET`,
+    of `NETSPEED`, `LANSPEED`, `BRIGHTNESS` and `TOGGLEDETAILTEXTURES`, and
+    of every resize of the game's viewport
+    ([`WinDrv.dll`](windrv-dll.md#the-window)); of the stock scripts only
+    on a player's choice in the menus and the exec functions that set a
+    preference, a server's map list at each map, and the credits' eggs, never
+    every frame.
     `appSaveStringToFile` writes nothing for an empty text, and makes the file
     through the file manager's `CreateFileWriter` (GOG DeusEx.exe
     `0x109067b0`) with no flags and `GNull` for its errors: for writing, made

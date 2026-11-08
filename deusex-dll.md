@@ -243,9 +243,10 @@ turn:
   - A new mission, a map outside any, or a player with `bStartingNewGame` set
     (which it then clears): `Current` is emptied first, and the URL's map
     loads from `Maps`. The screen shows `LOADING` alone, as for a
-    `?loadgame`. A destination that fails to load (not there) is followed by
-    the map of the current level's URL loaded again with the same travel
-    info (`Dx.Dx` with no level, `0x1001183f`-`0x10011e51`; so the start's
+    `?loadgame`. A destination that fails to load (not there, or not a
+    package, [the loading screen](engine-dll.md#the-loading-screen)) is
+    followed by the map of the current level's URL loaded again with the
+    same travel info (`Dx.Dx` with no level, `0x1001183f`-`0x10011e51`; so the start's
     first browse of a map not there loads `Dx.Dx` on its URL, the menu's
     map, and succeeds): the level starts afresh, the failure's
     message gone with it, or plays on where that URL names no map there
