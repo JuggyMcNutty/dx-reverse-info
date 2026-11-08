@@ -1439,7 +1439,17 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   - With an owner, every plane, the walk's and the hulls', is turned into the
     world by the owner's `ToWorld` (`FPlane::TransformPlaneByOrtho`, Core.dll
     `0x1011a000`), the box kept along the world's axes; a brush's hull gets no
-    box faces. The arithmetic is float, in a fixed order.
+    box faces. The arithmetic is float, in a fixed order. For a mover with a
+    `PostScale` the reading leaves a question: `ToWorld` takes the
+    `PostScale` in (`ABrush::ToWorld`, `0x1030f310`), and its planes so
+    turned (the line walk `0x103f3560` inline) would stretch the brush where
+    the `PostScale` shrinks it; yet on DXMP_CMD, where so stretched
+    `DeusExMover10` (6 by 80 by 80, its `PostScale` 0.05, 0.23, 0.27) would
+    fill a box some 2,300 units across, the original's lines from within it
+    meet `RepairBot2` and the walls beyond and never the door, and its hash
+    puts the door in the cells of its filed place (DXEngine's harness's
+    `PostScaleConsole`): its checks meet the door where its polygons are
+    filed.
 - **An actor's cylinder** (`UPrimitive::LineCheck`, `0x103d8af0`), with the
   line's box added: hit where the line comes in, through a cap or the side,
   within the trace, a thousandth of the trace short (its time − 0.001, held to
@@ -1517,7 +1527,13 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     its brush's coordinates (`ABrush::BuildCoords`, `0x1032f9e0`, its
     `PostScale` after the rotation, along the world's axes; `FPoly::Transform`,
     `0x10387360`, turning each normal by them, a mirror's too, and reversing a
-    mirrored polygon's corners: `PostScaleConsole`, `MirrorMoverConsole`), and
+    mirrored polygon's corners: `PostScaleConsole`, `MirrorMoverConsole` --
+    each corner less `PrePivot`, axis by axis, a float each, dotted with the
+    point transform's axes, X's term, then Y's, then Z's, a float each, and
+    moved by `Location`, a float each; the base likewise; the texture axes
+    and the normal through the vector transform, the normal then made a unit
+    by Core's `SafeNormal`; the corners reversed after, the normal not
+    turned: `FiledPlaneConsole`), and
     the level's nodes sorted beforehand against
     the sphere round them (`PrecomputeSphereFilter`: a node the sphere lies
     wholly in front of or behind takes each polygon that way untested). Each
@@ -1531,7 +1547,8 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     empty. Where a way ends at no child, a fragment in empty space becomes a
     node (`AddPolyFragment`, `0x1037bb00`), and one in solid is dropped. The
     node takes the polygon's plane (its W the base's dot with the normal, y
-    and z first) and its corners as new points; it hangs from the parent as
+    and z first, at the x87's precision, 24 bits as the render files a mover
+    again and 64 at a map's load) and its corners as new points; it hangs from the parent as
     that child, or, in a node's plane, at the end of that plane's chain
     (`iPlane`), so a line meets the level's node of the plane first. Its
     zones and leaves, both sides alike, are its parent's on its side
@@ -2252,7 +2269,24 @@ it is. It runs `PlayerInput` alone, then sets each `input` float to 0 itself
 
 - **The collision hash's order**, which a touch's and a check's lists follow:
   `FCollisionHash::AddActor` (`0x103580b0`) puts each link at its bucket's
-  head, so a cell gives its newest-filed actor first; `ActorRadiusCheck`
+  head, so a cell gives its newest-filed actor first. A coordinate's cell is
+  the coordinate plus 32768 over 256, a float, made whole by the x87's
+  `fistp`, to the nearest and a half to even (`GetHashIndices`,
+  `0x10357590`), held to 0 to 16383: a cell's middle lies on a multiple of
+  256 and its bounds 128 off one, and everything past the ends of that range
+  shares the end cells. An actor is filed in the cells of its primitive's
+  collision box (`GetActorExtent`, `0x10357e30`): a cylinder's (any actor
+  with no brush, a mesh's too) its place less and plus its radius and height
+  each a unit larger (`UPrimitive::GetCollisionBoundingBox`, `0x103d8460`); a
+  brush's its model's box's eight corners through its `ToWorld` as points,
+  the least and most of them (`UModel::GetCollisionBoundingBox`,
+  `0x103f0e70`), a mover's `PostScale` in it. The radius check takes the
+  cells of its middle less and plus the radius, the line check those of the
+  line's box less and plus the extent, each bound's Y and Z stored as floats
+  before the cell is taken and X as the x87 holds it; the encroachment check
+  those of the actor's own box at its new place; `ActorPointCheck`
+  (`0x103585b0`) walks as the radius check and puts each find at its list's
+  head; `ActorRadiusCheck`
   (`0x103589e0`), `ActorEncroachmentCheck` (`0x10358d50`) and `ActorLineCheck`
   (`0x10359160`) walk the cells X outermost, then Y, then Z, the radius and
   line checks putting each find at their list's head, the encroachment check

@@ -970,6 +970,10 @@ The rest are UE1's own. The details:
     take a sine table of 16384 steps round the turn (an angle's index its
     value >> 2, so its low 2 bits are dropped), a cosine the same table a
     quarter turn (0x4000) on. `GetUnAxes` gives `GetAxes`' axes transposed.
+    The table is GMath's (`FGlobalMath::FGlobalMath`, `0x10144130`): entry i
+    the float of `appSin` of i times 0.0003834951969714103 (2π over 16384),
+    the product a double, so a half turn's sine, a quarter turn's cosine, is
+    1.2246468e-16, the float of the sine of the double nearest π.
   - `v >> r` 276 and `v << r` 275 (`0x101380e0`, `0x10137d90`) turn a
     vector by the rotator and back, by the same table: the unit coords
     turned step by step (`FCoords::operator*=`, each axis taken to its dots
@@ -977,6 +981,23 @@ The rest are UE1's own. The details:
     for `>>` the yaw undone, then the pitch, then the roll; the vector then
     dotted with the coords' axes. `>>` is no inverse of a whole matrix, and
     its last float digits are its own.
+  - **`FCoords`**: each operator stores every component as a float, its
+    products and sums at the x87's precision. `TransformVectorBy`
+    (`0x10119e40`) dots the vector with each axis, X's term first;
+    `TransformPointBy` (`0x10119d70`) takes the origin off first, holding the
+    differences unstored. `*=` another coords (`0x1011a710`) moves the origin
+    as a point and each axis as a vector; `*=` a rotator (`0x1011ac80`) by
+    the yaw, then the pitch, then the roll, `/=` (`0x1011b690`) the roll
+    undone, then the pitch, then the yaw, each the unit axes turned by the
+    sine table. `*=` a scale (`0x1011c0a0`): first the sheer, the unit coords
+    with its snapped rate on its axis (`FSheerSnap`: past 0.65 either way
+    0.15 nearer 0, past 0.55 a half, past 0.05 0.05 nearer 0, else none),
+    then each axis times the scale axis by axis and the origin over it; `/=`
+    (`0x1011c860`) each axis over the scale and the origin times it, then the
+    sheer undone. `TransformPlaneByOrtho` (`0x1011a000`) dots the normal with
+    each axis, Y's and Z's terms first, and takes W less the origin turned as
+    a vector dotted with the new normal. `FScale::Orientation` (`0x10118880`)
+    is the sign of Z times Y times X.
   - `==` 142 and `!=` 203 (`0x10139400`, `0x101394f0`) compare every bit of
     each angle: rotators a whole turn apart are not equal.
   - `bool(r)` (`execRotatorToBool`, `0x10137060`) is true when any angle has
