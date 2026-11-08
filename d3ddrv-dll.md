@@ -155,6 +155,14 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
   whose mips are each a colour of their own, point-sampled (`PF_NoSmooth`),
   changes mip where that log2 passes each whole number (0.99, 2.01, 3.00,
   3.98, 5.01 and 5.92 at 1024x768), one texel to a pixel throughout.
+- **The filter and the addressing.** Every stage wraps, its filters linear
+  and its mip bias −0.5 (`InitTextureStageState`, `0x10009e20`; stage 0 at
+  `0x10009e68`, the bias at `0x10009e46`), and no draw changes the
+  addressing. `SetBlending` sets stage 0's magnification and minification
+  filters to point for `PF_NoSmooth` and back to linear for a smooth draw,
+  only as the flag changes (`0x1000845a`-`0x10008490`); `SetTexture` sets
+  the mip filter by the texture (`0x10009535`-`0x10009584`): none for a
+  texture of one mip, point for more, linear only with `UseTrilinear`.
 - **The modulation.** In 16 bits the stage's colour is `MaxColor` over 255,
   multiplied into the vertex colour of every draw that is not modulated. A
   one-pass surface's diffuse is trunc(256 × both stages' colours − 0.5). So
@@ -233,6 +241,9 @@ it sets the blending and the texture:
   other flag dropped, `PF_NoSmooth` with them, in white: its colour 0 is cut
   out where the texture's copy has it cleared ([textures](#textures)), and
   the rest doubles what is behind it.
+
+A tile wraps, as every draw does ([the filter](#textures)): a smoothed
+tile's outer half texel blends with its texture's opposite edge.
 
 ## Fog
 

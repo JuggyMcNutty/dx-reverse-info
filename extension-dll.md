@@ -557,7 +557,12 @@ yaw, its pitch left out.
   holds it to that many rows of the font's height and line spacing, its
   vertical spacing between. It draws (`Draw`, `0x1002e500`) only the rows
   its clip shows, the block of rows placed by its alignment -- centred by
-  the whole half of the room, margins and all -- each row by its own.
+  the whole half of the room, margins and all -- each row by its own; the
+  script's `DrawWindow` is handed the window's GC as it was, its own
+  defaults (`XGC::XGC`, `0x10026ad0`: left, top, word wrap on), where a text
+  window's `Draw` (`0x10046930`) sets the window's alignments and wrap first
+  (DXEngine's `UndoConsole`: 0, 0, word wrap on, for a window centred and
+  not wrapped).
 - **An edit field** (`XEditWindow::Init`, `0x1001cea0`): from the top left,
   3 in from the sides; editable and on several lines, word wrapped; a white
   insertion point, grey selection and black text in it (`inverseColor`,
@@ -1519,10 +1524,26 @@ What the game shows under a menu, by the player's UI background option
   character other than A to Z, a to z, 0 to 9, `_` and `-`. The game's 26
   calls pass identifiers alone.
 - **Edit fields.** `Undo` (`0x1001e0a0`) and `Redo` (`0x1001e170`) walk a
-  list of changes, each a position, the text removed and the text put in.
-  Typing straight after the last change joins it (`AddUndo`, `0x10020450`).
-  The list keeps at most `maxUndos`; `ClearUndo` empties it. The script's
-  Ctrl+Z and Ctrl+Y call them.
+  list of changes, each a position, the text removed and the text put in,
+  and put each back through `ReplaceText` with no undo and with select on,
+  so what they put back is selected and a key typed next replaces it.
+  Typing straight after the last change joins it (`AddUndo`, `0x10020450`),
+  unless that change is the clean mark (`0x100204ee`-`0x10020502`); a new
+  change drops the steps to redo, the mark with them. The list keeps at
+  most `maxUndos` (`ClampUndo`, `0x10020290`), 0 keeping none, and
+  `SetMaxUndos` (`0x1001da60`) takes anything under 0 as no limit;
+  `ClearUndo` (`0x1001ddf0`) empties it and leaves the changed state.
+  - **Changed** is the current step against the mark (`HasTextChanged`,
+    `0x10013760`): `SetTextChangedFlag` (`0x1001ddc0`) sets no mark for
+    True and the current step for False, `ClearTextChangedFlag`
+    (`0x1001dd50`) being False, and `TextChanged`'s `bModified` is the same
+    comparison (`ChangeText`, `0x1001fab0`), so an undo back to the mark
+    reads unchanged.
+  - The script's Ctrl+Z and Ctrl+Y call them. The Goals screen's note is
+    saved when changed as its focus leaves, its flag then cleared
+    (`PersonaScreenGoals.SaveNote`). Run: DXEngine's harness's
+    `UndoConsole`, a Backspace undone and the 'c' put back selected (2+1),
+    an 'X' typed then giving `abXdef`; an undo back to the mark unchanged.
 - **Tab groups.** `MoveTabGroupNext` and `MoveTabGroupPrev` (`0x100033f0`,
   `0x10003400`) move the focus to the next or previous tab group
   ([keyboard focus](#keyboard-focus)). The root window's script calls them
