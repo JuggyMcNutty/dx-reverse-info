@@ -316,7 +316,11 @@ the static pointer it is read through is set.
 - **A precache**: `Flush`, a precache allowed, sets `PrecacheOnFlip` from
   `UsePrecache` (`0x10002ec9`), and the game engine's next frame shows
   `PRECACHING` and precaches the level
-  ([the loading screen](engine-dll.md#the-loading-screen)).
+  ([the loading screen](engine-dll.md#the-loading-screen)). Run, only a
+  map's load shows it: with `UsePrecache` on, the level's action at a
+  console's ticks was Precaching at the map's first and at none of the five
+  after the console's `FLUSH` or `BRIGHTNESS`, each the engine's `Flush`
+  with a precache allowed; what keeps theirs from showing is not read.
 - **Lines and points** (`Draw2DLine`, `0x1000116d`; `Draw2DPoint`): at the
   depth of a point one unit before the eye, so over the whole scene, the
   line flags read for nothing; the colour times 256 into the vertex, under

@@ -1970,10 +1970,17 @@ depends on what the key did:
   with the same action, a flag held meanwhile so that an alias inside it
   (`Fire`'s `Button bFire | Fire`) is not expanded again.
 - **`UViewport::Exec`** (`0x10373a60`), the first taker wins: the input's
-  `Exec`, the render device's (`URenderDevice::Exec`, `0x10371b8a`:
-  `GETDETAILTEXTURES`, and `TOGGLEDETAILTEXTURES`, which saves the device's
-  config; `D3DDrv`'s first takes `GETRES`, its own list of modes, `LODBIAS`
-  and `SHOWPOOLS`, `D3DDrv.dll` `0x100061b0`), the viewport's own words
+  `Exec`, the render device's (`URenderDevice::Exec`, `0x10371b60`:
+  `GETDETAILTEXTURES` answers the device's `DetailTextures`, `1` or `0`;
+  `TOGGLEDETAILTEXTURES` flips it and saves the device's config, saying
+  nothing; `D3DDrv`'s `Exec`, `D3DDrv.dll` `0x100061b0`, asks those two
+  first, then takes `GETRES` while its DirectDraw is up -- its 16-bit modes,
+  each size once in the driver's order, the first 16 within its largest
+  size --, `LODBIAS`, which says `Texture LodBias <n>` and sets the
+  number past it, none 0, as the texture stages' mip bias, held nowhere
+  and saved nowhere, until its `SetRes` sets the stages again at -0.5
+  (`0x10009e20`), and `SHOWPOOLS`, which says `Dumping D3D Texture Pool
+  Info` and each texture format's pools under it), the viewport's own words
   (`GETPING`, `INJECT`, `NETSPEED`, `LANSPEED`, `SHOWALL`, `REPORT`, `SHOT`,
   `SHOWACTORS`, `HIDEACTORS`, `RMODE`, `EXEC`; `NETSPEED` and `LANSPEED`
   save the player's config, `0x10373bb3`, `0x10373c44`), the console's exec
@@ -1984,6 +1991,15 @@ depends on what the key did:
   spaces and tabs after it, so `exec"x.txt"` runs `x.txt` and `shot.` takes a
   shot; an exec function's name is the line's first token (`ParseToken`), and
   an alias's (`UInput::Exec`'s, a name found, never made).
+- **`UClient::Exec`**, among the engine's words (`UEngine::Exec`,
+  `0x10380ee0`, after the system's, the objects', the cache's and the
+  executable's): `BRIGHTNESS` (`0x10375966`-`0x10375b6a`) steps the live
+  client's `Brightness` a tenth up, back to 0 from 1 or more, flushes the
+  engine with a precache allowed, saves the client's config and sends the
+  viewport's player `Brightness level <n>/10`, n the brightness's tenths
+  and one, through `ClientMessage`. No PRECACHING frame follows it, nor a
+  console's `FLUSH`, run with `UsePrecache` on: only a map's load shows one
+  ([`D3DDrv.dll`](d3ddrv-dll.md#the-rest-of-a-frame)).
 - **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`,
   the exec functions of the game, the HUD, the player pawn and each item of its
   inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest). An
