@@ -50,7 +50,10 @@ The natives are the links': eight of `InternetLink`, nine of `TcpLink`, five of 
   port left off when 0 ([the scripts' addresses](network.md#addresses)).
 - **Receiving** (`TickDispatch`, `0x1070a440`): each tick, every datagram waiting, up to
   576 bytes each, goes to the connection whose address sent it. One from an unknown address,
-  on a server that accepts it (`NotifyAcceptingConnection`), opens a new connection.
+  on a server that accepts it (`NotifyAcceptingConnection`), opens a new connection. A read
+  that fails for anything but nothing waiting -- a longer datagram (`WSAEMSGSIZE`), a reset
+  from a port that refused what was sent to it (`WSAECONNRESET`) -- ends the tick's reading,
+  the first such failure logged `UDP recvfrom error: <code>`.
 - **A connection** (`UTcpipConnection`, `0x107092d0`): packets of at most 512 bytes
   (`MaxPacket`), each counted against the rate as 32 bytes more (`PacketOverhead`,
   [packets](network.md#packets)); `LowLevelSend` (`0x10709580`) sends each as one datagram.
@@ -76,7 +79,8 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
     `IsDataPending`, and `Validate` ([below](#the-master-server)).
 - **`TcpLink`:** `BindPort` (at the local bind address, as the net driver's socket,
   `0x10706a51`; any port when given none; with `bUseNextAvailable`, the first free of the
-  20 from the one given), `Listen`, `Open`, `Close`, `IsConnected`, `SendText`
+  20 from the one given; its `Port` the port it gave the bind, so 0 for an ephemeral one,
+  `0x10706960`), `Listen`, `Open`, `Close`, `IsConnected`, `SendText`
   (a line end added in line mode, everything queued in the send FIFO, the whole length with
   the line end answered, `0x10708870`; 0 only with WinSock down or the link's `Socket` 0,
   which a failed `BindPort` alone leaves, a link never bound or whose connection went
@@ -138,10 +142,22 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
   logs, closes the socket and keeps none (`0x1070c9a2`-`0x1070c9b1`): a second `BindPort`
   answers 0, "already bound" (`0x1070c88b`), `SendText` true with nothing sent
   (`0x1070cb5d`), the tick and `ReadText` reading nothing (`UdpRebindConsole`). `SendText` sends the text as it is, no line end in any mode, and answers
-  false only when nothing went. `SendBinary`, `ReadText`, `ReadBinary`. Its tick
+  false only when nothing went. `SendBinary`'s test is the other way round: false whenever
+  `sendto` sent or failed, true, logging `SendBinary: sendto failed`, only for a send of
+  nothing (`0x1070ce04`). `ReadText` (`0x1070d380`) empties its string, reads one datagram of
+  up to 4,096 bytes into a buffer on its stack and makes the string of that buffer up to a
+  NUL (`appFromAnsi`, at most 1,023 characters), not of the count read, so the text runs on
+  into the buffer's earlier bytes: `short` read after a 5,000-character datagram is `short`
+  and 1,018 x's (DXEngine's harness's `UdpEdgesConsole`). `ReadBinary` (`0x1070d6f0`) reads
+  into the script's array. A datagram longer than the read's room fails it (`WSAEMSGSIZE`),
+  the datagram gone, `ReadText: Error reading text.` or `ReadBinary: Error reading text.`
+  logged unless the error was would-block, a `ReadBinary`'s array holding its first bytes all
+  the same; after a read that takes one, `GetLastError` answers 0 under Wine. Its tick
   (`0x1070cee0`), by events, reads one datagram a tick, up to 4,095 bytes, and raises it
-  whole as `ReceivedText`, `ReceivedLine` or `ReceivedBinary` with the sender's address; by
-  hand, it only marks `DataPending`.
+  whole as `ReceivedText`, `ReceivedLine` or `ReceivedBinary` with the sender's address, a
+  longer one raised not at all; by hand, it only marks `DataPending`. The link's C++
+  constructor sets receiving by events over the class's defaults (`0x10702480`), so a class
+  that wants it by hand sets `ReceiveMode` at run time.
 
 ## The master server
 

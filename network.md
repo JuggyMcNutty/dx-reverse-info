@@ -95,8 +95,11 @@ logged (`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of
      `ConfiguredLanSpeed` (20,000) with `?LAN` in the URL, as the Join LAN
      screen adds;
    - `LOGIN RESPONSE=` (the engine's answer to the challenge) `URL=` and the
-     travel URL without the server's address or a `game=` option: the map (the
-     default one when the address named none) and its options (`Name`, `Class`,
+     travel URL's own text (`FURL::String`, `0x103f9210`) without the server's
+     address or a `game=` option (`0x1040b4dd`), a port not the default's kept
+     before the map -- `:7791/Index.dx?...`, which a server reads as the map
+     `:7791` and the portal `Index.dx` (DXEngine's harness's `PortJoinConsole`)
+     --: the map (the default one when the address named none) and its options (`Name`, `Class`,
      `Team`, `Skin`, `Face`, `OverrideClass`, `PASSWORD`: those the player has;
      from the game's `User.ini`, whose `[DefaultPlayer]` holds `Name` and
      `Class`, a login carries only those);
@@ -124,12 +127,17 @@ logged (`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of
      followed by what it imports, depth first (each package's imports, in its
      import table's order, straight after it). None twice, and none flagged
      server-side only (Deus Ex's `IpDrv`, `IpServer`, `UWindow`, `UBrowser`);
-   - `WELCOME LEVEL=` (the map) `LONE=` (`bLonePlayer`);
+   - `WELCOME LEVEL=` (the map) `LONE=` (`bLonePlayer`), whose `CHALLENGE=`,
+     if a server gives one, the client takes as the connection's challenge
+     (`0x1040a880`);
    - `STATICRATE` and `DYNAMICRATE` from the settings.
 5. **Client:** each package it lacks downloaded, one at a time
-   ([downloads](#downloads)). With all in hand, the map loaded (below), then
+   ([downloads](#downloads)), one whose `<name>.dll` is in the game's System
+   folder counting as had (`0x1040a880`; `handshakeserver.py --pkg Window`).
+   With all in hand, the map loaded (below), then
    `HAVE GUID= GEN=` for each package whose generation here differs from the
-   server's `GEN=` (the server counts only what the client's has), one frame
+   server's `GEN=` (the server takes the number as it is, `0x1039f780`, and
+   counts only what the client's has), one frame
    drawn ([what the player sees](#what-the-player-sees-of-a-join)), and `JOIN`,
    not in a single player's game (`LONE=1`). `NETSPEED` again whenever the
    player sets one (the server takes one of at least 500, held to
@@ -141,7 +149,8 @@ logged (`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of
    `ConfiguredInternetSpeed`, or `ConfiguredLanSpeed` with `?LAN` in its URL
    (`0x10401490`).
 6. **Server:** spawns the player (`SpawnPlayActor`, the game's `Login`, as an
-   autonomous proxy), or answers `FAILURE` and the reason. The `JOIN` is taken
+   autonomous proxy), or answers `FAILURE` and the reason, a bare `FAILURE `
+   when the game gives none, logging `join failure` (`0x1039f780`). The `JOIN` is taken
    whenever the connection has no player yet, whatever came before it: a
    `HELLO` and a `JOIN` log a player in with no challenge answered and no
    `PreLogin` asked (`0x1039f780`).
@@ -196,7 +205,9 @@ With no channel free, the download fails with `ChAllocate`.
   file is opened, logged `Sending '<file>'` (`NetSend`);
 - anything else is logged `Received invalid file request` (`NetInvalid`) and
   answered with an empty, unreliable bunch that closes the channel
-  (`0x10400464`);
+  (`0x10400464`): lost, it leaves the client's download waiting, the server's
+  channel closing for the connection's life and a later request on its index
+  passed over;
 - then each tick (`UFileChannel::Tick`, `0x10400780`), while the channel's
   reliable buffer has room (the rate left out: `IsNetReady(1)`), a reliable
   bunch of as much of the file as the packet has room for (`MaxSendBytes`: the
@@ -307,15 +318,27 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   answers a float of the connection times 1000 as an int and `GETLOSS`
   another float as an int, each after a blank (`" %i"`), which
   `DeusExServerPing` strips -- its lag, the stats period's mean of each
-  ack's round trip less half the connection's frame time, no least kept
+  ack's round trip less half the connection's last frame time, no least kept
   (`0x10403240`-`0x10403261`, the frame time `0x10404c03`-`0x10404c69`, set
-  each period `0x10404dc6`-`0x10404deb`), and its incoming packet loss in
-  percent -- then
+  each period `0x10404dc6`-`0x10404deb`), the sum begun at 9999 as the
+  connection is made (`0x10401604`), so the first period's lag is 9999 s over
+  its acks' count, hundreds of seconds; and its incoming packet loss in
+  percent, of those lost and the packets a second come in (100 × lost /
+  (lost + packets a second), the sum at least 1), the outgoing, 100 × lost /
+  the packets a second sent, kept beside it -- then
   `UPlayer::Exec`. A pawn's `ConsoleCommand` goes to its own player
   (`APlayerPawn::execConsoleCommand`, `0x103ba200`): on a server a remote
   player's connection answers so, which `PlayerReplicationInfo.Timer` takes
   for its ping; a local player's viewport answers `GETPING` with `0` and
   takes no `GETLOSS` (`UViewport::Exec`, `0x10373aee`; `WordsServer`).
+  Each period also sets the player's `bBadConnectionAlert`, which no stock
+  script reads: on while the player has its channel and its lag plus 1.2 s
+  for all lost of the greater loss passes 0.8 s, or the rate the loss leaves
+  falls under 2,000 bytes a second; on too while fewer than 2 packets a
+  second come in (`0x10404e1c`-`0x10404ef0`). The first period, its lag the
+  9999 start's, ends during the join, with no player yet to set (DXEngine's
+  harness's `AlertServer`: off from the player's first half second in the
+  game).
 
 ## Server travel
 
@@ -517,10 +540,19 @@ many bits as the maximum needs (`FBitWriter::WriteInt`).
 - **The first bunches:** until the control channel's open is acknowledged, its
   unacknowledged bunches go again every second (`UChannel::Tick`, `0x103fae80`):
   a client's `HELLO` while the server comes up.
-- **A reliable bunch** already had is dropped. An unreliable one opens a channel
-  only if it closes it too: an actor sent once, to keep (`bNetTemporary`). A
-  channel the other side opens is open and acknowledged here from its opening
-  bunch, whose packet it keeps as its open's.
+- **A reliable bunch** already had is dropped. An unreliable one is taken only
+  if it opens its channel and closes it too -- an actor sent once, to keep
+  (`bNetTemporary`) -- or once the channel's open has come; any other is
+  dropped, the connection playing on ("Received unreliable bunch before open",
+  `0x1040372c`-`0x10403759`), so an actor whose open was lost has its updates
+  wait for the open's resend (DXEngine's harness's `OpenLossServer` behind
+  `netdrop.py`). A channel the other side opens is open and acknowledged here
+  from its opening bunch, whose packet it keeps as its open's. Before the
+  control channel is open, a bunch for a channel not open, but the control
+  channel's own open, ends the packet, nothing more of it read ("Received
+  bunch before connected", `0x104035d9`): a first packet whose first bunch is
+  an actor channel's has its `HELLO` passed over, its acks alone answered
+  (`bunchfirst.py`).
 - **Timing:** a packet goes out at the end of a tick that sent a bunch;
   otherwise, with the acks' second copies (written every tick), when nothing has
   gone for `KeepAliveTime`. A connection with nothing in for `ConnectionTimeout`
@@ -728,7 +760,8 @@ never a client's, or a demo; the script classes' own statements their values -- 
 replicated `if (Role < ROLE_Authority)`, which the server's `ParseRightClick`
 picks up. A closed connection there has the client browse `?failed`. Each side
 keeps a copy of what the other last got (`SetChannelActor`, `0x103fd620`, on
-either side).
+either side), a value received and taken written into it too (`0x103fdd90`,
+`0x103fdfe6`), one dropped as unwanted not.
 
 **On a server** a client's bunch is taken with the roles as the client has them:
 a property value or a call only when its replication statement then holds and
@@ -813,12 +846,19 @@ others differ:
   with `bClientAnim`, or a demo recording), UE1's statement; Deus Ex's script
   gives `SimAnim` and `AnimMinRate` below simulated proxy and `bAnimNotify` at
   it. The blended animations its script added (`BlendAnimSequence`,
-  `SimBlendAnim`, `BlendAnimMinRate`) are in no list and never go.
+  `SimBlendAnim`, `BlendAnimMinRate`) are in no list and never go. `Physics`,
+  `Acceleration` and `bBounce` go to a simulated proxy in its first bunch
+  alone, and never to a simulated pawn; to any other remote role while
+  `bSimFall` is set (`0x10362f04`, `0x1036328a`), where the statement sends
+  them whenever they change (DXEngine's harness's `SimFallServer`).
 - **`Pawn`** (`0x10363bc0`): `PlayerRestartState` is in no list and never goes,
   though its statement names it for the owner.
 - **`PlayerPawn`** (`0x103649d0`): the owner's list also names
-  `bNeverAutoSwitch`, which no statement names, so it has no replication index,
-  and its change sends whatever has the first.
+  `bNeverAutoSwitch`, which no statement names, so it has no replication index:
+  it pushes index 0, `Actor`'s `bHidden`, the first replicated property of
+  Engine.u, and never writes the copy's `bNeverAutoSwitch` (`0x10364cb6`), so
+  on a server whose `User.ini` sets `[Engine.PlayerPawn] bNeverAutoSwitch=True`
+  each player's `bHidden` goes again every update.
 - **`PlayerReplicationInfo`** (`0x10365ca0`): `Actor`'s list only in the first
   bunch (`bNetInitial`).
 - **`Inventory`** (`0x10367450`): an always-relevant item past its first bunch
