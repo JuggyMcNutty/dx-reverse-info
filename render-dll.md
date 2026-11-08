@@ -279,11 +279,19 @@ then gives each surface its lights and each sprite its leaf's
 - **Its rectangle** on screen, in whole pixels, at least a row tall, at the
   depth of the actor's location: a sprite's texture at its size and place,
   or a mesh's render box through `BoundVisible`. That rectangle, set back in
-  the world at that depth, is its proxy.
+  the world at that depth, is its proxy (`0x10b233c0`), however near: a
+  mesh's location within a unit of the eye puts it there, at the eye's own
+  plane all its corners the eye's point, on the eye's side of every plane
+  further off (DXEngine's `NearProxyConsole`).
 - **The walk.** It starts at the BSP's root as a raster of the rectangle's
   rows. At each node it comes to (`0x10b23e30`), the part on each side of
   the node's plane goes on to that child, the raster cut along the line
-  where the plane crosses the proxy.
+  where the plane crosses the proxy. A corner counts on the plane's front
+  more than 0.01 units before it, on its back more than 0.01 behind; a proxy
+  with corners on one side alone goes whole to that side, and one with every
+  corner within 0.01 of the plane to neither, so it is dropped
+  (`0x10b23e88`-`0x10b23eb9`; the sides taken at `0x10b24303` and
+  `0x10b244c7`).
 - **An empty leaf** (UE1's `ChildOutside`): a part that comes to one waits in
   the node's list for that side, in order of depth. It is tested there
   (`0x10b24740`) against that leaf's zone's span buffer: what of the zone
@@ -312,7 +320,10 @@ then gives each surface its lights and each sprite its leaf's
   is behind the viewer gets no sprite at all.
 - **A sprite's rectangle:** its texture's size times the draw scale, round
   where its location lands, rounded up: a pixel is in when its upper left
-  corner is; none nearer than a unit.
+  corner is; none nearer than a unit, none whose right edge's pixel is the
+  frame's first column or before it, and none whose left edge's is the
+  frame's last column or past it (`0x10b23c85`-`0x10b23c9a`), so one at the
+  right edge with a column showing is not drawn.
 
 ## Sprites
 
@@ -934,9 +945,16 @@ palette's last entry never shows (`0x10b05d40`).
   light's object index; between, as it was. On the actor's first draw (no
   cache under it) every light's line is run, and one found open is lit full
   at once.
-- **The fade**, a byte each light keeps under the actor: a static light new
-  to the actor starts at 0 and unlit until its line is next run, a moving
-  one at 255. Each draw it steps by the viewport's time since its last frame
+- **The fade**, a byte each light keeps under the actor: a light new to the
+  actor starts by the list it is first found in -- the kept ones come first,
+  then the leaf's static lights, then its moving ones (`0x10b091a8`,
+  `0x10b09366`, `0x10b094c9`): one of the static lights at 0 and unlit until
+  its line is next run, one of the moving lights at 255 and so lit until its
+  line is run, whatever its own flags: a `bDynamicLight` light that is static and
+  in no light list of the model (15_Area51_Final's `Light809`, `Light221`,
+  `Light810`) lights an actor full from the first frame it reaches it
+  (DXEngine's `LightPickConsole`, `Scene=Late`). Each draw it steps by the
+  viewport's time since its last frame
   × 768, at most 255 (a third of a second): lit, up and odd, at most 255;
   else down and even, at least 0. A light lights as it fades, its colour ×
   the byte ÷ 255; up to 16 whose byte is over 1 are kept, strongest
