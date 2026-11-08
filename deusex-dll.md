@@ -171,7 +171,8 @@ and calls the function named here.
 Saves live under the ini's `SavePath`:
 
 - `Save\Current`: the maps of the mission in progress as the player left
-  them, and a `SaveInfo.<ext>` of its own.
+  them; a `SaveInfo.<ext>` only once a load has copied a slot's there, a save
+  writing its own into the slot alone (`0x1000f8e6`).
 - `Save\SaveNNNN` (a slot) and `Save\QuickSave` (the quick save): each a copy
   of `Current` plus the level saved in, and `SaveInfo.<ext>`.
 - A map's mission number is its name's two leading digits
@@ -192,11 +193,15 @@ turn:
   portal, `?loadonly` and no other option, so the player logs in with no
   name, and no travel info, and the level keeps its file's URL, `Index.dx`
   ([the level's URL](network.md#addresses)); with no `DeusExLevelInfo`, the
-  last URL as it is.
+  last URL as it is. A `MapName` that names no map (00_Intro's `Intro`,
+  99_Endgame1 to 3's) fails the load softly, the level playing on (the map
+  load's check, Engine.dll `0x1038c6ab`; `RestartNameConsole`).
 - **`?loadgame=N`** (-1 for the quick save; asked for as `loadgame=`, so a bare
   `?loadgame` is no load but a map's browse, the URL's map the default one,
-  `Index.dx`, when it names none): reads the slot's `SaveInfo`,
-  empties `Current`, copies the slot into it, and loads
+  `Index.dx`, when it names none): reads the slot's `SaveInfo` (`LoadSaveInfo`,
+  -2 `Current`'s), empties `Current`, copies into it the quick save when that
+  `SaveInfo`'s `DirectoryIndex` is -1, else `Save%04d` of the URL's number,
+  and loads
   `<SavePath>\Current\<MapName>.<ext>?load?loadonly?loadgame`, an absolute
   URL on the browse's, so the browse's player options after its own
   ([addresses](network.md#addresses)); the level keeps the URL the save
@@ -270,7 +275,8 @@ turn:
    task, "Saving" (`GWarn`), which shows nothing in the game. It deletes the
    level's brush tracker, if it has one, and frees the destroyed actors
    (`CleanupDestroyed(1)`, [destroyed actors](engine-dll.md#destroyed-actors)).
-3. It saves the level package as `<MapName>.<ext>`. With no
+3. It saves the level package as `<MapName>.<ext>`, the `DeusExLevelInfo`'s
+   `MapName` (`0x1000fe35`: 99_Endgame1's `Endgame1.dxs`). With no
    `DeusExLevelInfo` loaded at all (`GetDeusExLevelInfo`, below), nothing is
    saved: it logs `WARNING!  DeusExLevelInfo MISSING!`, and step 4 is
    skipped.
@@ -287,10 +293,13 @@ the `CarriedDecoration`. The player's goals, notes, conversation history and
 keys travel too, and it leaves them: the level is saved with them.
 
 **`SaveGame(slot, desc)`** (`0x1000ef10`), for the `SaveGame` native and the
-`SAVEGAME` console command, fills a `DeusExSaveInfo`:
+`SAVEGAME` console command, with no `DeusExLevelInfo` logs
+`WARNING!  DeusExLevelInfo MISSING!` and saves nothing, no slot made or
+copied and no frame painted (`0x1000f02d`-`0x1000f04d`; 99_Endgame4,
+`NoInfoSaveConsole`); else it fills a `DeusExSaveInfo`:
 
-- **Text:** the map name, and the description, or the level's `Title` when
-  none is given.
+- **Text:** the `DeusExLevelInfo`'s `MapName` (`0x1000f283`), and the
+  description, or the level's `Title` when none is given.
 - **Numbers:** the directory index, the player's incremented `saveCount`,
   its play time `saveTime`, the time stamp, and `bCheatsEnabled`.
 - **Place:** the level's `MissionLocation`.
@@ -331,7 +340,8 @@ menus. Each native's `exec` only unpacks its arguments.
   - saves (`GetSaveGamesDirectory`, `0x10017520`): the `Save*` directories.
 
   `GetDirCount` and `GetDirFilename(i)` (`0x10017e80`) read that list.
-- **Save info.** `GetSaveInfo(slot)` (`0x10017eb0`, -1 for the quick save) and
+- **Save info.** `GetSaveInfo(slot)` (`0x10017eb0`, -1 for the quick save, any
+  other number `Save%04d`, -2 too: `Save-002`, not `Current`) and
   `GetSaveInfoFromDirectoryIndex(i)` (`0x10018000`, the list's i-th directory)
   load that slot's `MyDeusExSaveInfo` and keep it. `DeleteSaveInfo(info)`
   (`0x10018170`) only lets go of one so kept: it releases its file and
@@ -344,7 +354,8 @@ menus. Each native's `exec` only unpacks its arguments.
 - **Other.** `GetTempSaveInfo` (`0x10018120`) makes one transient
   `DeusExSaveInfo` and keeps it. `GetSaveFreeSpace` (`0x10017770`): the save
   drive's free space in KB. `GetSaveDirectorySize(slot)` (`0x100179d0`): the
-  slot's files' total in KB.
+  slot's files' total in KB, each file's cut to a whole KB, its slot taken as
+  `GetSaveInfo`'s (`MissingSlotConsole`).
 
 `UDeusExSaveInfo::UpdateTimeStamp` (`0x10014df0`) stores the local time as
 the system gives it: the full year, the month (1 to 12), the day, hour,

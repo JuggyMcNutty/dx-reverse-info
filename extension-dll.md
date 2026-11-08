@@ -358,7 +358,11 @@ run in its tick, after its script's `Tick` and before its children
   - along its group's row list for left and right, its column list for up
     and down;
   - backward for left and up;
-  - round the ends (a tab group's default).
+  - round the ends when the focus's tab group wraps (`bWrapFocus`, which
+    `XTabGroupWindow::Init`, `0x10044d90`, sets and `XClipWindow::Init`,
+    `0x1000b320`, clears): at a clip window's ends the focus stays where it
+    is (`ClipWrapConsole`). `CheckFocusWindow` (`0x10050b80`) wraps whatever
+    the group.
 
   With none in the list, or no focus at all, it hands the move to
   `MoveTabGroup`. Both return the focus window, moved or not.
@@ -1193,11 +1197,18 @@ test.
   does any window in it, its clip rectangle lying within its parent's;
   one that shows a part is drawn whole, its children each by what of it
   shows.
-- **The order**, its GC pushed and given the canvas and the root's
+- **The order**, its GC pushed once and given the canvas and the root's
   multipliers: its background, unless its style is `DSTY_None` or it has
   none (`DrawIconPattern` over the whole window, tiled from its corner, or
   stretched over it with `bStretchBackground`); its `Draw`; each child in
-  turn from the bottom; then its `PostDraw`.
+  turn from the bottom; then its `PostDraw`, which takes the GC as `Draw`
+  left it (`GCStateConsole`).
+- **The GC** is the window's own (`XWindow::Init`, `0x1004bb30`), which its
+  `SetBackgroundStyle` and `SetBackgroundSmoothing` set (`0x1004d670`,
+  `0x1004d700`), so what the window draws takes its background's style and
+  smoothing, with a background texture or none: a button's texture
+  (`XButtonWindow::Draw`, `0x100082c0`) draws in the button's style, the
+  persona screens' translucent scroll arrows translucent (`BgStyleConsole`).
 
 ### Styles
 
@@ -1205,6 +1216,9 @@ test.
   stops drawing and leaves the rest. Any other style draws: `DSTY_Masked`,
   `DSTY_Translucent` or `DSTY_Modulated` with that one of the three, and
   `DSTY_Normal` with none.
+- **`EnableMasking`, `EnableTranslucency` and `EnableModulation`** make the
+  style again from the three (`XGC::GenerateStyle`, `0x1002aed0`), none
+  while drawing is off (`GCStateConsole`).
 - **A tile's flags** (`GeneratePolyFlags`, `0x1002af00`): two-sided, then
   masked, translucent and modulated as set, and no smoothing unless
   smoothing is on. Every tile goes to the canvas's `DrawTile`
@@ -1272,7 +1286,8 @@ corners, four edges and a centre.
 (`0x1002aa60`) draws an actor through the renderer, into the scene being
 drawn:
 
-- with the GC's style, the glow and unlit given, its draw scale multiplied,
+- with the GC's style, the glow and unlit given (left out, 1.0 and False:
+  `execDrawActor`, `0x1002cd80`), its draw scale multiplied,
   and with a skin every skin replaced, as if not hidden;
 - with `bConstrain`, through the scene's frame narrowed to where it meets
   the window's clip rectangle (the GC's multipliers taking it to the
@@ -1484,8 +1499,11 @@ What the game shows under a menu, by the player's UI background option
     a conversation's letterbox, and a computer, which holds the cameras'
     feeds, leaves rendering on.
   - Each piece left (above the viewport, below it, then left and right of
-    it) is drawn in the colour, unsmoothed: stretched from the background's
-    own size, or tiled from the piece's corner.
+    it) is drawn in the colour, smoothed as the root's GC has it
+    (`DrawRawBackground`, `0x1003c720`, leaves the smoothing as it is):
+    stretched from the background's own size, or tiled from the piece's
+    corner. `ShowSnapshot` turns the root's smoothing on before it sets the
+    snapshot, so the snapshot is filtered (`SnapSmoothConsole`).
 - **The game's use** (`DeusExRootWindow.ShowSnapshot`):
   - opening a menu with Snapshot takes a snapshot of the frame under it at
     the root's snapshot size (256 × 192), draws it stretched at half

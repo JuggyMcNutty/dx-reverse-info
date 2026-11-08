@@ -49,7 +49,10 @@ time it has played, when its lip sync is next worked out, the sample's mean
 
 ## Settings
 
-`[Galaxy.GalaxyAudioSubsystem]` in `DeusEx.ini`; the defaults are the game's.
+`[Galaxy.GalaxyAudioSubsystem]` in `DeusEx.ini`; the defaults are the game's
+`Default.ini`'s. The class sets none of its own (its `StaticConstructor`,
+`0x10604bb0`, and constructor, `0x10604a20`), so a key the ini lacks is 0,
+False or the first name: no voices, every volume 0, `OutputRate` 8000Hz.
 
 | Setting | Default | What it does |
 |---|---|---|
@@ -62,8 +65,8 @@ time it has played, when its lip sync is next worked out, the sample's mean
 | `UseReverb` | True | each zone's reverb ([reverb](#reverb)) |
 | `Use3dHardware` | False | A3D or EAX hardware, when found and `-no3dsound` is not given |
 | `LowSoundQuality` | False | read by the engine as each sound loads ([low sound quality](engine-dll.md#sounds)) |
-| `Latency` | 40 | the output's mix-ahead in milliseconds |
-| `OutputRate` | 44100Hz | the mixing rate, 8,000 to 48,000 Hz; the reverb's delays are whole samples of it |
+| `Latency` | 40 | the output's mix-ahead in milliseconds, held to 5–495 by the output library at a load (`glxStartOutput`, `0x10613350`) |
+| `OutputRate` | 44100Hz | the mixing rate, one of seven names, 8000Hz to 48000Hz, any other text keeping the rate it had (a byte enum, its `StaticConstructor` `0x10604be0`); `SetViewport` takes it from a table of seven unchecked (`0x10605e1e`-`0x10605e52`); the reverb's delays are whole samples of it |
 | `EffectsChannels` | 16 | the voices for sounds, 0 to 32; a change applies at once (below) |
 | `MusicVolume`, `SoundVolume`, `SpeechVolume` | 153, 204, 255 | the Sound options' sliders |
 | `AmbientFactor` | 0.7 | the scale of ambient sounds' volume |

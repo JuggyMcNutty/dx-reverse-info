@@ -87,7 +87,9 @@ their own.
 
 The Windows keys and the menu key are `Unknown5B`, `Unknown5C` and `Unknown5D`, Print Screen
 `IK_PrintScrn` (`VK_SNAPSHOT`), the keypad's operators `GreyStar`, `GreyPlus`, `GreyMinus`
-and `GreySlash`, its Enter `IK_Enter`. DirectInput is the mouse's alone
+and `GreySlash`, its Enter `IK_Enter`. No shipped ini sets `UseDirectInput`, so the stock
+game never starts DirectInput (`UWindowsClient::Init`'s gate, `0x11101d20`) and moves the
+mouse by the window's mouse moves from its middle (`0x11109b30`). DirectInput is the mouse's alone
 (`UWindowsViewport::diSetupKeyboardMouse`, `0x1110c700`: `GUID_SysMouse`, the mouse's data
 format, exclusive in the foreground): its buttons `LeftMouse`, `RightMouse` and
 `MiddleMouse`, its moves `MouseX` and `MouseY`, and its wheel's movement since the last

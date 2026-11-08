@@ -458,6 +458,17 @@ The text a property is read from and written to -- an ini's value, a `.int`
 file's, `SET` and `GET`, `SetPropertyText` and `GetPropertyText`, a travel's --
 by each property class's `ImportText` and `ExportTextItem`:
 
+- **A fixed array** (`UFixedArrayProperty`, `0x10167f50`, `0x10168050`):
+  written `(a,b,c)`, each element as its inner property writes one; read
+  after a `(`, the array zeroed first, one element after another, a `,`
+  stepped over after each, the last too, then a `)`: its own `(1,2,3)` sets
+  1, 2 and 3 and answers a failure, which `LoadConfig`, `SET`,
+  `SetPropertyText` and a travel pass over; `(1,2)` leaves the third 0. A
+  package, a save or a travel carries each element (`0x10167da0`). A map
+  (`UMapProperty`) writes and reads nothing (`0x10168f20`, `0x10168f30`), and
+  `SaveConfig` drops its key's lines (`0x10151540`). No stock package has
+  either kind, and Core.dll registers 35 classes, no pointer property and no
+  fixed-length string's among them.
 - **A struct** (`UStructProperty::ImportText`, `0x101698b0`):
   `(key=value,key[i]=value,...)`; a key up to 63 characters, an element index in
   brackets, `=` (`Illegal or missing key name`); the member found by name among

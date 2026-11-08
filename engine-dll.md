@@ -77,7 +77,10 @@ calls the listeners' script.
   (`XAISenderEvent`, one per actor raising it) and receivers
   (`XAIReceiverEvent`, one per actor listening), each list in arrival order.
   Every receiver is also in one ring the manager walks; a new one goes in before
-  the one the manager resumes at. All are objects in the level.
+  the one the frame's walk began at (`firstProcess`), which the frame's calls
+  leave in place, and the next walk starts at the receiver after the last that
+  had its turn (`0x1038478e`): after a full pass, one made during the calls
+  comes first (`EventRingConsole`). All are objects in the level.
 - **Deleting is deferred.** `SafeDelete` (`0x10383780`) marks an event;
   `CleanupEvents` (`0x10383d80`) unlinks and deletes the marked ones outside
   `AIProcess`. Event types last as long as the level.
@@ -123,11 +126,14 @@ of an event makes its sender; an actor being destroyed raises 0.
    within 400 units.
 3. **Scores.** A sender's score is its distance² + 1, or what the receiver's
    `scoreCallback(receiver, sender, score)` returns (`AIComputeScore`,
-   `0x10383f50`). A score ≤ 0 drops the sender. Past 256 senders a warning names
-   the event and the rest are ignored.
+   `0x10383f50`). A score ≤ 0, or not a number, drops the sender. From the 256th
+   sender a warning ("Greater than 255 objects emitting event") names the event
+   and the rest are ignored (`0x1038426f`).
 4. **The best sender:** by score, lowest (by default the nearest) first, the
    first the receiver senses (`ComputeSenseDetection`, `0x103837b0`). Its actor,
-   score and three senses go into the receiver's `XAIParams`.
+   score and three senses go into the receiver's `XAIParams`. Every turn sets the
+   receiver's best score and sender, 0 and None with nothing sensed
+   (`0x10384468`, `0x1038446b`); its state stays the last call's.
 5. **What a receiver senses** of a sender: each sense's highest number over the
    slots since the receiver's last turn (`0x10383bc0`), then:
    - **visibility:** a pawn's
@@ -146,8 +152,10 @@ of an event makes its sender; an actor being destroyed raises 0.
    pulses only (leaving it off).
 7. **The ring moves on.** Each sender's next slot starts at its current levels
    (0 for an actor being destroyed); a sender with nothing left in its 16 slots
-   is deleted. A receiver without a turn for 16 frames loses its oldest frame,
-   with a warning ("Event manager not cycling quickly enough").
+   is deleted. Then each live receiver whose next slot is the new current one,
+   one that had its turn this frame among them, is moved on a slot, and one line
+   warns of the events dropped ("Event manager not cycling quickly enough.  %d
+   events have been dropped.", `0x1038462d`-`0x10384681`).
 8. **The calls** (`0x10384980`): each receiver that had its turn and has a state
    gets its callback function (`AIEvent` when none) with the event's name, the
    state and the `XAIParams`.
@@ -187,7 +195,8 @@ fields, after their properties (none):
 - **`AICanSmell`** (`0x103c7880`): always 0; nothing smells in this build.
 - **`AIGetLightLevel(Location)`** (`0x1036b980`), the light at a location, 0..1:
   - from lights, 1 for a `bUnlit` actor; otherwise half the sum, over every
-    light (a light type, a brightness, not the actor itself) whose
+    light of the level's actors, walked at each call, before the level's first
+    frame too (a light type, a brightness, not the actor itself) whose
     `WorldLightRadius` takes in the location, of its luminance × (1 − distance /
     radius), a static light only with no wall or mover between;
   - plus 2 × the luminance of the ambient light of the actor's own zone;
@@ -274,7 +283,9 @@ fields, after their properties (none):
   the move's end (the delta + 2 along it). The hit is the first that blocks it.
   Passed over: with `bIgnorePawns`, a pawn or a decoration that is not `bStatic`
   (the decorations Deus Ex's, `0x103995f1`); with `bIgnoreBases`, what the actor
-  stands on; always, what stands on it.
+  stands on; always, what stands on it. A move of nothing leaves the hit as it
+  was (`0x1039915a`-`0x10399228`), so a walker into a wall takes two `HitWall`s
+  a step (`WallHitConsole`).
   - Unless `bNoFail`, a blocked move goes (length + 2) × hit time − 2 along the
     delta (2 short of the hit), or nowhere if that is ≤ 2; the hit's time
     becomes the distance gone / the delta's length (`0x103997c3`). So an actor
@@ -469,7 +480,9 @@ fields, after their properties (none):
     tick² / (2 × that friction, at least 0.025), less its part along the
     floor's normal.
 - **Walking** (`APawn::physWalking`, `0x103ca540`), the whole tick at once,
-  after the ladder check; in no zone, `FellOutOfWorld`:
+  after the ladder check; in no zone, `FellOutOfWorld`; its floor line a
+  `SingleLineCheck` with flags 23 (`0x1039aed0`), the first colliding hit
+  whether it blocks or not:
   - The speed (`calcVelocity`, below), the velocity and acceleration made level
     first. The move is the velocity, plus the zone's velocity × 25 × the tick
     for a player and for another pawn in a zone moving over 300, made level.
@@ -760,7 +773,8 @@ fields, after their properties (none):
     than mass rises to the surface and bobs there.
 - **Landing** (`processLanded(HitNormal, HitActor, remaining)`, `0x103cef60`),
   from `physFalling` when its move (each a `MoveActor`, above) meets a floor
-  (normal > 0.7). Any move of a decoration that hits a `PlayerPawn` first takes
+  (normal > 0.7). The walk after it goes on with the fall's count of steps
+  (`0x103d20ce`; `LandStepConsole`). Any move of a decoration that hits a `PlayerPawn` first takes
   one off its `numLandings` (not under 0). The remaining time is what the tick
   has not stepped yet, and the part of this step the move did not take; unless
   `bJustTeleported`, the velocity becomes the move's own, the distance gone
@@ -1358,7 +1372,12 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   brush with the mover its owner, set to its new place and rotation, asked
   about each actor in the hash's cells near it but a brush that is not
   static (so never another mover), that actor's box (radius, radius,
-  height) at its place, along the world's axes. Neither reads more of the
+  height) at its place, along the world's axes. A spawn's and a
+  `SetLocation`'s encroachment (`ULevel::CheckEncroachment`, `0x1039a350`)
+  asks the same check: the actor's own cylinder against the others', a mover
+  never asked (`0x10358ee6`-`0x10358f16`; `EncroachMoverConsole`). An actor's
+  cylinder's own point check (`UPrimitive::PointCheck`, `0x103d87e0`) gives a
+  normal out from its axis, which nothing reads. Neither reads more of the
   hit than whether there is one.
   - With no extent, the point goes down its side of each plane (on the plane
     counts as behind), the front of a solid boundary empty and its back
@@ -1458,7 +1477,11 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
     cut, selected and memorized bits), with `PF_SpecialLit` for a
     `bSpecialLit` mover, the mover its actor.
   - **The filing** (`0x1037a400`): the mover's polygons in the world through
-    its brush's coordinates, and the level's nodes sorted beforehand against
+    its brush's coordinates (`ABrush::BuildCoords`, `0x1032f9e0`, its
+    `PostScale` after the rotation, along the world's axes; `FPoly::Transform`,
+    `0x10387360`, turning each normal by them, a mirror's too, and reversing a
+    mirrored polygon's corners: `PostScaleConsole`, `MirrorMoverConsole`), and
+    the level's nodes sorted beforehand against
     the sphere round them (`PrecomputeSphereFilter`: a node the sphere lies
     wholly in front of or behind takes each polygon that way untested). Each
     polygon goes down from the root (`FilterPoly`, `0x1037c0c0`), one of 14
@@ -2467,7 +2490,15 @@ the texture unchanged. `UTexture::Unlock` (`0x103ed070`) does nothing.
 - **`AttachDecal`** (`execAttachDecal`, `0x103e7250`) attaches nothing and
   returns false while the client's `Decals` (the Display menu's Decals) is
   off or there is no client: the game's decals then destroy themselves as
-  they are made (`Decal.PostBeginPlay`).
+  they are made (`Decal.PostBeginPlay`). Otherwise its line meets the level's
+  model, the movers filed into it among its nodes, passing what is
+  shoot-through and not vis-blocking (flags 6), and refuses only an
+  auto-panned surface (`0x600`); on a mover's face it bases the decal on the
+  mover, keeping its rotation (`MoverDecalConsole`). The decal covers every
+  node of the surface hit (`0x103e9090`, `0x103e9340`), and a grid of
+  `MultiDecalLevel` squared lines, 4 for every stock decal, adds the surfaces
+  it finds; a `DecalDir` of zero takes a random direction from within the
+  unit sphere.
 - **`LevelInfo`'s clock** (`Year`, `Month`, `Day`, `DayOfWeek`, `Hour`,
   `Minute`, `Second`, `Millisecond` at `ALevelInfo+0x47c` to `0x49c`;
   `transient` in `Engine.u`; the script's one reader is `StatLog`'s date string)

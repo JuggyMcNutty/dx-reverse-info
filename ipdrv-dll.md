@@ -66,7 +66,9 @@ byte), its port a plain number. A new link is set up by its C++ constructor over
 defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
 
 - **`InternetLink`:**
-  - `Resolve` looks a host name up on a thread of its own and raises `Resolved` or
+  - `Resolve` takes a dotted address at once, `Resolved` raised within the call,
+    and fails `255.255.255.255` at once (`0x10702e03`, `0x10702ebd`); any other
+    name it looks up on a thread of its own and raises `Resolved` or
     `ResolveFailed` from the actor's tick (`0x10702d70`, `0x107026a0`), the port 0.
   - `IpAddrToString` writes `a.b.c.d:port`; `StringToIpAddr` takes the address alone (with
     a port it fails), the port 0.
@@ -109,8 +111,12 @@ defaults: text link mode, receive by events, no socket, -1 (`0x10702480`).
   - in any state, a connection that reads as ended (a peek of one byte finding nothing, or
     an error other than would-block) is closed, the link goes back to initialized unless it
     is still listening, and `Closed` is raised.
-- **`UdpLink`:** `BindPort` makes the socket (broadcast on, non-blocking) and binds as
-  `TcpLink`'s does. `SendText` sends the text as it is, no line end in any mode, and answers
+- **`UdpLink`:** `BindPort` makes the socket, broadcast on, binds at the local bind
+  address as `TcpLink`'s does (`0x1070c8d4`, `MULTIHOME=`'s or `-PRIMARYNET`'s), and only
+  then sets it non-blocking (`0x1070c931`); an ephemeral port leaves `Port` 0. Any failure
+  logs, closes the socket and keeps none (`0x1070c9a2`-`0x1070c9b1`): a second `BindPort`
+  answers 0, "already bound" (`0x1070c88b`), `SendText` true with nothing sent
+  (`0x1070cb5d`), the tick and `ReadText` reading nothing (`UdpRebindConsole`). `SendText` sends the text as it is, no line end in any mode, and answers
   false only when nothing went. `SendBinary`, `ReadText`, `ReadBinary`. Its tick
   (`0x1070cee0`), by events, reads one datagram a tick, up to 4,095 bytes, and raises it
   whole as `ReceivedText`, `ReceivedLine` or `ReceivedBinary` with the sender's address; by

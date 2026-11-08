@@ -884,7 +884,9 @@ palette's last entry never shows (`0x10b05d40`).
   the actor's: a kept light that no longer reaches it is dropped at once.
   Its strength at the actor's centre is `(1 − distance / radius) ×
   LightBrightness`, the byte, in 1024ths. A cylinder light counts with
-  three quarters of its brightness and radius.
+  three quarters of its brightness and radius, its reach tested at the
+  whole radius: one between the two stays, its strength below 0, and fades
+  out. A light that is off, or of no brightness, stays a candidate too.
   The leaf's volumetric lights (`LeafVolumetricLighting`, the fog map's
   list) are the actor's fog, every one listed while the light infos have
   room (256 in all).
@@ -893,8 +895,9 @@ palette's last entry never shows (`0x10b05d40`).
   are, none under an eighth of the first one lit. The actor's own light,
   among them, counts as any other, its place among the 8 and its eighth,
   but lights nothing of it: `AddLight` (`0x10b08b30`) takes no light that is
-  the actor lit. So a lamp or a sword that glows is lit only by lights an
-  eighth as strong at its centre as its own.
+  the actor lit, nor one that is off. So a lamp or a sword that glows is lit
+  only by lights an eighth as strong at its centre as its own, and a lamp
+  switched off beside an actor still keeps a weaker light from it.
 - **Shadowed or not:** a `bMovable` light that is not static is lit. Another
   is lit as a line from it to the actor through the level's BSP found it,
   the line run again every 16 frames, by the viewport's frame count and the
@@ -931,7 +934,12 @@ palette's last entry never shows (`0x10b05d40`).
   DXEngine's `GlowConsole`, run on the original). Each channel is at most
   1. An unlit draw (`PF_Unlit`, the actor's or a material's) is
   `AmbientGlow` / 256 + `ScaleGlow` / 2, held to 0-1: mid-grey for most
-  (`0x10b0f6e0`).
+  (`0x10b0f6e0`), the mesh drawn's own, a held weapon's its own though the
+  holder is its light sink (`DrawActorSprite`, `0x10b25080`;
+  `HeldGlowConsole`). An unlit face writes it into each of its corners'
+  light as the faces are drawn (`0x10b0bab0`), so a lit face drawn after it
+  takes it at the corners they share: the LAM's, the NanoKey's, the security
+  camera's.
 - **Fog** (`Fog`, `0x10b02c00`), for a draw that `SetupForActor` flags
   `PF_RenderFog`, the actor's leaf having volumetric lights. One of them
   that also lights the actor stays a light; the rest are the fog's alone.

@@ -189,7 +189,8 @@ With no channel free, the download fails with `ChAllocate`.
   have any, `Client requested file: Allowed`; a client's refuses a server); the
   file is opened, logged `Sending '<file>'` (`NetSend`);
 - anything else is logged `Received invalid file request` (`NetInvalid`) and
-  answered with an empty bunch that closes the channel;
+  answered with an empty, unreliable bunch that closes the channel
+  (`0x10400464`);
 - then each tick (`UFileChannel::Tick`, `0x10400780`), while the channel's
   reliable buffer has room (the rate left out: `IsNetReady(1)`), a reliable
   bunch of as much of the file as the packet has room for (`MaxSendBytes`: the
@@ -298,9 +299,14 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   connection takes `ConfiguredLanSpeed`, the next one, for `?LAN`).
 - **The connection's** (`UNetConnection::Exec`, `0x10401c50`): `GETPING`
   answers a float of the connection times 1000 as an int and `GETLOSS`
-  another float as an int -- by UT's `UnNet.h` layout its best lag of the
+  another float as an int, each after a blank (`" %i"`), which
+  `DeusExServerPing` strips -- by UT's `UnNet.h` layout its best lag of the
   stats period and its incoming packet loss in percent -- then
-  `UPlayer::Exec`.
+  `UPlayer::Exec`. A pawn's `ConsoleCommand` goes to its own player
+  (`APlayerPawn::execConsoleCommand`, `0x103ba200`): on a server a remote
+  player's connection answers so, which `PlayerReplicationInfo.Timer` takes
+  for its ping; a local player's viewport answers `GETPING` with `0` and
+  takes no `GETLOSS` (`UViewport::Exec`, `0x10373aee`; `WordsServer`).
 
 ## Server travel
 
@@ -542,8 +548,11 @@ its heritage list, its one generation its counts.
 - **An object:** a bit; 1 and a channel number for a dynamic actor (its actor
   channel on this connection; 0 for None or an actor without one), 0 and the
   object's number otherwise (`UPackageMapLevel::SerializeObject`, `0x104089f0`);
-  an object by number is loaded if it is not (`IndexToObject` with Load).
-- **A name:** its number, up to the count of names; the count is None.
+  an object by number is loaded if it is not (`IndexToObject` with Load). One
+  the map has not goes as channel 511 and counts as sent, so goes once.
+- **A name:** its number, up to the count of names; the count is None. One the
+  map has not goes as -1 (Core.dll `0x1012bf30`), which the other side reads as
+  another name.
 - **A class's fields:** numbered on from its parent class's: its own replicated
   properties and its net functions that override none, in the order of its
   package's exports (`0x1012c160`).
@@ -561,7 +570,7 @@ its heritage list, its one generation its counts.
 | vector | each coordinate rounded, in as many bits as the largest needs (given first, 4 bits), offset to be positive |
 | rotator | each component's top byte, after a bit for whether it is not zero |
 | plane | four 16-bit numbers, X, Y, Z, W, each rounded |
-| any other struct | member by member, its own members first, then those of the struct it extends, each one the package map numbers (`UStructProperty::NetSerializeItem`, Core.dll `0x101691e0`) |
+| any other struct | member by member, its own members first, then those of the struct it extends, each one the package map numbers (`UStructProperty::NetSerializeItem`, Core.dll `0x101691e0`); a static array member's element i at its offset plus i times its count, past the member (`0x10169549`-`0x10169566`), which no replicated stock struct has |
 
 ## Replication
 
@@ -698,9 +707,12 @@ is a player pawn with a player -- the local player's own -- goes through the sam
 `ReplicateActor`. Its own pawn is owned there (`bNetOwner`: its top owner's
 player a viewport), and the statements are evaluated as the client has the
 roles, so what goes is what a statement sends from a client: the native lists
-send nothing (each returns at once unless its actor's `Role` is the authority:
-`AActor`'s `0x103618c0`, `APawn`'s `0x10363bc0`, `APlayerPawn`'s `0x103649d0`),
-the script classes' own statements their values -- Deus Ex's `FrobTarget`,
+send nothing but `APlayerPawn`'s (`0x103649d0`): from a client its `Password`
+when it differs in more than case (`0x103616e0`), `bReadyToPlay` and each of
+`AdditionalViews[0..2]`, None for one that cannot go (`0x10364a24`,
+`0x10364f9e`-`0x10365105`; `ViewsServer`); `AActor`'s returns at once
+(`0x103618c0`), `APawn`'s client branch (`0x103645a0`) waits on `bNetInitial`,
+never a client's, or a demo; the script classes' own statements their values -- Deus Ex's `FrobTarget`,
 replicated `if (Role < ROLE_Authority)`, which the server's `ParseRightClick`
 picks up. A closed connection there has the client browse `?failed`. Each side
 keeps a copy of what the other last got (`SetChannelActor`, `0x103fd620`, on
@@ -813,9 +825,10 @@ others differ:
   in the first empty one, whether it is there already or not, and
   `RemoveAdditionalView` (`0x103ba4c0`) empties the first that holds it and
   moves those after it down a place, the last left as it was. The windows are
-  the client's, and a client's pawn sends none of its `PlayerPawn` values
-  ([replication](#replication), a client replicates too), so in the stock
-  game no server's copy of a pawn holds one.
+  the client's, and a client's pawn sends its `AdditionalViews`
+  ([replication](#replication), a client replicates too), which the server's
+  `ServerTickClient` (`0x103a3500`) takes for viewers when it picks what is
+  relevant: a drone's or a security camera's view gets what is round it.
 - **The client's classes checked** (the game's script, `DeusEx.u`): a joined
   player's pawn is called to check its console's class and its root window's
   (`VerifyConsole(Engine.Console)`, `VerifyRootWindow(DeusEx.DeusExRootWindow)`,
