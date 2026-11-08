@@ -138,7 +138,9 @@ Its only users are `DeusExPlayer`'s debug console commands.
   The game's `WinMain` clears `GIsEditor` and sets `GIsServer`, and
   `GIsClient` but with `-server` (DeusEx.exe `0x10908d79`-`0x10908dc0`), so
   the game's context is the client's and the server's, a dedicated server's
-  the server's alone. A reference to any other export reads as None. The
+  the server's alone. A reference to any other export reads as None, and so
+  does one to an export of a class named `Camera` (the name 162, the
+  editor's viewport actor), which is never made whatever its flags. The
   editor's alone are not made: each map's brushes (flags `0x340000`, 74,485
   in the 88 maps), their models and some of their polys, its editor cameras
   and script text, and each class's `ScriptText` in the `.u` files; a level's
@@ -179,11 +181,13 @@ Its only users are `DeusExPlayer`'s debug console commands.
   characters when one before the terminator is past 0xFF, else positive and
   a byte each (Latin-1); on a load, the count's sign says which, and a string
   of the terminator alone is made empty. So a note typed past Latin-1 is
-  saved wide and every other string of a save as 8-bit.
-  A name of a package's table is such a string, then its flags
-  (`FNameEntry`'s `<<`, `0x1014e260`): copied whole into the entry, 16-bit,
-  and the name made of it (`AllocateNameEntry`, `0x1014e430`), so a name
-  keeps every character of a 16-bit one as a note does.
+  saved wide and every other string of a save as 8-bit. It tests no version:
+  a package of any version holds its strings so.
+  A name of a package's table is such a string from version 64 on, below it
+  a byte a character to a NUL, then its flags (`FNameEntry`'s `<<`,
+  `0x1014e260`): copied whole into the entry, 16-bit, and the name made of it
+  (`AllocateNameEntry`, `0x1014e430`), so a name keeps every character of a
+  16-bit one as a note does.
 - **A package's file** (`appFindPackageFile`, `0x10148ec0`). A name ending in
   `.dll` finds none. The search:
   1. the name as given, if a file of it exists in the working directory
@@ -208,17 +212,40 @@ Its only users are `DeusExPlayer`'s debug console commands.
     file of the same name there fails the join as a version mismatch
     ([downloads](network.md#downloads)).
 - **An import is checked as its package opens.** The linker's constructor
-  (`0x10160000`) runs `Verify` (`0x10160d80`) unless `LOAD_NoVerify`, which
-  looks up every import, used or not (`VerifyImport`, `0x10160fd0`): one its
-  package lacks is found in memory only as a public, native, transient class
-  (the C++ ones), is None without a word when its class is
-  `CLASS_SafeReplace`'s (a texture, palette, sound or song, or a subclass),
-  and else throws `FailedImport` with its class and full name
-  (`FailedImportPrivate` for a private export), the linker dropped: so a
-  map's load (`LoadMap`, flags `0x1A`), a join's packages and a save's.
+  (`0x10160000`), its tables read and itself listed among the linkers, runs
+  `Verify` (`0x10160d80`) unless `LOAD_NoVerify`, which looks up every
+  import, used or not, each once, its outer first (`VerifyImport`,
+  `0x10160fd0`). A package's import opens that package's linker
+  (`LOAD_Throw`): one not there throws `PackageNotFound`, but for `UnrealI`,
+  whose place `UnrealShare` takes (`0x101610cd`). Any other is looked for in
+  the linker of its outermost import: the export of its name whose class has
+  exactly the import's class name and class package (an `UnrealI` class
+  package taking `UnrealShare`'s too), whose outer is the export the
+  import's own outer found or none -- a top-level export standing for any
+  group --, through the linker's export hash, so the table's last such
+  export first; a `Mesh` is looked for again as a `LodMesh`, the import's
+  class renamed so, a `LodMesh` found taking the place of a `Mesh`. A match
+  that is not public throws
+  `FailedImportPrivate`. With none, the import is found in memory only as a
+  public, native, transient object right in its outermost package (the C++
+  classes); one right in `UnrealI` is looked for again in `UnrealShare`
+  (`0x10161669`); one whose class is in memory with `CLASS_SafeReplace` (a
+  texture, palette, sound or song, or a subclass: Engine.dll's C++ `Sound`,
+  `Music`, `Texture` and `Palette` take the flag in their classes'
+  constructors) is None without a word; any other throws `FailedImport` with
+  its class and full name, the linker dropped: so a map's load (`LoadMap`,
+  flags `0x1A`), a join's packages and a save's.
   DXEngine's harness's `LocalMapConsole` on 02_NYC_Bar with `Mission02`
   renamed (`badpackage.py --rename`): "Can't find Class in file 'Class
-  DeusEx.Mission0X'", the start on Dx.Dx.
+  DeusEx.Mission0X'", the start on Dx.Dx; with a sound's name renamed
+  (`Sink`) or a texture's (`ClenMedmWalnt_A`), the bar. A level's save in
+  `Current` written while a third-person conversation went on holds the
+  conversation's camera, which ConSys makes in package `DeusEx` at run time
+  ([ConSys](consys-dll.md#small)), as an import its package's file lacks, so
+  the level is never entered again, the travel back failing with "Can't find
+  ConCamera in file 'ConCamera DeusEx.ConCamera0'" (DXEngine's harness's
+  `ConSaveConsole`: Battery Park left 3 s in, during its first conversation,
+  and entered again from the street).
 - **A package's generations.** `GetPackageLinker` (`0x10154530`), given a
   GUID, as a join's load is, compares it (`0x101548c3`-`0x101548e8`), then
   refuses a linker whose summary holds more than one generation
@@ -487,9 +514,15 @@ by each property class's `ImportText` and `ExportTextItem`:
   stepped over after each, the last too, then a `)`: its own `(1,2,3)` sets
   1, 2 and 3 and answers a failure, which `LoadConfig`, `SET`,
   `SetPropertyText` and a travel pass over; `(1,2)` leaves the third 0. A
-  package, a save or a travel carries each element (`0x10167da0`). A map
-  (`UMapProperty`) writes and reads nothing (`0x10168f20`, `0x10168f30`), and
-  `SaveConfig` drops its key's lines (`0x10151540`). No stock package has
+  package, a save or a travel carries each element (`0x10167da0`), a
+  struct's or a dynamic array's too; its `Link` (`0x10167c60`) loads and
+  links the inner first, the array's size the count times the inner's; a
+  copy takes each element by the inner (`0x10168290`), and replication sends
+  and reads nothing of one (`0x10167de0`). A map (`UMapProperty`) writes and
+  reads nothing (`0x10168f20`, `0x10168f30`), nor does its serial form
+  (`0x10168d90`), its replication (`0x10168da0`) or `LoadConfig`
+  (`0x10150d60`, its key's lines gathered and set nowhere), and `SaveConfig`
+  drops its key's lines (`0x10151540`). No stock package has
   either kind, and Core.dll registers 35 classes, no pointer property and no
   fixed-length string's among them.
 - **A struct** (`UStructProperty::ImportText`, `0x101698b0`):
@@ -655,7 +688,9 @@ How the original runs UnrealScript.
   | 0x70 and up | the native of that number |
 
 - **Operands follow their token:** a variable's property, a constant's value,
-  a jump's offset, a call's function or name.
+  a jump's offset, a call's function or name. The code is read from a
+  package so at any version (`UStruct::SerializeExpr`, `0x101289c0`, testing
+  none): a `Return` its expression, a `LetBool` its two.
 - **A string constant** (`execStringConst`, `0x10130890`) is 8-bit text, each
   byte widened to a character (`appFromAnsi`, `0x1014a0c0`, into a ring of
   256 buffers of 1,024, `0x10145c60`), at most 1,023 of them; a Unicode one

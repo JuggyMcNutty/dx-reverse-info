@@ -2388,9 +2388,19 @@ and it stays on the screen until the next frame is drawn.
   gives `GWarn` Core's `BinaryFormat` ("The file '<file>' contains
   unrecognizable data") for a tag not the package's and fails with
   `Aborted`; one older than version 60 asks `OldVersion` (`GWarn`'s yes or
-  no), no failing with `Aborted`. Each failure is logged as a warning,
-  Core's `FailedLoad` ("Failed to load '<map>': <error>",
-  `UObject::SafeLoadError`, `0x10154430`). A file cut short within its
+  no), no failing with `Aborted`, and one newer than the game's 68 is read
+  as it is, no test above (`LocalMapConsole` on a version-100 copy of
+  02_NYC_Bar: the bar). The linker checks each import as it opens
+  ([`Core.dll`](core-dll.md#packages-and-linkers)): a package an import
+  names, or one that package imports, that is not on the paths fails the
+  load with Core's `PackageNotFound` ("Can't find file for package
+  '<package>'"); and a package with no `MyLevel` of class `Level` fails
+  with `ObjectNotFound` ("Failed to find object 'Level None.MyLevel'").
+  Each failure is logged as a warning, Core's `FailedLoad` ("Failed to
+  load '<map>': <error>", `UObject::SafeLoadError`, `0x10154430`), for each
+  load it passed through, the innermost first: a missing import's package,
+  each package between it and the map, the map, then `Level None.MyLevel`
+  (a missing `MyLevel`'s line alone). A file cut short within its
   header or tables is read past its end by the linker's reader, made with
   `GError`, which stops the game ("ReadFile beyond EOF"). Then the
   game engine's `NotifyLevelChange` sends the first viewport's console its
@@ -2557,6 +2567,9 @@ harness's `OldVerConsole` loads `vergen.py`'s version-62 copies of
 
 ## Small
 
+- **A mesh of package version 65** holds a float after its `CurVertex`
+  that `UMesh::Serialize` (`0x103a63b0`) reads into nothing, its `TextureLOD`
+  left empty; from 66 the `TextureLOD` array.
 - **A rotator's turn** is the sine table's wherever the engine turns by one,
   as the scripts' conversions are ([`Core.dll`](core-dll.md#the-natives)):
   through Core's `FCoords` turned by a rotator (`*=`, `/=`), as the scene's

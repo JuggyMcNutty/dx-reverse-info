@@ -313,8 +313,9 @@ and, with `SaveCurrentLevel`, the level.
 
 **The others:**
 
-- **`CopySaveGameFiles(from, to)`** (`0x10010000`): every file of one
-  directory into another.
+- **`CopySaveGameFiles(from, to)`** (`0x10010000`): the files
+  `<from>\*.<ext>` finds, the save extension's, into `to`, which it makes
+  (the folder alone, not its tree): a `.old` or any other file stays.
 - **`DeleteSaveGameFiles(dir)`** (`0x10010360`): every file of `dir`, or of
   `Current` for `""`, after resetting the level's loaders.
 - **`DeleteGame(slot)`** (`0x10010710`): removes `Save%04d` with its
@@ -342,7 +343,11 @@ and, with `SaveCurrentLevel`, the level.
 menus. Each native's `exec` only unpacks its arguments.
 
 - **Listing.** `GetGameDirectory` (`0x100171e0`) lists by `SetDirType`:
-  - maps (`GetMapsDirectory`, `0x10017200`): the map files on every path;
+  - maps (`GetMapsDirectory`, `0x10017200`): the map files of each path
+    whose text holds `*.<map extension>` (`appStrstr`), in the paths'
+    order, each folder's as `FindFiles` gives them, a name listed already,
+    in any case (`appStricmp`), passed over: a map in two folders, or a
+    folder named twice, is listed once, the first path's;
   - saves (`GetSaveGamesDirectory`, `0x10017520`): the `Save*` directories.
 
   `GetDirCount` and `GetDirFilename(i)` (`0x10017e80`) read that list.
