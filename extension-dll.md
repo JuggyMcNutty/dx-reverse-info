@@ -260,7 +260,10 @@ are `exec` exports.
   `Y` and `defaultCursorColor`. A hot spot under 0 or not under the texture's
   size becomes half the size less one. The shadow is drawn first with style
   4 (modulated), then the cursor with style 2 (masked) in the colour, both at
-  the mouse less the hot spot. `SetDefaultCursor`'s native sets all five: an
+  the mouse less the hot spot, through the root's own GC as its setters
+  left it, drawing turned on (`0x1003aab0`): once `ShowSnapshot`'s
+  `SetBackgroundSmoothing` has turned the root's smoothing on, the pointer
+  is smoothed too. `SetDefaultCursor`'s native sets all five: an
   omitted shadow is none, hot spots −1, the colour white.
   `bCursorVisible`:
   `Init` sets that as the root starts; `ShowCursor` clears and sets it. A
@@ -562,7 +565,10 @@ yaw, its pitch left out.
   defaults (`XGC::XGC`, `0x10026ad0`: left, top, word wrap on), where a text
   window's `Draw` (`0x10046930`) sets the window's alignments and wrap first
   (DXEngine's `UndoConsole`: 0, 0, word wrap on, for a window centred and
-  not wrapped).
+  not wrapped). The rows come after it, each through `XGC::DrawTextLine`
+  (`0x10028470`) with the GC as the script left it, none with its drawing
+  off, a row the font's height of the last layout (`ComputeLineHeight`)
+  and the vertical spacing below the last whatever its characters.
 - **An edit field** (`XEditWindow::Init`, `0x1001cea0`): from the top left,
   3 in from the sides; editable and on several lines, word wrapped; a white
   insertion point, grey selection and black text in it (`inverseColor`,
@@ -625,8 +631,11 @@ yaw, its pitch left out.
     the margins, each row by the alignments, a row at least 4 wide; a
     selected stretch with the selection texture behind it, from half the
     vertical spacing above the row and a row and its spacing tall, its text
-    in the inverse colour; then the insertion point while it is blinked on.
-    Otherwise as a large text window.
+    in the inverse colour; then the insertion point while it is blinked on,
+    masked in the insertion colour. Its rows draw nothing while the GC's
+    drawing is off, the insertion point all the same, its `SetStyle`
+    turning drawing on (DXEngine's `EditDrawOffConsole`). Otherwise as a
+    large text window.
   - **The mouse** (`0x10021570`, `0x100216b0`, `0x10021760`), after the
     script's: the left button puts the insertion point where it is pressed,
     dragging the selection with Shift held, and starts a drag, of whole
