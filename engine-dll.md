@@ -2022,6 +2022,32 @@ own nodes (a Liberty Island save: 209 of the level's 13,212 flagged in front,
   failure logs "Open failed: " or "Start failed: " and the reason. There is no
   cheat check: this is what a line forwarded to the running game runs ([the
   receiver](launch-flow.md#1-single-instance-forwarding-0x10908a300x10908cd1)).
+- **The game engine's other words**, after Deus Ex's `SAVEGAME` and
+  `DELETEGAME` (`DDeusExGameEngine::Exec`, DeusEx.dll `0x1000ed70`), in
+  `UGameEngine::Exec`'s order: `SERVERTRAVEL`, the level's `ServerTravel`
+  with the rest of the line, whatever it is, the engine being a server always
+  (`0x1038a22c`); on a server with no client `SAY`, the level's
+  `BroadcastMessage` of the rest with a beep (`0x1038a392`); `DISCONNECT` and
+  `RECONNECT`, browsed at once with no viewport too; `GETCURRENTTICKRATE`,
+  the frames a second the main loop last counted, and `GETMAXTICKRATE`, each
+  `%f` (`0x1038a623`, `0x1038a63a`); `GSPYLITE`, `GSpyLite.exe` launched;
+  `CANCEL`; then the level's words (`ULevel::Exec`, below), the game's exec
+  functions with no executor, and the engine's (`UEngine::Exec`,
+  `0x10380ee0`): the system's, the objects' ([`Core.dll`](core-dll.md)), the
+  memory cache's `DUMPCACHE` (a line an item, Core.dll `0x10125500`), the
+  executable's ([the launcher's](launch-flow.md)), the client's `BRIGHTNESS`,
+  the audio's (Galaxy's `CDTRACK`, `CDVOLUME`, `MUSICORDER`, `RECORDSOUND`,
+  `ENDRECORDSOUND` and `ASTAT`), the renderer's
+  ([`STAT` and the rest](render-dll.md#mesh-detail)), `FLUSH`, and
+  `CRACKURL`: the rest of the line read as an absolute URL, its parts listed
+  a line each, `BAD URL` for one that does not read; one that reads faults
+  at its `String` line, the string's first character pushed for a `%s`
+  (`0x1038111d`-`0x10381122`). An actor's `ConsoleCommand` runs here
+  (`AActor::execConsoleCommand`, `0x103ded00`), none of the viewport's, the
+  render device's or the window's words; a pawn's on its own player
+  ([the viewport's](#a-keys-binding), or a remote player's
+  [connection](network.md#joining)), nothing for a pawn with none
+  (`APlayerPawn::execConsoleCommand`, `0x103ba200`).
 
 - **A client's travel** (`UGameEngine::SetClientTravel`, `0x1038fa10`): the
   player's viewport keeps the URL, its type and whether items travel; then
@@ -2097,7 +2123,13 @@ depends on what the key did:
   and one, through `ClientMessage`. No PRECACHING frame follows it, nor a
   console's `FLUSH`, run with `UsePrecache` on: only a map's load shows one
   ([`D3DDrv.dll`](d3ddrv-dll.md#the-rest-of-a-frame)).
-- **`UPlayer::Exec`** (`0x103d7ed0`), the first taker wins: the level's `Exec`
+- **`UPlayer::Exec`** (`0x103d7ed0`), on the player's `Actor`, nothing
+  taken without one -- a remote player's set as the login spawns its pawn,
+  before its `Possess`, so a server runs what the new player's root window
+  sends as it is made (DXEngine's harness's `WordsServer` with
+  `CapWordsMatch`: the game's `KeyName` run 767 times at a join, the root
+  window's three loops over the key names) --, the first taker wins: the
+  level's `Exec`
   (`ULevel::Exec`, `0x1039dfe0`: its net driver's words, `SOCKETS` among them,
   then its demo driver's, `DEMOREC`, `DEMOPLAY` and `STOPDEMO` while a demo
   runs (`UDemoRecDriver::Exec`, `0x104083c0`), then its own `DEMOREC` and

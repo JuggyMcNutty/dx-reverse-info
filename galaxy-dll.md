@@ -302,7 +302,7 @@ timer:
     table at `0x1064d338`): a voice whose sides sum to under 16 of 32,767
     is silent, and the rest lose up to 9.5 dB at the lowest levels, 0.3 dB
     near full;
-  - a surround voice's right side added, not negated;
+  - a surround voice's right side added, not negated, the sounds' voices' too;
   - a 16-bit sample read at its whole frame, never interpolated, an 8-bit
     one through the cosine table when `UseFilter` asks and the voice steps
     under a frame;
@@ -408,7 +408,11 @@ animates.
 - **A song that will not load** is a line in the log, Galaxy's `%s failed:
   %i` with the call and its code, `glxLoadMusic(&Mem, GLX_LOADFROMMEMORY )
   failed: <code>` (`0x1060a77e`-`0x1060a7a2`, event `0x2ff`), and the change
-  goes on, no song playing.
+  goes on, no song playing. Its loaders know their formats by the data's
+  signature, the tracker formats and MIDI (`0x10618be0`); data none of them
+  takes, an Ogg, MP3 or WAV song among it, falls to the MOD loader, the
+  last, which fails with 15, finding no MOD signature at byte 1,080
+  (`0x106252f0`).
 - **Where it is.** While no transition is waiting, each frame writes the
   order playing back into the player's `SongSection`. Deus Ex's dynamic music
   keeps it to "save our place in the ambient track"
@@ -513,6 +517,31 @@ animates.
     the voices are silenced and the jump flagged all the same: the song goes
     on at the order after the count as the row ends, a song just loaded at
     order 0.
+  - **Its vibrato** (H, K's and a T under 0x20, the player's commands 4 and
+    6) takes each nibble of its parameter that is not 0 as the channel's
+    speed and depth on the row's first tick and plays none there, the row
+    clearing it; on each tick after, the waveform's place steps on by the
+    speed, 64 steps a cycle, and the voice's pitch (in 256ths of a semitone,
+    larger lower) is raised by 32 times the depth times the step's value
+    over 256, its rate taking 64ths (`0x10616eb0`, `0x10614920`,
+    `0x10615660`). The waveform is ProTracker's sine table of 255
+    (`0x1063daa0`; by E4x a ramp from 255 down to -255 or a square of 255,
+    a waveform of 3 and up reading the table after them): the depth over 8
+    of a semitone at the top, twice IT's with its old effects off, the pitch
+    going down first. A struck note takes its instrument's waveform, the
+    sine the IT loader leaves there, from its first step. The tremolo (R) is
+    made alike, its depth twice IT's.
+  - **E9y** (Q): on each tick of the row that is a multiple of y, the row's
+    first among them, the voice's place goes back to its sample's start and
+    nothing else changes; a voice that has ended stays silent, its playing
+    flag cleared at its end. A note struck on the row plays from its start
+    anyway, so a row with a note and a y dividing the speed sounds as IT's;
+    a row with none retriggers on its first tick too, where IT's count,
+    carried over the rows, does not: rows of Q04 with no note at speed 6
+    retrigger 4 and 2 ticks apart in turn, IT's every 4.
+  - **ECx** (SCx): on each tick past x the note's volume 0, the note playing
+    on, so a later volume brings it back; ECF at a speed over 16 from tick
+    16.
 
 ## Reverb
 

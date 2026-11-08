@@ -235,8 +235,16 @@ the world: no wall hides any part of it.
 
 ## Which actors are drawn
 
-`SetupDynamics` goes through every actor of the level, each frame. It passes
-over one that is:
+`SetupDynamics` goes through every actor of the level, each frame -- none
+while the viewer's `ShowFlags` lacks `SHOW_Actors` (8), which `HIDEACTORS`
+clears and `SHOWACTORS` sets (`Engine.dll` `UViewport::Exec`,
+`0x10373a60`), nor on a level whose BSP has no nodes
+(`0x10b22dbc`-`0x10b22dd7`). Then no actor gets a sprite, no mover is filed
+again, its fragments drawn where the tracker last filed them, and no light
+becomes one of the frame's dynamic lights, so no moving light lights a
+surface or the fog: DXEngine's harness's `ViewWordsConsole`, Liberty
+Island's statue, bottles and bin gone from the frame after `HIDEACTORS`.
+It passes over one that is:
 
 - hidden (`bHidden`; `bHiddenEd` in the editor);
 - the actor the view is from, in first person in the main frame: the
@@ -538,7 +546,28 @@ RENDER` none):
 |---|---|
 | `MLOD` | the shape LOD |
 | `MLMODE` | the mode: 0 the fixed factor (`MLFIX`) whatever the distance; 1 normal; 2 no morphing; 3 the field of view ignored; 4 both |
-| `TLOD` | a texture LOD distance |
+| `TLOD` | a texture LOD distance, 3 from `Init`, which nothing draws by |
+
+Each answers on the command's output: alone, its value, `%f` (`MLMODE`'s
+`%i`); with a number past the word -- `MLOD` and `TLOD` over 0, `MLMODE` and
+`MLFIX` 0 or more set, any other kept -- `Global mesh shape LOD distance %f`,
+`Global mesh texture LOD distance %f`, `Shape LOD draw mode %i` and `Shape
+LOD scaling fixed at %f`. `REND LEAK` and `REND T` toggle two debug options,
+saying `Rendering option recognized`. `STAT` is taken with any word or none,
+each panel's word looked for in turn in the table's order past the one
+before, so `stat net fps` toggles both and `stat fps net` Fps alone. The
+panels are drawn after the console's `PostRender`, with the viewer's
+`RendMap` 3 to 6 (`PostRender`, `0x10b14700`), and of them `DrawStats` draws
+Fps, Global, Net, Hardware, Mesh, Zone, Occlusion, Game and Cache, the
+others' words toggling nothing drawn. The Fps line is white in the canvas's
+small font, centred, `FPS=%05.1f Frame=%05.1f MSEC Render=%05.1f MSEC
+Nodes=%03i Polys=%03i Tex=%03i TexMem=%06.1fK`: the frame time the mean of the
+last 32 times between `DrawStats`' calls, the render's the mean of the last
+32 from the renderer's `PreRender` (`0x10b14560`, before the console's tick)
+to `DrawStats`, the nodes and polygons each one a BSP node drawn
+(`OccludeBsp`, `0x10b197db`-`0x10b197f4`), and the textures the frame
+updated and 5/4 of their texels' bytes, in K (`UTexture::Update`, Engine.dll
+`0x103ecbaa`-`0x103ecbcf`), each cleared at `PreRender`.
 
 **The game's meshes.** Every one has `LODMinVerts` 10, `LODMorph` 0.3, and no
 `LODZDisplace` or `LODHysteresis`. No actor's `LODBias` differs from 1.

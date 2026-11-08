@@ -320,12 +320,13 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   `DeusExServerPing` strips -- its lag, the stats period's mean of each
   ack's round trip less half the connection's last frame time, no least kept
   (`0x10403240`-`0x10403261`, the frame time `0x10404c03`-`0x10404c69`, set
-  each period `0x10404dc6`-`0x10404deb`), the sum begun at 9999 as the
-  connection is made (`0x10401604`), so the first period's lag is 9999 s over
-  its acks' count, hundreds of seconds; and its incoming packet loss in
-  percent, of those lost and the packets a second come in (100 × lost /
-  (lost + packets a second), the sum at least 1), the outgoing, 100 × lost /
-  the packets a second sent, kept beside it -- then
+  each period `0x10404dc6`-`0x10404deb`; 1 s as the connection is made,
+  `0x104015ee`, so ` 1000` until its first period), the sum begun at 9999
+  as the connection is made (`0x10401604`), so the first period's lag is
+  9999 s over its acks' count, hundreds of seconds; and its incoming packet
+  loss in percent, of those lost and the packets a second come in (100 ×
+  lost / (lost + packets a second), the sum at least 1), the outgoing, 100 ×
+  lost / the packets a second sent, kept beside it -- then
   `UPlayer::Exec`. A pawn's `ConsoleCommand` goes to its own player
   (`APlayerPawn::execConsoleCommand`, `0x103ba200`): on a server a remote
   player's connection answers so, which `PlayerReplicationInfo.Timer` takes

@@ -95,6 +95,11 @@ Then `InitWindowing()` (`0x10909205`, from `Window.dll`).
 - Logs `LocalizeGeneral("Start", "<Package>")`.
 - If `GIsClient`: sets the window property **`IsBrowser`** on the log window
   (`0x1090934A`). This is what §1 finds.
+- A line typed into it (`WTerminal::TypeChar`, the SDK's `Window/Inc/Window.h`),
+  254 characters at most, no character below a blank, runs at Enter on the
+  engine the main loop gives it (`MainLoop`'s `SetExec`), the log its output;
+  one that nothing takes is answered Core.int's `[Errors] Exec`,
+  `Unrecognized command`, in the window alone, not the log's file.
 
 ## 5. `InitEngine` (`0x1090A050`)
 
