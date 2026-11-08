@@ -2500,7 +2500,9 @@ What the audio subsystem then does with it:
 `LODSet` -- `TextureDetail` for the world's (1), `SkinDetail` for skins' (2),
 none for any other (0) -- raised to the render device's `RecommendedLOD`
 (`D3DDrv` never sets it: 0), held to 3 and to the last mip. The levels: High 0,
-Medium 1, Low 2, UltraLow 3 (`UClient::StaticConstructor`, `0x10375010`). The
+Medium 1, Low 2, `Ultra Low` 3 (`UClient::StaticConstructor`, `0x10375010`, the
+enum `Details`), the last two words, which no text reaches: an enum's import
+reads one token ([a property's text](core-dll.md#a-propertys-text)). The
 device gets the mips from that one down, that mip's size as the texture's, and
 the scale grown by the top mip's size over that one's, so a texel lands where
 it would. Given a time, as every frame's draw gives it the viewport's
