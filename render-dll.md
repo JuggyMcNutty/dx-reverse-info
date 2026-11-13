@@ -771,11 +771,13 @@ palette's last entry never shows (`0x10b05d40`).
   (its owner given), every light is a moving one, but the actor itself. With
   the client's `NoDynamicLights` on (an ini setting, off by default),
   animated lights count as static and moving ones are left out.
-- **A mover with `bDynamicLightMover`** (`0x10b06efe`): its surface takes the
-  lights of the mover's leaf in front of the surface's plane, with no owner
-  and no shadow bits (`0x10b06f63`-`0x10b06fca`), and the moving lights over
-  it with the mover for their owner (`0x10b06ffc`): so those are moving
-  lights, an `LE_OmniBumpMap` one too, which lights the mover's surface.
+- **A mover with `bDynamicLightMover`** (`0x10b06efe`, `SetupMoverSurface`):
+  its surface takes the lights of the mover's leaf in front of the surface's
+  plane, with no owner and no shadow bits (`0x10b06f63`-`0x10b06fca`), and
+  the moving lights over it with the mover for their owner (`0x10b06ffc`):
+  so those are moving lights, an `LE_OmniBumpMap` one too, which lights the
+  mover's surface. Its map is built again whenever the mover moves, turns
+  or changes leaf (below).
 - **No light map at all** when the viewer's `RendMap` is not `REN_DynLight`
   (5) or the client's `NoLighting` is on: `DrawFrame` asks for a surface's
   maps only when it has a light map, the level has light maps, and neither
@@ -798,19 +800,36 @@ palette's last entry never shows (`0x10b05d40`).
   plane, which may face the other way (`0x10b19b8c`). `SetupForSurf` starts
   the map from that zone's ambient light (`0x10b06e83`, `0x10b07fa8`). The
   map is kept in the global cache (`GCache`) under the model, the light map
-  and the zone. It is built again only when it is not there, when one of
-  its lights has `bLightChanged`, or, for a mover's surface, after the mover
-  moves, turns or changes leaf. A mover's surface is lit where the brush
-  tracker filed it ([`Engine.dll`](engine-dll.md#traces)), from its brush's
-  light map (`0x10b06e29`: for a surface the tracker owns, its actor's
-  `Brush` is the model), its static lights through the shadow bits
-  raytraced at its `BrushRaytraceKey`, and each fragment by its own node's
-  zone, not the mover's: a polygon the tracker split across two zones takes
-  each one's ambient light, pan speeds and fog on its own side of the split,
-  and a mover whose place lies in another zone than its faces takes their
-  zones'. Measured: a door moved 100 units off its place is lit there, by
-  its own lights' fall-off and by a moving light 48 units before it that
-  reaches no further.
+  and the zone actor's own zone number (its `Region`'s, read at
+  `0x10b06e90`), so zones of one ambient light keep a map each. It is built
+  again only when it is not there -- never built,
+  dropped by the cache for room, or flushed: `UEngine::Flush`, `FLUSH`'s and
+  `BRIGHTNESS`'s, empties the cache ([`Engine.dll`](engine-dll.md) `0x10380cf0`,
+  `0x10380d27`) -- or when one of the lights added to it has `bLightChanged`
+  (`AddLight`, `0x10b08b30`, of every kind). A mover's surface is no
+  exception unless the mover has `bDynamicLightMover`: `SetupNormalSurface`,
+  which sets up every other surface, drops the surface's actor before the
+  cache is asked (`0x10b070c1`), and only `SetupMoverSurface` keeps it, so
+  that only a `bDynamicLightMover`'s map holds its mover's leaf, place and
+  rotation and is built again when any differs (`0x10b07e29`-`0x10b07ec5`,
+  `0x10b07f4a`). Any other mover's static map is built where the mover
+  stands when one is first wanted and kept as it moves and turns:
+  Liberty Island's `DeusExMover10`, shot shut, then opened 90 degrees out of
+  view and shot again, keeps on its turned face the light it had shut, 0.96
+  of the shut face's brightness, where a map built where it now stands would
+  light it to some 0.4 (DXEngine's harness's `MoverDecalConsole`, through
+  `D3DDrv`; with a `FLUSH` before the second shot, 0.033 of white, built again where it stands); moved 100 units off
+  its place before it is first drawn, it is lit there, by its own lights'
+  fall-off and by a moving light 48 units before it that reaches no further
+  (`MoverLightConsole`). A mover's surface is lit where the brush tracker had
+  filed it when its map was built ([`Engine.dll`](engine-dll.md#traces)),
+  from its brush's light map (`0x10b06e29`: for a surface the tracker owns,
+  its actor's `Brush` is the model), its static lights through the shadow
+  bits raytraced at its `BrushRaytraceKey`, and each fragment by its own
+  node's zone, not the mover's: a polygon the tracker split across two zones
+  takes each one's ambient light, pan speeds and fog on its own side of the
+  split, and a mover whose place lies in another zone than its faces takes
+  their zones'.
 - **The fog map** ([`D3DDrv`'s fog](d3ddrv-dll.md#fog)), only when the render
   device takes fog maps and does volumetric lighting (`SupportsFogMaps`,
   `VolumetricLighting`) and the viewport's actor is in a fog zone
@@ -849,8 +868,13 @@ palette's last entry never shows (`0x10b05d40`).
   cached with the frame's time, so a surface drawn twice in a frame is lit
   once.
   - An animated light whose shape holds still is kept in the cache as its
-    shadowed light on that surface, and only scaled by its current
-    brightness.
+    shadowed light on that surface, by the light and the surface
+    (`0x10b0873d`-`0x10b0888a`), made again only when it is not there or the
+    light has `bLightChanged` (`0x10b08820`), and only scaled by its current
+    brightness: on a mover's surface, the shape it had where the mover stood
+    when it was made. Each effect's table entry says whether its shape
+    changes (`GLightEffects`, `0x10b2a0f0`): the searchlight, the slow and
+    fast waves, the cloud cast, shock, disco, interference and the rotor.
   - One whose shape changes keeps its unpacked shadows there and has its
     shape run again.
   - A moving light is run without shadows.

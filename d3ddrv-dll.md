@@ -135,9 +135,13 @@ How a texture's texels reach the card (`SetTexture`, `0x10008a60`):
 - **One copy a texture.** `SetTexture` finds a texture's copy by its cache
   ID alone, the draw's flags no part of it. The draw that first sets a
   texture makes the copy, colour 0 cleared or not as that draw is masked or
-  not, and every later draw takes it so until it is made again (a realtime
-  texture's change): a texture drawn both masked and not shows its colour 0
-  in every draw as the first had it.
+  not, and every later draw takes it so until it is made again: a realtime
+  texture's change (`Flags` 0x10), or a light or fog map (`TEXF_RGBA7`)
+  whose `MaxColor` is still unset, all ones, as `Render.dll` leaves a map
+  it has just built (`0x10008eac`-`0x10008ec5`; `Render.dll` `0x10b07f89`-
+  `0x10b07fa6`), its `MaxColor` then worked out (`CacheMaxColor`): a texture
+  drawn both masked and not shows its colour 0 in every draw as the first
+  had it, and a static light map built again shows as built.
 - **A texture already on its stage is passed over.** `SetTexture` looks no
   further at a texture whose cache ID is the one its stage last took, its
   realtime change (`Flags` 0x10, which `Render.dll` sets on a light map it
