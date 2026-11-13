@@ -145,7 +145,13 @@ name the four do nothing (`0x10382c86`-`0x10382c9d`, `0x10383206`,
    dropped)", the name the event type's own object's (`AIEventType<n>`, its
    object name, `0x1038427b`), not the event's.
 4. **The best sender:** by score, lowest (by default the nearest) first, the
-   first the receiver senses (`ComputeSenseDetection`, `0x103837b0`). Its actor,
+   first the receiver senses (`ComputeSenseDetection`, `0x103837b0`). The
+   senders are sorted by `appQsort` (`0x103842d2`), MSVCRT's `qsort`, their
+   comparison (`0x10382420`) ordering two of one score by their places in the
+   array as it is handed them, so ties come out as the sort's moves leave
+   them ([the pathnode list](#moving) has its steps): of a farther
+   sender listed before two at one distance, the second of those two first;
+   of senders all of one score, the list's order. Its actor,
    score and three senses go into the receiver's `XAIParams`. Every turn sets the
    receiver's best score and sender, 0 and None with nothing sensed
    (`0x10384468`, `0x1038446b`); its state stays the last call's.
@@ -733,7 +739,12 @@ fields, after their properties (none):
   call of MSVCRT's `qsort`, so equal distances keep the order that leaves: a
   run of up to 8 entries sorted by moving its largest, the first of equals, to
   its end, again and again; a longer one split round the middle of its first,
-  middle and last entries. Each step sets `NavPoint` to None before taking the
+  middle and last entries. Windows' `msvcrt.dll` (Vista and later) and Wine's
+  make the same comparisons and moves: Wine's (`dlls/msvcrt/misc.c`,
+  `quick_sort`, since 2014) was written to native's, its tests asserting the
+  sequence native compares for 8 and 9 elements and its order of a
+  9-element run with ties. `appQsort` is Core's call of it (Core.dll
+  `0x10123640`). Each step sets `NavPoint` to None before taking the
   next entry, so it is None once the list is done; `distance` keeps the last
   node's.
 - **`ComputePathnodeDistances(startActor)`** (`0x103c8910`): clears the paths
@@ -1659,9 +1670,14 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   the BSP's solid space, not its polygons. The segment is classified plane by
   plane, both ends within a thousandth of a unit of the plane counting as in
   front of it, its near part walked first. The point where it crosses a plane
-  is the start moved toward the end by the start's distance over the two ends'
-  difference, worked in floats, each step rounded: from a start off the float
-  grid it can lie a float step off the exact crossing. A node is a boundary
+  is the start plus the start less the end, each axis a float, times the
+  start's distance over the end's less the start's, each axis's product a
+  float, the sum a float (`0x103f37d2`-`0x103f3879`); each end's distance its
+  Z, X and Y terms summed in that order, less W, a float (`0x103f36b3`), the
+  tests against ±0.001 and 0 made on those floats. All at the x87's
+  precision, 24 bits in a console's tick: from a start off the float grid the
+  crossing can lie a float step off the exact one, the hit's place that
+  crossing. A node is a boundary
   when it has a polygon and none of `NF_NotCsg`, `NF_IsNew` and the flags the
   caller passes (`FBspNode::IsCsg`, `0x103f68b0`): the front of a boundary is
   empty space and its back solid, a node that is no boundary leaves the space
@@ -1695,7 +1711,14 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   `0x10123640`, the CRT's `qsort` with a float compare, `0x1039c060`; of two
   equal times it puts the later first, so a mover's ties before the level's).
   The times are floats: the level's, `UModel::LineCheck`'s from the float
-  point where its walk crosses the plane; the cut a float, its end point
+  point where its walk crosses the plane -- the line less its start, each
+  axis a float, dotted with the place less the start, X's term first, then
+  Y's and Z's, over the line's length squared stored as a float, the time a
+  float, less 0.5 over `appSqrt` of the length squared, held to 0..1, a
+  number under 0 or none 0 (`0x103f3d3d`-`0x103f3de4`), at the x87's
+  precision (DXEngine's `FiledPlaneConsole`: a line at Battery Park's turned
+  door at -367.044434 in a console's tick, -367.044403 with these sums at 53
+  bits); the cut a float, its end point
   rounded to floats (`0x1039b35a`, `0x1039b386`); a mover's brush walked on
   the cut line, its planes turned into the world by its `ToWorld`, its time
   times the cut a float (`0x1039b6a2`). So a door flush with its wall falls
@@ -1786,7 +1809,14 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   (`0x1036dea0`; by default the actor's own place and rotation): puts the actor
   there for the moment, takes its primitive's box (its brush's, else its mesh's,
   else the collision cylinder's; `bExact` passed on), and returns whether the
-  box is valid. The scripts pass a mover's place and rotation at one of its
+  box is valid. A brush's (`UModel::GetRenderBoundingBox`, `0x103f1190`) is
+  its model's own box's eight corners through the actor's `ToWorld`
+  coordinates as points (`ABrush::ToWorld`, `0x1030f310`;
+  `FVector::TransformPointBy`), or, with `bExact` and polygons, each
+  polygon's corners so; with no corner it is not valid. So a mover's
+  `PostScale` is in it (DXEngine's `PostScaleConsole`: DXMP_CMD's bot door's
+  top at -1289.999878, where one matrix of the same coordinates gives -1290).
+  The scripts pass a mover's place and rotation at one of its
   keys: the HUD's highlight on a door, and a mover's area.
 - **`CycleActors(BaseClass, Actor, Index)`** (`0x1036e9d0`): the level's actors
   of the class (Actor by default), from the slot `Index` names (0 when out of
@@ -2877,7 +2907,17 @@ harness's `OldVerConsole` loads `vergen.py`'s version-62 copies of
   before the texture's animation is stepped or it is locked; it clips one
   in part off to the frame, its texels in proportion, adds the frame's own
   masked bit, and hands it to the render device (DXEngine's harness's
-  `TileEdgeConsole`).
+  `TileEdgeConsole`). Both hand the tile the canvas's `Z` (`0x10377d2e`,
+  `0x103786b8`), as the canvas's line drawer hands each glyph (`0x10377170`,
+  at `0x103772c7`) and the window tree's GC each of its tiles
+  ([extension-dll.md](extension-dll.md#styles)); `UCanvas::DrawTile` passes
+  it on to the device's `DrawTile`, which draws the tile at the depth of a
+  point Z units before the eye ([d3ddrv-dll.md](d3ddrv-dll.md#tiles)). The
+  canvas's `Reset`, which its `Update` calls each frame (`0x10377560`), sets
+  it to 1; no stock script sets it otherwise (`UWindow.RenderUWindow` sets
+  1). `Canvas.uc`'s note, "1=no screenflash, 2=yes screenflash", is of no
+  effect through `D3DDrv`, whose flash is drawn whatever the depth
+  (DXEngine's `CanvasZConsole`).
 - **`ScriptedTexture.ReplaceTexture(Tex)`** (`execReplaceTexture`,
   `0x103eb1e0`): with a texture whose USize and VSize are the scripted
   texture's, that texture is updated to the scripted texture's LocalTime,

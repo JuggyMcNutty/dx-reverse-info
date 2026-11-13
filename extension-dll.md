@@ -464,7 +464,10 @@ yaw, its pitch left out.
   (`0x1004e5f0`, `0x1004e680`) ask it with the other side given.
   - So a plain window stays 10 by 10, and an empty text window is 0 wide --
     its minimum width takes the -1 ([text](#text)) -- and keeps its height.
-- **Laying out again** (`AskParentForReconfigure`, `0x1004e060`) marks the
+- **Laying out again** (`AskParentForReconfigure`, `0x1004e060`; asked too by
+  a background changed, `XWindow::SetBackground` `0x1004d5e0`, the window's
+  preferred size then the background's on a side it gave no size of its
+  own, the same background again asking nothing) marks the
   window and, if it and every parent show, asks its parent
   (`ChildRequestedReconfiguration`); a parent that does not take it asks its
   own, up to the root, which only runs its own `ConfigurationChanged`
@@ -1236,9 +1239,10 @@ test.
 - **A tile's flags** (`GeneratePolyFlags`, `0x1002af00`): two-sided, then
   masked, translucent and modulated as set, and no smoothing unless
   smoothing is on. Every tile goes to the canvas's `DrawTile`
-  (`XGC::DrawTile`, `0x1002a820`; `Engine.dll` `0x10376160`), which adds the
-  masked bit of the texture's frame, so a masked texture draws masked in any
-  style. A character goes to the render device's `DrawTile` itself, with
+  (`XGC::DrawTile`, `0x1002a820`; `Engine.dll` `0x10376160`), with the
+  canvas's `Z` (`0x1002a92c`), so a window drawn after a script set it is
+  drawn at that depth; the canvas adds the masked bit of the texture's
+  frame, so a masked texture draws masked in any style. A character goes to the render device's `DrawTile` itself, with
   the text's flags ([`D3DDrv`'s tiles](d3ddrv-dll.md#tiles)).
 - **A tile's place** (`XGC::DrawTile`, `0x1002a820`; `ClipTile`,
   `0x1002a4f0`): the window's origin added, the tile is clipped to the GC's
@@ -1500,7 +1504,10 @@ What the game shows under a menu, by the player's UI background option
   `SetRenderViewport` gives the scene a rectangle of the root instead (the
   conversations' letterbox).
 - **The raw background** (`SetRawBackground(texture, colour)`,
-  `SetRawBackgroundSize`, `StretchRawBackground`) is drawn before any window
+  `SetRawBackgroundSize`, `StretchRawBackground`; `SetRawBackground`,
+  `0x1003cbe0` into `XRootWindow::SetRawBackground` `0x10039eb0`, sets both,
+  no texture and white unless given, the white's fourth byte whatever the
+  native's stack held) is drawn before any window
   (`DrawRawBackground`, `0x1003c720`), wherever the scene is not: over the
   whole root with rendering off, around the render viewport with one set,
   nowhere otherwise.

@@ -237,6 +237,14 @@ it sets the blending and the texture:
   stock tile is drawn so: the main menu's buttons and the colours screen's
   example draw `MainMenuTrueType` translucent, as the console does
   `LargeFont`.
+- **Its depth** is its `Z`'s: 1/w is 1/Z and z' is F ÷ (F − 1) × (1 − 1/Z),
+  as a point Z units before the eye (`0x10005c41`-`0x10005c71`), so a tile at
+  Z 1, as the canvas draws every stock one, lies at 0. It is tested less than
+  or equal against the depth buffer, and one neither translucent nor
+  modulated writes its depth (`SetBlending`, `0x10008270`: Z writes for
+  every such draw, `PF_Occlude` or not). The screen flash (`EndFlash`) is a
+  quad at Z 2's depth drawn with the depth test off (its `ZFUNC` always at
+  `0x10008002`, less-or-equal again at `0x10008088`).
 - **A modulated tile** draws `PF_Modulated` and `PF_Masked` alone, every
   other flag dropped, `PF_NoSmooth` with them, in white: its colour 0 is cut
   out where the texture's copy has it cleared ([textures](#textures)), and
