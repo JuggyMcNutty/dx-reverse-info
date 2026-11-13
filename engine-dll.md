@@ -745,8 +745,8 @@ fields, after their properties (none):
   run of up to 8 entries sorted by moving its largest, the first of equals, to
   its end, again and again; a longer one split round the middle of its first,
   middle and last entries. Windows' `msvcrt.dll` (Vista and later) and Wine's
-  make the same comparisons and moves: Wine's (`dlls/msvcrt/misc.c`,
-  `quick_sort`, since 2014) was written to native's, its tests asserting the
+  make the same comparisons and moves: Wine's (`quick_sort` in its msvcrt's
+  `misc.c`, since 2014) was written to native's, its tests asserting the
   sequence native compares for 8 and 9 elements and its order of a
   9-element run with ties. `appQsort` is Core's call of it (Core.dll
   `0x10123640`). Each step sets `NavPoint` to None before taking the
