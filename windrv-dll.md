@@ -200,8 +200,15 @@ pixel), or the full screen ones -- and saves the client's config whatever the si
 (`SaveConfig`, `0x1110e2f3`-`0x1110e35b`), the config cache flushed, every changed ini written
 ([configuration](core-dll.md#configuration)): a window sized by hand's too (`WM_SIZE`, below).
 So in a window the windowed size is the window's own, and `ENDFULLSCREEN` there logs its line
-and sizes the window at the size it has; full screen it is the toggle's way back. `PREFERENCES`
-and the window's `WM_DESTROY` end full screen first (`0x111072bb`, `0x11109c3e`).
+and sizes the window at the size it has; full screen it is the toggle's way back.
+`PREFERENCES` (`0x11107296`-`0x111073a6`) clears the client's mark to go back to full
+screen, and full screen ends it first and sets the mark (`0x111072bb`); it makes the
+client's Advanced Options window once -- `WConfigProperties` named `Preferences`, captioned
+`LocalizeGeneral("AdvancedOptionsTitle","Window")`, the client its notify hook, owned by the
+viewport's window, filled -- then shows it and gives it the focus, a second `PREFERENCES`
+the same window. Its going (`UWindowsClient::NotifyDestroy`, `0x11102ac0`) forgets it and,
+the mark set, runs `ToggleFullscreen` on the first viewport, by its whole command chain.
+The window's `WM_DESTROY` ends full screen first too (`0x11109c3e`).
 
 `WM_SIZE` (`0x11109f82`), with the client area's new size: full screen, a restore moves the
 window back over the rectangle full screen took (`0x11109fa7`-`0x11109fdb`). In a window, the

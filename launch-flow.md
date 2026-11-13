@@ -145,8 +145,11 @@ and set it to `"Saved game"` if it is empty.
 | `ShowLog` | show the log window |
 | `HideLog` | hide it |
 | `TakeFocus` | bring the window forward |
-| `EditActor Class=<name>` / `EditActor new` | open a `WObjectProperties` inspector; errors *"Actor not found"* / *"Missing class"* |
-| `Preferences` | open `WConfigProperties`, caption `LocalizeGeneral("AdvancedOptionsTitle","Window")` |
+| `EditActor Class=<name>` | the class among those loaded, by its name in any package (`ParseObject`, its value 64 characters at most, `None` any class); the actor of it nearest the viewport's player, in the player's level and not being destroyed, the first of the nearest, 999,999 units at most (`0x109137d6`-`0x10913c18`), opened in a new `WObjectProperties` named `EditActor` over the viewport's window, its object set, shown (`0x10913c27`-`0x10913d36`): captioned "<its class> Properties", 352x512 at the screen's corner, its rows the object's categories by name, every property under one, those not editable under `None`, an object reference with Clear (None), Use and "..." (DXEngine's harness's `EditActorConsole`); *"Actor not found"* for none, *"Missing class"* for no `Class=` or no class found. With no client, every actor at distance 0, the first found, and the window's open reads the client it has not, a fault |
+| `Preferences` | with no client alone (`GIsClient`, `0x10913dd9`): a dedicated server's Advanced Options, `WConfigProperties` named `Preferences`, caption `LocalizeGeneral("AdvancedOptionsTitle","Window")`, owned by the log window, made once, shown and given the focus (`0x10913df8`-`0x10913f65`). A client's is its viewport's ([windrv-dll.md](windrv-dll.md#the-window)) |
+
+  (The "EditActor new" form was a misreading: the "new" at 0x10913c27 is the tag
+  GMalloc's Malloc takes for operator new.)
 | `MPLAYER` | `LaunchMPlayer` (`0x109142C0`), which holds the binary's only registry read, `HKLM\software\mpath\mplayer\main` ([`ini-keys.md`](ini-keys.md#registry)) -- **dead service** |
 | `HEAT` | launch `GotoHEAT.exe` on port `5193` -- **dead service**; `GotoHEAT.exe` is not shipped |
 

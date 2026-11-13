@@ -530,7 +530,12 @@ it walks every property instead and calls `Modify` before each change.
     subclass reads it at that property's place, each then told of the change
     (`PostEditChange`); then the class's defaults; then the class's config is
     saved. So `SET Actor bSinglePlayer` sets `Actor`'s in a `PlayerPawn` too,
-    and `SET PlayerPawn bSinglePlayer` the player's own.
+    and `SET PlayerPawn bSinglePlayer` the player's own. `GlobalSetProperty`
+    takes the value's place in an object -- `SET`'s the property's first
+    element, another caller's an element or a struct's member -- and whether
+    the objects take it at all: `SET` asks it always (`0x1015337e`); without, the
+    defaults alone take it, then the save. `GET` of a dynamic array of strings
+    gives its elements quoted in parentheses, `("..\System\*.u","..\Maps\*.dx")`.
 
 ### A property's text
 
@@ -629,6 +634,25 @@ must be put there.
     `<?int?<Package>.<Section>.<Key>?>`;
   - a class's localized properties (`LoadLocalized`, `0x10151390`) take an
     empty text, and a property given empty text keeps its default.
+- **The C++ classes' config properties**, which no package holds, each `CPF_Config`
+  alone, made by their StaticConstructors: `USystem`'s `PurgeCacheDays`, `SavePath`,
+  `CachePath`, `CacheExt`, `Paths` and `Suppress` (dynamic arrays of strings and
+  names), all `Options` (`0x1016b500`); `UClient`'s in `Client` (the six viewport sizes
+  and depths, `MipFactor`) and `Display` (`Brightness`, `CaptureMouse`,
+  `CurvedSurfaces`, `TextureDetail` and `SkinDetail` of its enum `Details` -- `High`,
+  `Medium`, `Low`, `Ultra Low` --, `ScreenFlashes`, `NoLighting`, `MinDesiredFrameRate`,
+  `Decals`, `NoDynamicLights`; Engine.dll `0x10375010`); `UWindowsClient`'s
+  `UseDirectDraw`, `UseDirectInput`, `UseJoystick`, `StartupFullscreen`,
+  `SlowVideoBuffering` in `Display` and `DeadZoneXYZ`, `DeadZoneRUV`, `InvertVertical`,
+  `ScaleXYZ`, `ScaleRUV` in `Joystick` (WinDrv.dll `0x111015f0`); `URenderDevice`'s
+  `VolumetricLighting`, `ShinySurfaces`, `Coronas`, `HighDetailActors`, `Description`,
+  `DescFlags`, `DetailTextures` (Engine.dll `0x103713c0`); `UNetDriver`'s twelve, all
+  `Client` (Engine.dll `0x10409080`), `UTcpNetDriver` adding none (IpDrv.dll
+  `0x1070b740`); `UGameEngine`'s `ServerActors` and `ServerPackages`, dynamic arrays of
+  strings, `Settings` (Engine.dll `0x10388fc0`); `UInput`'s `Aliases[40]`, its struct
+  `Alias` (`Command`, `Alias`), `Aliases`, and a string property a name of `Actor`'s
+  `EInputKey`, its `IK_` cut off, `RawKeys` -- `IK_None`'s a property named `None`, so
+  `StrProperty0` -- (`UInput::StaticInitInput`, Engine.dll `0x103930c0`).
 - **The objects they register** (`UObject::CacheDrivers`, `0x10158900`),
   which `GetRegistryObjects` (`0x101591c0`) calls before it reads them. It
   reads the files once, and again when the language changes.
@@ -638,7 +662,18 @@ must be put there.
   - Each file found is read by its name from `System`, not from the folder
     it was found in: its `[Public]` section, from `<name>.<language>` else
     `<name>.int`. `Object=` lines register objects, and `Preferences=` lines
-    the Advanced Options' pages.
+    the Advanced Options' tree: each line's `Caption=`, `Parent=`, `Class=`,
+    `Category=` (a name) and `Immediate=` (`ParseUBOOL`), every line kept, in
+    the files' order and each file's, duplicates too; `GetPreferences`
+    (`0x101594a0`) gives a parent's lines in that order. The window (Window.dll's,
+    not read) shows each caption once, sorted by caption, a class that does not
+    load as `<class> (failed load)`, and a class's config properties (`CPF_Config`,
+    a C++ class's too) in its line's category by name; an edit there -- Enter, or
+    another row selected -- sets the class's defaults and its objects at once and
+    saves the class's section whole, its line's `Immediate` or not; an array's Add,
+    Insert, Delete and Empty change the defaults alone and write nothing, then or at
+    the exit; Reset To Defaults copies `Default.ini`'s section and the file is written
+    at once (DXEngine's harness's `PrefsConsole`).
   - So only `System`'s files register anything. A file found in another
     path's folder registers `System`'s file of that name, if there is one,
     a second time.
