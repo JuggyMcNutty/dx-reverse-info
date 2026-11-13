@@ -314,16 +314,29 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   `NETSPEED <rate>`. `LANSPEED` does the same for a `?LAN` server, and keeps its
   rate as `ConfiguredInternetSpeed` too, the field `NETSPEED` writes (the
   connection takes `ConfiguredLanSpeed`, the next one, for `?LAN`).
-- **The connection's** (`UNetConnection::Exec`, `0x10401c50`): `GETPING`
+- **The connection's** (`UNetConnection::Exec`, `0x10401c50`, its `this` the
+  connection's `FExec` part, 0x2C in): `GETPING`
   answers a float of the connection times 1000 as an int and `GETLOSS`
   another float as an int, each after a blank (`" %i"`), which
   `DeusExServerPing` strips -- its lag, the stats period's mean of each
   ack's round trip less half the connection's last frame time, no least kept
-  (`0x10403240`-`0x10403261`, the frame time `0x10404c03`-`0x10404c69`, set
-  each period `0x10404dc6`-`0x10404deb`; 1 s as the connection is made,
-  `0x104015ee`, so ` 1000` until its first period), the sum begun at 9999
-  as the connection is made (`0x10401604`), so the first period's lag is
-  9999 s over its acks' count, hundreds of seconds; and its incoming packet
+  (`0x10403240`-`0x10403261`, set each period `0x10404dc6`-`0x10404deb`;
+  9999 s as the connection is made, `0x104015f8`, so ` 9999000` until its
+  first period ends -- the 1 s at `0x104015ee` is the period's length), the
+  sum begun at 9999 as the connection is made (`0x10401604`). The frame
+  time is the machine's clock's, `appSeconds` (the time-stamp counter's
+  seconds since the machine started), between the connection's last two
+  ticks, its last time 0 as the connection is made (`0x10404bb8`-
+  `0x10404c69`; the constructor, `0x10401490`, sets none of it), so its
+  first frame time is the clock's whole count, and each ack taken before
+  the connection's second tick -- on a server the client's answer to the
+  `CHALLENGE` -- loses half of it: the first period's lag is 9999 s less
+  half the machine's uptime over its acks' count, below 0 on a machine up
+  more than twice 9999 s (-194 s on one up 12 hours, DXEngine's
+  `AlertServer`), hundreds of seconds on one up less. The first second's
+  average frame time is that count too, which a client's local
+  `PlayerReplicationInfo.Ping` loses half of (`PostNetReceive`,
+  `0x103689b7`); and its incoming packet
   loss in percent, of those lost and the packets a second come in (100 ×
   lost / (lost + packets a second), the sum at least 1), the outgoing, 100 ×
   lost / the packets a second sent, kept beside it -- then
@@ -336,10 +349,13 @@ player's `ShowUpgradeMenu` first. The console's `Tick` calls the player's
   script reads: on while the player has its channel and its lag plus 1.2 s
   for all lost of the greater loss passes 0.8 s, or the rate the loss leaves
   falls under 2,000 bytes a second; on too while fewer than 2 packets a
-  second come in (`0x10404e1c`-`0x10404ef0`). The first period, its lag the
-  9999 start's, ends during the join, with no player yet to set (DXEngine's
+  second come in (`0x10404e1c`-`0x10404ef0`). A client that joins within
+  its connection's first second (DXEngine's, its map loaded in some 0.2 s;
+  the original's within 0.95 s) has the first period end with its player
+  in: on a machine up more than twice 9999 s its lag is below 0 and no
+  alert is set, on one up less it is on until the next period (DXEngine's
   harness's `AlertServer`: off from the player's first half second in the
-  game).
+  game, `GETPING` ` 9999000` at the join, then below 0).
 
 ## Server travel
 

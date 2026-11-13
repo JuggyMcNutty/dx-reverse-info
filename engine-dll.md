@@ -416,7 +416,12 @@ fields, after their properties (none):
   `UModel::PointCheck` and `LineCheck` (`0x103f19b0`, `0x103f42f0`), and
   `Normalize`, which leaves a vector under 1e-8 squared as it is, in one
   both share (`0x103f6600`).
-- **A projectile's move** (`AActor::physProjectile`, `0x103d4600`): in steps
+- **A projectile's move** (`AActor::physProjectile`, `0x103d4600`): an actor
+  in zone 0 -- out of the world, in solid -- is destroyed at once
+  (`0x103d462a`-`0x103d4648`); a spawned actor has its zone before its
+  `PostBeginPlay` (`SpawnActor`'s `SetActorZone`, `0x1039556c`), so one
+  spawned in solid and set to `PHYS_Projectile` goes at its first tick, in
+  the frame it was spawned, before a client is sent it. Otherwise in steps
   of the time left, up to 8, each the velocity less the zone's fluid friction
   (in water) plus the acceleration × the time left, a `Projectile` held to its
   `MaxSpeed`, and one `MoveActor` by the velocity × the tick's whole time (not
