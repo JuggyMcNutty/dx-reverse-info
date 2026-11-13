@@ -125,7 +125,11 @@ command for the window's menu (`SC_KEYMENU`, [the window's commands](#the-window
 Alt+Space opens the menu, in a window or full screen, the window keeping its menu there
 ([the window](#the-window)); any other character Windows takes for a menu's underlined
 letter, and with no menu bar to find it in, beeps. A `WM_CHAR` the engine leaves goes no
-further.
+further. An IME's text comes the same way: the window takes none of the IME's messages
+(`WM_IME_STARTCOMPOSITION` to `WM_IME_COMPOSITION`, `WM_IME_SETCONTEXT` to `WM_IME_KEYUP`),
+which go to `DefWindowProcW` with every other message it leaves (`0x1110b6d0`), and WinDrv calls
+nothing of IMM32's: Windows' own IME window shows what is being composed, and the result comes as
+`WM_CHAR`s, a UTF-16 unit each.
 
 **The focus** (`ViewportWndProc`): losing it (`WM_KILLFOCUS`, `0x1110a0a3`) lets the mouse's
 capture go (`SetMouseCapture`, `0x11108e40`, which in taking it puts the pointer in the

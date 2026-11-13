@@ -26,7 +26,8 @@ to the bit.
   (`NotifyAcceptingChannel`, `0x1039f290`: a server takes the control channel
   and file channels a client opens, a client only
   actor channels), and answers the handshake.
-- **Demos** (`UDemoRecDriver`) write the same packets to a file.
+- **Demos** (`UDemoRecDriver`) write the packets a level sends a client to a file, and play
+  them back as a client's level ([demos](#demos)).
 - **The settings**, `[IpDrv.TcpNetDriver]` in `DeusEx.ini` (the GOG build's):
   `ConnectionTimeout` 15 s, `InitialConnectTimeout` 500 s, `AckTimeout` 1 s,
   `KeepAliveTime` 1 s, `MaxClientRate` 20,000 bytes/s, `RelevantTimeout` 5 s,
@@ -881,6 +882,123 @@ others differ:
 - **`Inventory`** (`0x10367450`): an always-relevant item past its first bunch
   sends `bHidden` alone; and one not owned by the client, a simulated proxy with
   an `AmbientSound`, sends its `Location` too.
+
+## Demos
+
+A demo is what a level sends a client, kept in a file and played back as a client's level
+(`UDemoRecDriver`, `UDemoRecConnection`, `UDemoPlayPendingLevel`). `[Engine.Engine]`
+`DemoRecordingDevice` names the driver's class, `Engine.DemoRecDriver`, whose section holds its
+settings: `NetServerMaxTickRate` 60, `KeepAliveTime` 1 s, `DemoSpectatorClass`
+`UnrealShare.UnrealSpectator`, a class Deus Ex has not. A key the section lacks is
+`UNetDriver`'s own, 0 but `MaxClientRate`'s 25,000 (`UNetDriver::StaticConstructor`,
+`0x10409080`).
+
+- **The file**: a record for each packet: the frame the driver has counted (4 bytes), its time
+  (an 8-byte double), the packet's size (4 bytes) and its bytes
+  (`UDemoRecConnection::LowLevelSend`, `0x10406a70`). The driver's time and frame start at 0
+  (`InitBase`, `0x10407420`); each of its ticks adds the frame's time, not dilated, and a frame
+  (`TickDispatch`, `0x10407f60`).
+- **The words** (`ULevel::Exec`, `0x1039dfe0`; `UDemoRecDriver::Exec`, `0x104083c0`):
+  `DEMOREC <name>` records into the name, `.dem` added where it does not end so, "Attempting
+  to record demo %s" logged; "Demo recording started to %s", or "Demo recording failed:
+  Couldn't open demo file %s for writing" and the driver deleted. `DEMOPLAY <url>` reads its
+  text as a URL on no base, `.dem` added to its map -- so `DEMOPLAY x.dem`, whose dot is no
+  map's or save's extension, names a host and the default map, which gets the `.dem`: a demo
+  is named without it --, logs "Attempting to play demo %s", gives up a join under way and
+  makes a pending level of the demo's; "Demo playback failed: Couldn't open demo file %s for
+  reading" when the file is not there. Either word bare: "You must specify a filename". While
+  a demo runs its driver takes `DEMOREC` and `DEMOPLAY` first, "Demo recording currently
+  active: %s" or "Demo playback currently active: %s", and `STOPDEMO`, "Demo %s stopped (%d
+  frames)": a recording's driver deleted, its connection's control channel closed and sent
+  (the file's last packet), then "Closing down demo driver." and the file closed
+  (`UNetDriver::Destroy`, `0x10409840`; `UNetConnection::Destroy`, `0x104019e0`;
+  `LowLevelDestroy`, `0x10407e50`); a playback's connection closed. A map's load deletes the
+  old level's demo driver too (`UGameEngine::LoadMap`, `0x1038c1f0`).
+- **Recording** (`UDemoRecDriver::InitListen`, `0x10407870`): one connection
+  (`UDemoRecConnection`, `0x104068a0`), open, at 1,000,000 bytes a second and 512-byte
+  packets, always ready (`IsNetReady`, `0x10406c80`), and acknowledging itself: it writes no
+  acks (`SendAck`, `0x10404360`), and each tick marks all it sent acknowledged, its channels'
+  opens too, never times out and never alerts its player for lag or loss
+  (`UNetConnection::Tick`, `0x10404a40`). In single player and on a server an
+  `Engine.DemoRecSpectator` is spawned at the level's origin, rotation 0, no one's player
+  (`SpawnDemoRecSpectator`, `0x10408690`; one that cannot be spawned ends the game, a cast of
+  None), and the demo's packages are built as a server's (`BuildServerMasterMap`,
+  `0x10388b10`, the game engine's virtual at +0xC0, logging each `Server Package` again); on a
+  client they are its server connection's. Then the control channel, and the welcome a server
+  gives a client (`ULevel::WelcomePlayer`, `0x1039f500`), sent at frame 0: the `USES` lines,
+  `WELCOME LEVEL= LONE=` with `CLIENTDEMO` (single player, a client) or `SERVERDEMO` (a
+  server) after it, then the demo driver's `DYNAMICRATE` and `STATICRATE`.
+- **Each tick** of the level (`ULevel::Tick`, `0x103a51a0`): the demo driver's dispatch at its
+  start, after the net driver's, by the frame's own time; at its end, after the net driver's
+  flush, `TickDemoRecord` (`0x103a4b90`), then the demo's flush. A recording runs no more
+  frames a second than its driver's `NetServerMaxTickRate`, held to 10..120 -- 60 --, with
+  `-lanplay` the level's net driver's `LanServerMaxTickRate`, read whether the level has a net
+  driver or not (`UGameEngine::GetMaxTickRate`, `0x1038fd9c`-`0x1038fdb9`): a single player's
+  has none.
+- **What it records** (`TickDemoRecord`): every actor each tick, none passed over for
+  relevance, priority or `NetUpdateFrequency`: one with a remote role, or on a client one of
+  the server's (its role neither none nor the authority); in the list's dynamic part, or a
+  zone, the `LevelInfo` among them; one sent once to keep, once; not one that is not static
+  whose class is (`0x103a4cd4`-`0x103a4d09`); with a channel, its class one the demo's
+  packages number. Each goes through `ReplicateActor` with `bDemoRecording` set, and on a
+  client `bClientDemoRecording` and its roles exchanged, so it goes as its server sent it.
+  Every actor is the demo's own (`bNetOwner`) -- on a client only those of its viewport's
+  player (`UActorChannel::ReplicateActor`, `0x103fecf1`-`0x103fed74`) --, so each one's
+  replicated `bNetOwner` goes 1; an autonomous proxy goes as a simulated one
+  (`0x103feeb1`-`0x103feec9`).
+- **Calls** (`AActor::ProcessRemoteFunction`, `0x103e5d90`; `ProcessDemoRecFunction`,
+  `0x103e6400`): while a level records, a call of a function for the net, not static, on an
+  actor not sent once to keep (on a client not one of its own authority), whose first
+  declaration's statement holds with `bDemoRecording` set (on a client `bClientDemoRecording`
+  too, the roles exchanged), goes into the demo as a server sends a call, the actor's channel
+  opened and the actor sent first where the demo has none; then the call goes on as ever, in
+  single player run there. Its parameters are evaluated for the demo and again for the call
+  itself. `bClientDemoNetFunc` is set on an actor before a call that came from the other side
+  runs (`UActorChannel::ReceivedBunch`, `0x103fe4be`) and cleared after a demo's test of a
+  call. `PlaySound` gives the actor's `DemoPlaySound` event the sound first while its level
+  records, but on a client (`0x103e2164`-`0x103e22c4`), `PlayOwnedSound` on a client too, with
+  its own radius (`0x103e2acd`-`0x103e2b10`); `DemoPlaySound`'s statement is `bDemoRecording`
+  alone, and its native plays the sound to the viewports' players (`0x103e1d00`). A recorded
+  player takes his view's pitch and yaw into `DemoViewPitch` and `DemoViewYaw` after his
+  `PlayerTick` (`AActor::Tick`, `0x103a2616`-`0x103a263b`), which go `if (bDemoRecording)`.
+  A destroyed actor's channel closes in the recording too (`ULevel::DestroyActor`,
+  `0x10395ba0`).
+- **Playback** (`UDemoPlayPendingLevel`, `0x104058f0`; `InitConnect`, `0x10407550`): the
+  server's connection, pending, at the same speed and acknowledging itself; the URL's
+  `?3rdperson`, `?timebased` and `?noframecap`. Each tick reads the packets whose frame has
+  come (with `timebased`, whose time has), one a tick while the connection waits for its
+  player; by frame, a packet ahead of the driver's time first waits out the difference, the
+  CPU spinning, each packet's wait from the end of the last, so a frame of several packets
+  plays slower than it was made (`0x10408052`-`0x1040811c`); the file's end, or a packet not
+  read whole ("Failed to read demo file packet"), closes the connection. A packet is read into
+  a 520-byte buffer whatever its size. Nothing is sent (`UDemoRecConnection::FlushNet`,
+  `0x10406ca0`). The pending level takes every channel, and of the text `USES` and `WELCOME`
+  alone (`0x10406080`, "DemoPlayPendingLevel received: %s"): each package found by its name
+  or its GUID, or "Don't have package for demo: %s" and the playback waits for good;
+  `SERVERDEMO` makes it a third person's; the driver's time set to 0. Its map is the first
+  package the demo uses, loaded as a client's (`LoadMap`, `0x1038c607`-`0x1038c6ab`), the
+  level's URL the demo's; the Connecting action and a frame drawn, and no `JOIN` (`SendJoin`,
+  `0x10405da0`). While it waits the connecting message is the demo's file alone
+  (`0x10388976`-`0x103889c5`). Calls for the net go nowhere: a simulated proxy's held off as
+  ever, the rest run there (`ProcessRemoteFunction`). A received player pawn takes
+  `DemoViewPitch` and `DemoViewYaw` into his view (`PostNetReceive`,
+  `0x10368336`-`0x10368370`).
+- **The player** (`UDemoRecConnection::HandleClientPlayer`, `0x10406cc0`): the first player
+  pawn whose `bNetOwner` comes set while the connection is pending -- in a single player's
+  demo the recorded player, ahead of the `DemoRecSpectator` in the level's list -- is the
+  viewport's, as a joining client's (`UNetConnection::HandleClientPlayer`, `0x10405290`); with
+  `3rdperson`, a spectator of `DemoSpectatorClass` (`Engine.Spectator` for none; one not to be
+  had ends the game, the stock ini's), spawned at the level's first `PlayerStart`, flying, an
+  admin, owned, of the authority, who takes his view target pawn's view, not from behind, as a
+  server's copy of a client's pawn does (`AActor::Tick`, `0x103a2793`-`0x103a2888`). Either way
+  the player takes the level's song, faded in, and a console's timedemo turns the frames' cap
+  off. The level's Connecting action ends once the player is in, and at the demo's end the
+  viewport travels to `?entry` (`ULevel::TickDemoPlayback`, `0x103a4f70`).
+- **`Engine.DemoRecSpectator`**, a `MessagingSpectator`: its `ClientMessage`, `TeamMessage`,
+  `ClientVoiceMessage` and `ReceiveLocalizedMessage` go into the demo as `RepClientMessage`
+  and the rest, `reliable if (bDemoRecording)`; in a playback its simulated `Tick` finds the
+  player pawn a viewport plays and the game replication info, gives him it, and passes the
+  messages on to him.
 
 ## Deus Ex's additions
 

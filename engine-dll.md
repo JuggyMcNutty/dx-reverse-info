@@ -2173,8 +2173,8 @@ depends on what the key did:
   runs (`UDemoRecDriver::Exec`, `0x104083c0`), then its own `DEMOREC` and
   `DEMOPLAY`: a name given `.dem`, "You must specify a filename" without one,
   and in single player a CLIENTDEMO with an `Engine.DemoRecSpectator`
-  (`InitListen`, `0x10407870`); DXEngine's harness's `DemoWordsConsole`, 370
-  frames recorded on Liberty Island), the exec functions of the game, the HUD, the player pawn and each item of its
+  (`InitListen`, `0x10407870`; [demos](network.md#demos)); DXEngine's harness's
+  `DemoWordsConsole`, 370 frames recorded on Liberty Island), the exec functions of the game, the HUD, the player pawn and each item of its
   inventory in turn, then the engine's `Exec` (`OPEN`, `START` and the rest). An
   exec function's parameters are each imported by its property's `ImportText`
   from where the last one stopped, a first one that is an object of the
