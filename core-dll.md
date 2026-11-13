@@ -487,10 +487,40 @@ it walks every property instead and calls `Modify` before each change.
     by its name, once, on that class, its own before its base's
     (`0x10143fd0`), else `Unrecognized class %s` or `Unrecognized property
     %s` is the command's output (DXEngine's harness's `EngineWordsConsole`).
-    `StaticExec` also takes `MEM`, `DUMPNATIVES`, `GTIME` (to the log alone)
+    `StaticExec` also takes `MEM`, `DUMPNATIVES` and `GTIME` (to the log
+    alone: `DUMPNATIVES` a "Native index %i is available" for each of the
+    native table's 4,096 slots still undefined, `0x10153179`-`0x101531ab`)
     and `OBJ`'s `GARBAGE`, `MARK`, `MARKCHECK`, `REFS`, `HASH`, `CLASSES`,
     `DEPENDENCIES`, `LIST`, `VFHASH` and `LINKERS`, each a table to the
-    command's output.
+    command's output:
+    - `REFS CLASS=<class> NAME=<object>` (`0x101535be`-`0x101537f0`):
+      "Referencers of <full name>:", each object whose `Serialize` hands it
+      over (a finding archive's), then "Shortest reachability from root to
+      <full name>:" and the chain, its first " (native)" or " (root)", or
+      "   (Object is not currently rooted)"; nothing without both objects;
+    - `HASH`: `FName::DisplayHash` (`0x1014e000`), "Hash: %i names, %i/%i
+      hash bins" of the 4,096; the objects' hash it counts, and gives not
+      (`0x1015381e`-`0x101538b4`);
+    - `DEPENDENCIES PACKAGE=<package> EXCLUDE0= ... EXCLUDE15=`
+      (`0x10153958`-`0x10153afc`): "Dependencies of <path name>:", then for
+      each object whose outer is the package each reference its `Serialize`
+      hands over whose outer is neither the package nor one left out,
+      "      <full name>", the first under a "   <full name> references:"
+      that names that first reference, the archive's own object being meant
+      (`FArchiveShowReferences`, `0x1015de10`);
+    - `LIST`: each object's bytes those a counting archive tallies of its
+      `Serialize`: its properties' size, used and allocated alike, which
+      `UObject::Serialize` counts as it ends (`0x101504a9`-`0x101504b2`),
+      and each array's used and allocated bytes, as an array serializes
+      (the SDK's `TArray::CountBytes`);
+    - `VFHASH` (`0x10153fd7`-`0x101540e2`): "Class VfHashes:", then each
+      state, classes too, by its name, "%s:", and its function hash's 256
+      chains' lengths, "   %i: %i";
+    - `LINKERS` (`0x10154100`-`0x10154269`): "Linkers:", then each loader,
+      `%s (%s): Names=%i (%iK/%iK) Imports=%i (%iK) Exports=%i (%iK) Gen=%i
+      Lazy=%i`: its file, its package's full name, its names with 4 bytes
+      each and their entries' 2 bytes a character and 14 more, its imports at
+      28 bytes and exports at 36, its generations and its lazy loaders.
   - `GET` gives the class default's first element as the ini writes it,
     with no quotes: a string bare; an object its class and path name
     (`Texture'Engine.S_Actor'`) or `None`; a bool `True` or `False`; an enum
@@ -619,7 +649,11 @@ must be put there.
 
 `USystem::Exec` (`0x1016b790`), beside `EXIT` and `QUIT` (which answer
 "Closing by request"), `MEMSTAT` (the memory's figures) and `CONFIGHASH` (the
-config cache's dump, the executable's), takes `RELAUNCH`
+config cache's dump, the executable's `FConfigCacheIni::Dump`: "Files map:",
+then its map's "TMapBase: %i items, %i hash slots" -- 8 slots, twice as many
+each time a file is added past twice the slots and 8 more -- and a
+"   Hash[%i] = %i" a slot, the files whose name's `appStrihash` falls in it),
+takes `RELAUNCH`
 with the rest of the line:
 
 1. It logs `Relaunch: <rest>`.

@@ -584,6 +584,104 @@ to `DrawStats`, the nodes and polygons each one a BSP node drawn
 updated and 5/4 of their texels' bytes, in K (`UTexture::Update`, Engine.dll
 `0x103ecbaa`-`0x103ecbcf`), each cleared at `PreRender`.
 
+The other panels follow from 16 pixels down at the left, white in the small
+font, a line under the last (`ShowStat`, `0x10b144a0`), each panel with a
+line of a blank after it, in this order. Each time is its counter's cycles in
+ms; the render's counters are cleared at `PreRender` (`0x10b1458f`), the
+level's as its tick begins (`ULevel::InitStats`, Engine.dll `0x103a06b0`),
+the engine's set by its tick:
+
+- **Global**: `GLOBAL:`; `  FRAME=%04.1f: GAME=%04.1f CLI=%04.1f BLIT=%04.1f
+  PLAT=%04.1f`, the frame's mean, the game engine's levels' tick
+  (`GameCycles`, `0x1039006a`-`0x10390204`), the client's tick less its
+  `DrawCycles` -- the window's device lock and unlock (WinDrv.dll
+  `0x1110cabd`, `0x1110ce4e`) --, the `DrawCycles`, and the frame less the
+  engine's whole tick, its sign dropped; `  %s`, the viewer's level's
+  `GetStats` (Engine.dll `0x103a0740`): `Script=%05.1f Actor=%04.1f
+  Path=%04.1f See=%04.1f Spawn=%04.1f Audio=%04.1f Un=%04.1f Move=%04.1f
+  (%i) Net=%04.1f`: the events from native code, the outermost each
+  (`ProcessEvent`, Core.dll `0x1013f880`-`0x1013f9b0`, cleared by any
+  level's `InitStats`), the actors' tick, `FindBestInventoryPath`, the
+  pawns' `ShowSelf`, `CheckEnemyVisible` and `CheckNoiseHearing`, nothing,
+  the audio's update (in `UGameEngine::Draw`, `0x1038f5f8`-`0x1038f660`),
+  nothing, `MoveActor` and its count, the net tick; `  RENDER=%04.1f
+  MESH=%04.1f POLYV=%04.1f ILLUM=%04.1f OCC=%04.1f FILT=%04.1f EX=%04.1f
+  DECAL=%04.1f DECALCLIP=%04.1f DECAL#=%d`: the render's mean, the meshes'
+  draws, the device's `DrawComplexSurface` for the world's surfaces
+  (`0x10b1b027`-`0x10b1b081`), the surfaces' light setup (`SetupForSurf`),
+  `OccludeBsp`, `SetupDynamics`, the lights' setup for a surface (the
+  light manager's, `0x10b063ae`-`0x10b06640`, `0x10b068c2`-`0x10b06b92`),
+  the decals' pass, their `ClipDecal`, and the decals drawn
+  (`0x10b1b0ac`-`0x10b1b382`).
+- **Net**, on a client alone (its level's net driver's, or a demo driver's,
+  server connection): `NET (IN/OUT):`; the ping (`BestLag`, in ms); the
+  channels open; the packets come out of order a second each way (none go
+  out of order, nothing counting them); the loss; the packets, bunches and
+  bytes a second each way, a star by a byte rate whose 95% passes the
+  connection's speed; the speed twice and `Lan` or `Net` by the URL's `LAN`;
+  each stats period also a line to the log, `% 4i % 3i % 3i%% % 5i % 5i % 5i
+  % 5i % 5i % 5i % 5i % 5i` (ping, channels, the incoming loss, the rates,
+  the bunches, the packets, the two losses), under a header `Ping  Ch Loss
+  IRate ORate IBnch OBnch  IPkt  OPkt ILoss OLoss` and a ruled line when
+  the panel was off the frame before (`0x10b13dc0`-`0x10b14116`). The rates
+  are the period's counts over its length (`UNetConnection::Tick`,
+  `0x10404ce5`-`0x10404d56`): the bytes with each packet's overhead
+  (`ReceivedRawPacket`, `FlushNet`), the bunches handed to their channels
+  and sent, a bunch merged into the last uncounted.
+- **Hardware**: `HARDWARE:`; `  %s`, the device's `GetStats`, then a blank
+  line, then the device's `DrawStats`. D3DDrv's (`0x10007330`): `surf=%03i
+  %04.1f poly=%03i %04.1f tile=%03i %04.1f vbflushes=%03i` -- its surfaces,
+  polygons and tiles drawn this frame and the time in its
+  `DrawComplexSurface`, `DrawGouraudPolygon` and `DrawTile`, cleared at its
+  `Lock` (`0x100031c8`), and its vertex buffer's flushes since the last
+  `GetStats` --, then for each pixel format ` %s=%iK/%iK %i/%i %i %i %04.1f`:
+  its name, the bytes of its textures set this frame and of all it holds,
+  in K, their counts, and the frame's sets and uploads and the uploads'
+  time; then, when textures were thrown out, ` thrash=%i %04.1f (%ix%i)`.
+  SoftDrv's is "No stats available" (SoftDrv.dll `0x10d4b210`).
+- **Mesh**: `MESH: %04.1f`, the meshes' draws; `  GetFrame=%04.1f
+  Process=%04.1f LightSet=%04.1f Light=%04.1f`: the mesh's `GetFrame`
+  (`DrawMesh` `0x10b0d2e2`-`0x10b0d394`, `DrawLodMesh`
+  `0x10b0edd0`-`0x10b0ee3c`), a plain mesh's pass over its faces
+  (`0x10b0db31`-`0x10b0ddb6`), the light manager's `SetupForActor`
+  (`0x10b0dfd9`-`0x10b0e024`, `0x10b107b7`-`0x10b1080b`), the vertices'
+  light (its vertex function, `0x10b0282e`-`0x10b02fdc`, and `DrawLodMesh`'s
+  pass, `0x10b10821`-`0x10b10ad9`); `  Sub=%04.1f Clip=%04.1f Tmap=%04.1f`:
+  the face draw (`0x10b0bab0`, `0x10b0bc36`-`0x10b0c4fd`), `Clip` never
+  counted, the device's `DrawGouraudPolygon` (`0x10b0cc02`-`0x10b0cc57`);
+  `  MeshCount=%i MeshPolyCount=%i MeshSubCount=%i MeshLights=%i
+  MeshVtrics=%i VertLights=%i`: the meshes drawn (`0x10b0e9a7`,
+  `0x10b10d2f`), the faces kept to draw (`0x10b0e304`, `0x10b10ad3`), the
+  triangles the face draw hands the device (`0x10b0cc4e`), the lights
+  `SetupForActor` leaves (`0x10b0986b`) and the moving lights it adds new
+  to the actor (`0x10b097a0`), and the lights each vertex lit took
+  (`0x10b02894`).
+- **Zone**: `Zones: Visible=%i/%i Reject=%i`: each `OccludeBsp`'s zones with
+  spans, of its model's, summed over the frame's walks
+  (`0x10b19bf9`-`0x10b19c31`), and the nodes its walk cuts as their zone
+  mask holds none of the zones seen (`0x10b19be3`).
+- **Occlusion**: `Occlusion=%04.1f:`, `OccludeBsp`'s time; `   Clip=%04.1f
+  Raster=%04.1f Span=%04.1f Visit=%i/%i Points=%i`: its clip, raster and
+  span stages (`0x10b18038`-`0x10b1808f`, `0x10b18110`-`0x10b181a5`,
+  `0x10b182c8`-`0x10b19914`), the nodes visited (`0x10b1803d`) of the
+  model's (`DrawFrame` `0x10b1bb9d`), the points `ClipBspSurf` transformed
+  (`0x10b14f23`); `   Transform=%i Clip=%i Raster=%i RasterAccept=%i
+  DrawNodes=%i`: the surfaces `ClipBspSurf` transformed (`0x10b14d05`) and
+  those its points' outcodes do not reject together (`0x10b14f7e`), the
+  polygons given to the raster setup, those whose rectangle the span buffer
+  hides (`0x10b19e31`) and those it shows (`0x10b19e7f`) together, and the
+  latter alone, and the Fps line's nodes; `   BoxTime=%04.1f BoxChecks=%i
+  BoxBacks=%i BoxIn=%i BoxOutPyr=%i BoxSpanOcc=%i`: `BoundVisible`'s time and
+  calls (`0x10b1631e`-`0x10b17049`), the boxes wholly behind the eye
+  (`0x10b16652`), those the eye is in (`0x10b16542`), those wholly beyond a
+  side of the view's pyramid (`0x10b16e4f`), and those the spans hide
+  (`0x10b1701c`).
+- **Game**: `GAME:`; `   %s`, the level's `GetStats` again.
+- **Cache**: `CACHE:`; `   %s`, the memory cache's `Status`: `Gets=%04i
+  (%04.1f) Crts=%03i (%04.1f) Fresh=%03iK Stale=%03iK Items=%03i
+  Tick=%04.1f`, its gets, creations, fresh and stale bytes, items and tick
+  time, the counts cleared by it (Core.dll `0x10125610`).
+
 **The game's meshes.** Every one has `LODMinVerts` 10, `LODMorph` 0.3, and no
 `LODZDisplace` or `LODHysteresis`. No actor's `LODBias` differs from 1.
 

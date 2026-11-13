@@ -2069,11 +2069,14 @@ own nodes (a Liberty Island save: 209 of the level's 13,212 flagged in front,
   `CANCEL`; then the level's words (`ULevel::Exec`, below), the game's exec
   functions with no executor, and the engine's (`UEngine::Exec`,
   `0x10380ee0`): the system's, the objects' ([`Core.dll`](core-dll.md)), the
-  memory cache's `DUMPCACHE` (a line an item, Core.dll `0x10125500`), the
+  memory cache's `DUMPCACHE` (a line an item, "%02X [%i]: %s", its ID's low
+  byte, its size and Locked -- a cost of 2^24 or more --, Empty -- no ID --,
+  Stale -- not used this cache tick -- or Fresh, Core.dll `0x10125500`), the
   executable's ([the launcher's](launch-flow.md)), the client's `BRIGHTNESS`,
-  the audio's (Galaxy's `CDTRACK`, `CDVOLUME`, `MUSICORDER`, `RECORDSOUND`,
-  `ENDRECORDSOUND` and `ASTAT`), the renderer's
-  ([`STAT` and the rest](render-dll.md#mesh-detail)), `FLUSH`, and
+  the renderer's ([`STAT` and the rest](render-dll.md#mesh-detail)), the
+  audio's (Galaxy's `CDTRACK`, `CDVOLUME`, `MUSICORDER`, `RECORDSOUND`,
+  `ENDRECORDSOUND` and `ASTAT`, [the console](galaxy-dll.md#hardware-and-the-console)),
+  `FLUSH`, and
   `CRACKURL`: the rest of the line read as an absolute URL, its parts listed
   a line each, `BAD URL` for one that does not read; one that reads faults
   at its `String` line, the string's first character pushed for a `%s`

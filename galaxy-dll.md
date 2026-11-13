@@ -595,11 +595,54 @@ and 32.4 dB, and its peak 0.5 dB down, as the original's is.
   routines, stereo too (`0x10623578`, chosen at `0x10614080`), with 64-level
   gains (`0x1062357c`-`0x106235a9`) and one interleaved buffer; without SSE the
   integer MMX routine, all but alike.
-- **Console commands** (`Exec`, `0x10607070`):
-  - `CDTRACK`, `CDVOLUME`;
-  - `MUSICORDER`: a jump to an order, logged as "Galaxy order";
-  - `ASTAT AUDIO` and `ASTAT DETAIL`: each channel's sound, volume, pitch,
-    radius and priority, drawn by `PostRender` (`0x10608570`);
-  - `RECORDSOUND` and `ENDRECORDSOUND`: the microphone at 8 kHz, filtered,
-    saved as `Test.wav` and played at the player;
-  - A3D's `s_...` settings.
+- **Console commands** (`Exec`, `0x10607070`), the engine's after the
+  renderer's ([`Engine.dll`](engine-dll.md)), in this order:
+  - `CDTRACK <n>`, with a viewport: "CD Track <n>" to the command's output,
+    the player's `CdTrack` set to it and its `Transition` to `MTRAN_Instant`,
+    so the next update changes the music as at any instant transition
+    ([music](#music)), the same song going on from its own order;
+  - `CDVOLUME <f>`: the CD audio's volume, 127 times it; nothing written;
+  - `MUSICORDER <n>`, while a song is loaded: "Galaxy order <n>" to the
+    command's output, and `glxControlMusic`'s position set (its case 1,
+    `0x1060d0e0`): the order count made the order before it, the pattern's
+    break flagged and the mixer's count to the next tick run out
+    (`0x1060d15e`-`0x1060d193`), so the order starts at once, where a
+    section's change (case 2 and the break, `0x1060a863`-`0x1060a88d`) waits
+    for the playing row's end; a negative order counts from the order
+    playing (-1 the next), and one past the song's last is refused, quietly;
+  - `RECORDSOUND` (`0x106071c5`-`0x10607342`): the microphone opened
+    (`waveInOpen`, the wave mapper) at 8 kHz, mono, 16 bits, one buffer of
+    64 KB, 4.096 s, given it and started, "RecordSound begin" to the log;
+    each call that fails is an assertion, a critical error;
+  - `ENDRECORDSOUND`, while recording (else nothing,
+    `0x1060735d`-`0x10607a95`): the recording reset and stopped, its
+    samples, the bytes recorded over 2, "RecordSound end (%i samples)" to the
+    log, the device closed. Then from the fourth sample on, in place, a
+    slope coder: a step of 256 at first, grown by half (3/2, cut toward 0)
+    when the three samples before it, as they now stand, rise or fall
+    strictly one way, else cut by a third (2/3), held to 256-2048; a value
+    from 0 moved up by the step if under the sample plus what was missed
+    before, else down, held to -32,768-32,767 and written, what was missed
+    the sample less it. Then from the fourth on, in place, a low pass: the
+    sample 1 - 0.6 (the float) of itself and 0.6 of the one before, cut
+    toward 0 (`_ftol`). Written as `Test.wav` in the current folder by
+    `SaveRiffFile` (Core's `FRiffChunk.h`): a RIFF `WAVE` of a `fmt ` chunk
+    of 16 bytes -- the format's tag, channels, rate, bytes a second, block
+    and bits, each logged as it is written, "wFormatTag: 1" to
+    "nBitsPerSample: 16" -- and a `data` chunk of the samples; nothing, its
+    lines unlogged, when the file will not open. With a viewport and some
+    samples, that file loaded into a new `USound` of the transient package
+    and played at the player through the subsystem's `PlaySound`, Id 2, at
+    the player's place, volume 1000 (full), radius 4,096 and pitch 1;
+  - `ASTAT AUDIO` toggles the overlay, `ASTAT DETAIL` its detail, any other
+    `ASTAT` taken too. `PostRender` (`0x10608570`), after the console's
+    `PostRender` and before the renderer's statistics (Engine.dll
+    `0x1038f775`-`0x1038f79b`), draws it white in the canvas's small font:
+    `GalaxyAudioSubsystem Statistics` at the left 16 pixels down; then for
+    each of `EffectsChannels` from 24 pixels down, 10 in, 8 pixels apart --
+    16 with the detail -- `Channel %2i: %s`, the sound's full name, for a
+    channel with a voice, `Channel %i: None` for another, `Channel %i:
+    None` with a blank more from the tenth; with the detail 8 under each `
+    Vol: %05.2f Pitch: %05.2f Radius: %07.2f Priority: %05.2f`, the
+    record's, or `  ...`;
+  - A3D's `s_...` settings, with A3D 2.0 in use.
