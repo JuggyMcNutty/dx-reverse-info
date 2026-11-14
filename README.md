@@ -44,16 +44,10 @@ what each function does, with addresses.
 | `WinDrv.dll` | the Windows client and viewport: the game's window, DirectDraw, DirectInput, the joystick, which render device a viewport opens with | [`windrv-dll.md`](windrv-dll.md) | its command-line flags, keys and typed characters, the focus, where the game's window opens, which viewport a frame draws and which render device a viewport opens with |
 | `Window.dll` | the Win32 widgets and dialog templates of the launcher and the editor | [`wizard.md`](wizard.md#page-layouts) | the launcher's dialog templates, as data |
 
-Beside them in `gamefiles/System/`, not the game's:
-
-- **`RGalaxy.dll`** is `Galaxy.dll` with 8 bytes changed: 7 rename its package to RGalaxy,
-  so both can be installed, and 1 makes the `MUSICORDER` console command change the music's
-  order when the playing pattern ends, not at once
-  ([the console](galaxy-dll.md#hardware-and-the-console)).
-- **`ALAudio.dll`** is OldUnreal's OpenAL audio driver built for Deus Ex ("OpenAL Audio for
-  DeusEX", copyright 2016): lip sync, EFX reverb with a mode that emulates the old one,
-  HRTF, Doppler, OGG, and tracker music through libxmp. It needs `OpenAL32.dll`,
-  `ALURE32.dll` and `libxmp.dll`, beside it.
+Beside them in `gamefiles/System/`, not the game's, **`ALAudio.dll`** is OldUnreal's OpenAL
+audio driver built for Deus Ex ("OpenAL Audio for DeusEX", copyright 2016): lip sync, EFX reverb
+with a mode that emulates the old one, HRTF, Doppler, OGG, and tracker music through libxmp. It
+needs `OpenAL32.dll`, `ALURE32.dll` and `libxmp.dll`, beside it.
 
 ## Working on the binaries
 
