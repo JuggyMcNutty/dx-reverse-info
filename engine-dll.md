@@ -2209,7 +2209,8 @@ it is. It runs `PlayerInput` alone, then sets each `input` float to 0 itself
   game's `InitGame`; every actor's `PreBeginPlay` and `BeginPlay`; each actor's
   zone; every actor's `LastRenderTime` set to −10 s, whatever its map kept;
   `PostBeginPlay`; `SetInitialState`; the actors' bases: an actor with an
-  `AttachTag` bases the first actor of that tag on it; else a decoration,
+  `AttachTag` stands on the first actor of that tag in the list, itself
+  among them (`SetBase(that, 0)`, `0x1038c1f0`'s pass); else a decoration,
   inventory item or pawn with no base that collides with the world and is at
   rest (none or rotating physics) gets `FindBase`'s ([moving](#moving)), and
   one it based on the level keeps none. Each pass runs over
