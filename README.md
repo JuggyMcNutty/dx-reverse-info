@@ -49,6 +49,11 @@ audio driver built for Deus Ex ("OpenAL Audio for DeusEX", copyright 2016): lip 
 with a mode that emulates the old one, HRTF, Doppler, OGG, and tracker music through libxmp. It
 needs `OpenAL32.dll`, `ALURE32.dll` and `libxmp.dll`, beside it.
 
+**HX**, Sebastian Kaufel's co-op mod, abandoned since its 0.9.89.4 of 2019, is read as the
+game's binaries are: its `HX.dll`, `HX.exe` and `HCC.exe`, in [`hx-dll.md`](hx-dll.md), for
+DXEngine to play it. The mods still being made are not read
+([Port Ex Machina's mods](https://github.com/JuggyMcNutty/port-ex-machina/blob/main/AGENTS.md#decided)).
+
 ## Working on the binaries
 
 A path below that is not this repository's is the parent folder's, where this repository is
