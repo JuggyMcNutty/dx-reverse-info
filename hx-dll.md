@@ -468,9 +468,13 @@ that a `Current` save keeps it. The arrival is the game's `ULevel::SpawnPlayActo
   `flagBase` (+0x890) is set None.
 - **The old level**: after its loaders are reset and its tracker and drivers deleted,
   `ExitLevelCleanup` ([below](#exitlevelcleanup)).
-- **The co-op starts**: right after the load, on a server whose `LevelInfo.Game` is None,
-  `HX.HXCoopStart` must load (`CoopStartClass` asserted), then `HXSpawnCoopStarts` with the
-  level and the URL's map ([co-op starts](#co-op-starts)).
+- **The co-op starts**: right after the load, for a level that is a server's (`IsServer`)
+  and whose `LevelInfo.Game` is None, `HX.HXCoopStart` must load (`CoopStartClass`
+  asserted), then `HXSpawnCoopStarts` with the level and the URL's map, the name the level was
+  loaded by ([co-op starts](#co-op-starts)). A client's level passes the test too, its net
+  driver not yet hooked up to it (that comes after the package map's `HAVE GUID` lines); its
+  starts go with the map's other actors that are neither static nor kept when the level
+  begins.
 - **`CoopSetupActors`**, after the package map's `Compute`, outside the editor, with no
   package map or one that holds package `HX`: on a client, only for an HX server
   ([below](#coopsetupactors)).
@@ -536,16 +540,28 @@ here are its class's, for the rest of the run. `HXTailMutator` keeps the
 ### Co-op starts
 
 `HXSpawnCoopStarts` (`0x10025e20`) compares the map's name with 80 of the game's maps
-(00_Intro to 99_Endgame4) and spawns the starts of its table, compiled in, through
-`HXSpawnSingleStart` (`0x10025cb0`): 1,189 `AHXCoopStart`s in all, the output of the
-`spewcoopstarts` commandlet ([commandlets](#commandlets)). Each has its place and rotation, a
-`Tag` (its portal's name, `ToBarFrontEntrance`), `Priority` (+0x330), `bDefaultStart` (+0x324
-bit 2), `TeamNumber` (+0x334), `bInitiallyEnabled` (bit 0), `EnableTag` (+0x328), `DisableTag`
-(+0x32c) and `EnabledMessage` (+0x338, `Enabled new CoopStart.`), and collides with actors as
-its entry says, blocking nothing (`SetCollision`). A failure logs `Failed to spawn coop start
-at (%f,%f,%f) with Tag '%s'`. A level from a `Current` folder, which has no game, gets them
-again; whether it then holds two sets, the saved ones beside the new, is not confirmed by a
-run.
+(00_Intro to 99_Endgame4) in turn, without regard to case (`appStricmp`), and spawns the
+starts of the one that matches, compiled in, through `HXSpawnSingleStart` (`0x10025cb0`):
+1,268 `AHXCoopStart`s in all, 4 to 98 a map (98 in 04_NYC_Street), the output of the
+`spewcoopstarts` commandlet ([commandlets](#commandlets)). The table is code, not data: each
+start is a call whose sixteen arguments are constants pushed before it -- the level, the tag,
+the place (three floats), the rotation (three ints), the priority, `bDefaultStart`, the team,
+`bInitiallyEnabled`, the enable and disable tags, the message and the collision. The compiler
+made each map's last call one shared call at the function's end (`0x1003a1c0`, the last
+arguments pushed there or just before), which each map's block jumps to (the last falls into
+it), so the code holds 1,189 calls for the 1,268 starts.
+
+`HXSpawnSingleStart` spawns each through the level's `SpawnActor`, with no name, owner or
+instigator and a spawn that may fail, then sets its `Tag` (its portal's name,
+`ToBarFrontEntrance`, or the class's own, `HXCoopStart`), `Priority` (+0x330),
+`bDefaultStart` (+0x324 bit 2), `TeamNumber` (+0x334), `bInitiallyEnabled` (bit 0),
+`EnableTag` (+0x328), `DisableTag` (+0x32c) and `EnabledMessage` (+0x338), and makes it
+collide with actors as its entry says, blocking nothing (`SetCollision`). Of the 1,268, 572
+are default starts, 7 start disabled, 13 have an enable or a disable tag, 5 collide, all are
+team 0 and carry `Enabled new CoopStart.`; 906 have priority 0, the rest 100 to 1000. A
+failure logs `Failed to spawn coop start at (%f,%f,%f) with Tag '%s'`. A level from a
+`Current` folder, which has no game, is loaded by its file's path ([Browse](#browse)), which
+names none of the 80 maps, so none are spawned again.
 
 ### ExitLevelCleanup
 
