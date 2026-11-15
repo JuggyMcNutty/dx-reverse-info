@@ -175,6 +175,28 @@ Its only users are `DeusExPlayer`'s debug console commands.
   when it is also public (the import tagger, `0x1015e7b0`). A level's mission
   script (`MissionScript` is transient) is in no save, nor an object a
   script's `new` flags transient.
+- **A conformed save** (`SavePackage`, `0x10155980`, given a linker to
+  conform to, as HX's level save gives the map's,
+  [hx-dll.md](hx-dll.md#saving-a-level)): logged `Conformal save, relative
+  to: <that file>, Generation <its generations and one>`, the save keeps
+  that file's numbering for what it shares with it:
+  - **the names:** that file's, each at its own index, whether the save
+    uses it or not; the save's others after them;
+  - **the exports:** each of that file's in its order, taken by the save's
+    export of the same full name (its class, then its path within the
+    package, compared without case), or left an empty entry (no class,
+    name or flags, no data) that no load makes; the save's others after
+    them;
+  - **the header:** that file's GUID and generations, the save's own counts
+    one more generation.
+
+  A save with nothing to conform to gets a new GUID (`appCreateGuid`) and
+  one generation. A client counts a package by the generation it has
+  ([numbering](network.md#numbering)), so one with the first file numbers a
+  conformed save's shared objects and names as the server does (HX's saves
+  of Liberty Island and UNATCO HQ in its run's folder, read against the
+  maps: the map's names in their slots, its exports' slots filled or left
+  empty, the rest added after).
 
 - **A string's bytes** (`FString`'s `<<`, `0x101459b0`): a compact count
   with the terminator, then the characters; on a save, negative and 16-bit

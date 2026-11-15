@@ -235,16 +235,26 @@ render device's and the audio's choices (`BoxOptionSelected`).
   The game's server refuses only a response of 0 ([joining](network.md#joining)), so the
   inverse keeps no client out.
 - **The package map** (`BuildServerMasterMap`, `0x1003f0e0`): the game's
-  ([joining](network.md#joining), step 4), then what HX calls its packagemap hack. While
-  HX's `Browse` loads a level from a `Current` folder, a global (`0x10099420`) holds that
-  level's file, `<folder>\<map>.s%02d` ([browse](#browse)), cleared after the load. The entry
-  of the server's package list (68-byte entries from +0x28) whose file is that one gets in
-  its place the map's own file (`appFindPackageFile` of the package's name), that file's size
-  (+0x24) and a `RemoteGeneration` (+0x3c) of 1, so that clients are sent the untouched map,
-  not the saved one (HX's changelog). It warns (`GWarn`) `Failed to find package %s for
-  packagemap hack.` or `Failed to find suitable sized package %s for packagemap hack.`.
-  Whether a client then maps the saved level's objects onto the map it has is not confirmed
-  by a run.
+  ([joining](network.md#joining), step 4), then what HX calls its packagemap hack. While HX's
+  `Browse` loads a level from a `Current` folder, a global (`0x10099420`) holds that level's
+  file, `<folder>\<map>.s%02d` ([browse](#browse)), cleared after the load. The entry of the
+  server's package list (68-byte entries from +0x28) whose file is that one, compared without
+  case, gets in its place the map's own file (`appFindPackageFile` of the package's name, no
+  GUID), that file's size (+0x24, the file manager's: a file it cannot size is not taken) and a
+  `RemoteGeneration` (+0x3c) of 1; the list is not computed again. So clients are sent the
+  untouched map, not the saved one (HX's changelog), whose two generations a client's load
+  refuses ([packages and linkers](core-dll.md#packages-and-linkers), a package's generations);
+  its `SIZE=` is the map's, its `GEN=` still the save's own (the game's `SendPackageMap`,
+  `0x10401ed0`, sends the server's generation), and the server counts the level by its first
+  generation, the map's, as a client with the map asks by its `HAVE`
+  ([numbering](network.md#numbering)): the conformed save ([saving a level](#saving-a-level),
+  step 8) keeps the map's objects and names at those numbers. It warns (`GWarn`) `Failed to
+  find package %s for packagemap hack.` or `Failed to find suitable sized package %s for
+  packagemap hack.`. Run (a probe on a listen server, Liberty Island left for UNATCO HQ and
+  entered again, a client joining it, DXEngine on the other side): Liberty Island announced
+  with the map's `SIZE=9411740` and `GEN=2`, each of its 19 movers, marked by the server
+  before it left, carrying its mark on the client, and a client without the map sent
+  `..\Maps\01_NYC_UNATCOIsland.dx`.
 
 ### The checks
 
@@ -425,7 +435,8 @@ decoration and shadow. `HXActor`'s does nothing, so every other HX actor is save
    (`appFindPackageFile`, asserted; `LOAD_NoWarn|LOAD_NoVerify`), and `SavePackage` of the
    level's package, the level its base, no flags, to the file, with that linker to conform
    to. So the save keeps the map's names and exports in their order and its GUID, one
-   generation on (not confirmed by a run).
+   generation on ([a conformed save](core-dll.md#packages-and-linkers); its saves of Liberty
+   Island and UNATCO HQ read against the maps).
 9. Saved: `Generations` set to the new number, and the file of the number before the old one
    deleted when there is one, so the last two stay. Not saved:
    `CoopSaveCurrentLevel: SavePackage() failed`.
