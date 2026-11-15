@@ -376,9 +376,12 @@ A server moves its game to another map, and its clients follow:
    `NotifyAcceptingConnection` ignores a new client's packets
    (`Server <level> refused`). Once `NextSwitchCountdown` runs out (the
    `ServerTravelPause` 4 s it was given when the map began listening;
-   `UGameEngine::Tick`): `Server switch level: <url>`; the players' travel info
-   taken when `bNextItems` is set; a browse to `NextURL` relative to the last
-   URL, whose options (`?listen`, the game) it keeps. The old net driver goes
+   `UGameEngine::Tick`): `Server switch level: <url>`; the level's own travel
+   info for a `NextURL` of `?RESTART` alone, compared without case
+   (`0x1039037d`), so not for a listen server's, its host's options appended,
+   else the players' travel info when `bNextItems` is set; a browse to
+   `NextURL` relative to the last URL, whose options (`?listen`, the game) it
+   keeps. The old net driver goes
    with its level, closing the clients' connections, and the new map listens
    again.
 4. **A client**: the `ClientTravel` browses relative to its last URL (the

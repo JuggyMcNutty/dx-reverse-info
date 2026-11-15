@@ -341,9 +341,17 @@ Extension's, so `XGameEngineExt` never asks for the root window after a load
    shows `ConnectionFailed` for 6 s.
 4. `?restart`: the URL becomes the `DeusExLevelInfo`'s `MapName` with the last URL's portal
    and `?loadonly`, or the last URL itself with no `DeusExLevelInfo`; slot -2 is emptied,
-   on a listen or dedicated server too, whose own folder is left as it was (not confirmed by
-   a run); the map loads from `Maps` with the browse's travel info, which HX's frame gives
-   it ([the frame](#the-frame)).
+   on a listen or dedicated server too, whose own folder is left as it was; the map loads
+   from `Maps` with the browse's travel info. HX's frame gives it the level's own only for a
+   `NextURL` of `?RESTART` alone, compared without case (`0x1003c3b0`, as the game's frame,
+   [server travel](network.md#server-travel)): a listen server's game appends its player's
+   `?Name` and `?Class`, so its restart takes the players' travel with `bNextItems`, else
+   none, and Steve begins afresh. The level, entered with no `?listen`, is no longer a
+   server. Run (a probe on Liberty Island setting a flag of Steve's, UNATCO HQ setting
+   another, then `?RESTART`; both engines): on a listen server UNATCO HQ again with neither
+   flag, its game's options `?loadonly` alone, `Current` emptied and `ListenCurrent` left;
+   on a dedicated server, whose `NextURL` is `?RESTART` alone, UNATCO HQ again with the
+   first flag and not the second, `Current` emptied and `ServerCurrent` left.
 5. `?loadgame=` fails: `Loadgame is not supported.`
 6. Not a local map: a server's address on a client goes to `UGameEngine::Browse`; any other
    internal URL fails (`ServerOpen`); an external one goes to `appLaunchURL`.
@@ -499,7 +507,10 @@ that a `Current` save keeps it. The arrival is the game's `ULevel::SpawnPlayActo
   or `DefaultServerGame`, `Game class is '%s'`).
 - **A fresh map**: the game spawned, then `HX.HXSteve`, whose `FlagBase` (+0x324) is a new
   `UHXFlagBase` (0x12c) in the transient package, and Steve's `Init` with the travel info and
-  the URL's portal ([Steve](#steve)); then the game's passes over every actor, and `Bringing
+  the URL's portal ([Steve](#steve)): none for the Entry level's load, which the engine's start
+  makes for a client alone, and `Browse`'s copy for every other, a dedicated server's first
+  map's too (runs: `Initializing Steve.FlagBase` logged at Entry's load and where the travel
+  holds Steve's flags alone, in both engines); then the game's passes over every actor, and `Bringing
   %s up for play...`, without the tick rate the game's line has.
 - **A level that has begun play** (from a `Current` folder, its game and Steve not saved):
   `bBegunPlay` cleared, so the spawns send no events; the game and Steve spawned and set up as
