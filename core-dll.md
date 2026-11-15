@@ -190,8 +190,10 @@ Its only users are `DeusExPlayer`'s debug console commands.
   - **the header:** that file's GUID and generations, the save's own counts
     one more generation.
 
-  A save with nothing to conform to gets a new GUID (`appCreateGuid`) and
-  one generation. A client counts a package by the generation it has
+  A save with nothing to conform to gets a new GUID (`appCreateGuid`,
+  `0x1016d030`: Windows' `CoCreateGuid`, a random version-4 one) and one
+  generation (`ReturnConsole`'s saves of Liberty Island and UNATCO HQ into
+  `Current`: GUIDs no map has). A client counts a package by the generation it has
   ([numbering](network.md#numbering)), so one with the first file numbers a
   conformed save's shared objects and names as the server does (HX's saves
   of Liberty Island and UNATCO HQ in its run's folder, read against the
