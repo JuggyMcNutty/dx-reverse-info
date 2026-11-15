@@ -1185,7 +1185,8 @@ replacement for the old `ServerCommandlet`, with the improvements made in `Launc
   to 1 s is left, a 1 ms sleep while more than 1.5 ms is left, else a spin. The game's
   (`0x103818b0`) sleeps the rest at once (`appSleep`), not at all at a rate of 0; Windows'
   coarse sleep makes that one sleep too long for the 90 frames a second HX's ini asks of a
-  server (`NetServerMaxTickRate=90`).
+  server (`NetServerMaxTickRate=90`). Run (a probe on `HCC.exe server`): `GETMAXTICKRATE`
+  90, 901 frames in 10.0004 s, each 11.111 to 11.123 ms.
 
 **The other four**, for HX's developers (their help is `HX.int`'s); play needs none, and the
 mission scripts' hand-made tables come from their output:
@@ -1268,7 +1269,8 @@ Neither of the last two changes how a package loads.
   - frames timed by the time-stamp counter when it keeps within 0.25% of
     `QueryPerformanceCounter`, else by the latter;
   - the main loop (`0x10923a90`) holds the tick rate to 2.5..200, a rate of 0 (no cap) taken
-    for 200, and sleeps 1 ms at a time, where the game's has no cap;
+    for 200, and waits each frame out as `MainLoop` does (below): 1 ms sleeps while 1.5 ms or
+    more is left, then a spin, only while under a second is left; the game's has no cap;
   - 21 functions of Core and Engine rewritten by five-byte jumps (`RedirectCall`,
     `0x109047d0`): varargs and the string pool hardened (`0x10933d90`); `Logf` passing over
     suppressed names; `SafeLoadError`, `StaticLoadClass` (`%s is not a child class of %s`)
