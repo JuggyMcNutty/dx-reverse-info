@@ -223,7 +223,12 @@ are `exec` exports.
   so a call without it recurses -- up the parents: true when the window and
   every ancestor has the flag, false at the first that lacks it. With
   `False`, the window's own flag.
-- **A new window** (`NewChild`, `CreateNewWindow`, `0x1004df70`) starts
+- **A new window** (`NewChild`, `CreateNewWindow`, `0x1004df70`) is
+  constructed in its parent, with no name given, so it is named after its
+  class and a number; the root window in the player's pawn
+  (`ConstructRootWindow`, `0x10037e70`, its class the ini's
+  `[Engine.Engine] Root`): a window's path runs through its parents to the
+  pawn (`DX.JCDentonMale0.DeusExRootWindow0.Window11`). It starts
   hidden. Its parent gets `ChildAdded`, then the parent and each ancestor
   `DescendantAdded`, all before the window's `InitWindow`. Then, unless
   `NewChild` was asked not to, it is shown as `Show` shows it, so
