@@ -310,7 +310,9 @@ compacting, `CoopSaveCurrentLevel` forced and compacting.
   actor is deleted.
 
 So a reference to a destroyed actor goes None within a few frames, where the game's waits for
-128 of them.
+128 of them. Run (a probe alone on Liberty Island, both engines): six actors destroyed in one
+frame, each held by a window of the root's and by an actor, the four newest None in both the
+next frame, all six the frame after.
 
 ### Small
 
