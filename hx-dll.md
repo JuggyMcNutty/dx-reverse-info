@@ -725,6 +725,16 @@ its own surface, not its coplanar nodes', an `iSurf` of -1 not checked. Each axi
 difference is stored as a float before it is scaled, which can move the last bit.
 `ActorCanSee` and the `FastRepTrace` natives use it ([traces](#traces)).
 
+Runs (a private probe on a dedicated server, `HCC.exe server` and DXEngine's, each with the
+other's client and DXEngine's with its own, on UNATCO HQ): a sprite the client's view reaches
+only through glass, a line `FastTrace` stops at and `FastRepTrace` passes, is sent, one behind
+a wall is not; with three extra views on the player, a sprite seen from the second alone and
+one seen from the third alone are sent, one seen from none is not; a hidden item that a pawn
+in view holds as its `SelectedItem` is sent, one it holds otherwise is not, nor the selected
+item of a pawn out of view; each actor sent has its `LastRenderTime` the level's time, the
+others keep theirs (a dedicated server draws nothing). A conversation an NPC starts as the
+player comes near moves the player's view to its camera, and what is sent with it.
+
 ### The actor channel
 
 `UHXActorChannel::ReplicateActor` (`0x100152e0`, `HXChan.cpp`, Unreal Tournament's code) is
