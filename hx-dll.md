@@ -162,14 +162,15 @@ from the constructors of `XInputExt` and `APlayerPawnExt`, and from HX's copies.
   `DefaultLocalMap`, the server's `DefaultMap`, where the game's tries `DX.dx`. Any other
   failure is fatal (`FailedBrowse`).
 - **The player's name**, on a client: `[DefaultPlayer] Name`, read from the file named
-  `User.ini`, which the config cache takes for the user ini, `HXUser.ini` (not confirmed by
-  a run). One missing, empty or `Player` in any case, or any name with `-RANDOMDENTON` on
-  the command line, is replaced by a new one, written there before the default URL is read:
-  one to four letters, then `_Denton`. The count comes from a triangle from 1 to 4 peaking
-  at 2 (a uniform u: 1 + √(3u) below 1/3, else 4 − √(6(1 − u))), rounded to the nearest by
-  the x87, so 1 letter in 8.3% of names, 2 in 54.2%, 3 in 33.3%, 4 in 4.2%; it is asserted
-  to be 1 to 5. Each letter is `A` plus `appFrand` × 25 − 0.5 rounded, held to `A`..`Z`:
-  `A` to `Y` alike, never `Z`. The shares are not confirmed by a run.
+  `User.ini`, which the config cache takes for the user ini, `USERINI=`'s or `HXUser.ini`
+  ([HX.exe](#hxexe); runs with `USERINI=`: the new name in its file, the game's `User.ini`
+  keeping `Player`). One missing, empty or `Player` in any case, or any name with
+  `-RANDOMDENTON` on the command line, is replaced by a new one, written there before the
+  default URL is read: one to four letters, then `_Denton`. The count comes from a triangle
+  from 1 to 4 peaking at 2 (a uniform u: 1 + √(3u) below 1/3, else 4 − √(6(1 − u))), rounded
+  to the nearest by the x87, so 1 letter in 8.3% of names, 2 in 54.2%, 3 in 33.3%, 4 in
+  4.2%; it is asserted to be 1 to 5. Each letter is `A` plus `appFrand` × 25 − 0.5 rounded,
+  held to `A`..`Z`: `A` to `Y` alike, never `Z`. The shares are not confirmed by a run.
 
 ### The frame
 
@@ -197,9 +198,12 @@ travel; the pending join; the client's tick; the cycle counts. It differs:
 - **A client's travel** tests for `?RESTART` in the level's `NextURL`, not in the viewport's
   `TravelURL` (+0xa0): a viewport's `?RESTART` is a plain travel that exports the items, and
   the level's travel info goes to the browse only while the level's own `NextURL` is
-  `?RESTART`. It looks like a bug (not confirmed by a run). The export needs `bTravelItems`
-  (+0xac) and an `AHXPlayerPawn` with a `Player` and a `PlayerReplicationInfo`, and logs
-  `Export client travel for: %s` (the game's `Export travel for: %s`).
+  `?RESTART`. So `RESTARTLEVEL`, a viewport's `?restart` that carries no items, reaches the
+  browse with no travel info, as the game's `Browse` gives a `?restart` none
+  ([`DeusEx.dll`](deusex-dll.md#the-game-engine-travel-and-saving)). The export needs
+  `bTravelItems` (+0xac) and an `AHXPlayerPawn` with a `Player` and a
+  `PlayerReplicationInfo`, and logs `Export client travel for: %s` (the game's `Export
+  travel for: %s`).
 - **The portal**: the last URL's (+0xa8) is kept for a client's browse, where the game's
   empties it. HX's `SwitchLevel` and `SwitchCoopLevel` add an empty portal (`#`) when given
   none, so that the travel does not take the current one.
@@ -348,7 +352,7 @@ Extension's, so `XGameEngineExt` never asks for the root window after a load
    `NextURL` of `?RESTART` alone, compared without case (`0x1003c3b0`, as the game's frame,
    [server travel](network.md#server-travel)): a listen server's game appends its player's
    `?Name` and `?Class`, so its restart takes the players' travel with `bNextItems`, else
-   none, and Steve begins afresh. The level, entered with no `?listen`, is no longer a
+   none, and Steve begins afresh. The level, entered with no `?listen`, is not a
    server. Run (a probe on Liberty Island setting a flag of Steve's, UNATCO HQ setting
    another, then `?RESTART`; both engines): on a listen server UNATCO HQ again with neither
    flag, its game's options `?loadonly` alone, `Current` emptied and `ListenCurrent` left;
@@ -512,8 +516,8 @@ that a `Current` save keeps it. The arrival is the game's `ULevel::SpawnPlayActo
   the URL's portal ([Steve](#steve)): none for the Entry level's load, which the engine's start
   makes for a client alone, and `Browse`'s copy for every other, a dedicated server's first
   map's too (runs: `Initializing Steve.FlagBase` logged at Entry's load and where the travel
-  holds Steve's flags alone, in both engines); then the game's passes over every actor, and `Bringing
-  %s up for play...`, without the tick rate the game's line has.
+  holds Steve's flags alone, in both engines); then the game's passes over every actor, and
+  `Bringing %s up for play...`, without the tick rate the game's line has.
 - **A level that has begun play** (from a `Current` folder, its game and Steve not saved):
   `bBegunPlay` cleared, so the spawns send no events; the game and Steve spawned and set up as
   above; their `Touching` cleared, their execution initialised, `bBegunPlay` and `bStartup`
@@ -552,7 +556,7 @@ actor, by its class:
 | `Decoration`, `Effects`, `Projectile`, `Triggers` | with a `LightType`, `bStatic` and `bNoDelete` kept, `Keeping %s as bStatic and bNoDelete due to LightType!=LT_None.` (or the line for the one it has); else both cleared. `bGameRelevant` (+0x1a0 bit 7) cleared either way |
 | `DeusExLevelInfo` | `RemoteRole` None, `bNoDelete` set |
 | `ZoneInfo` | `bGameRelevant` cleared |
-| `CameraPoint` | `bNoDelete` set, `RemoteRole` None; the class's state `Idle` has its `StateFlags` (+0x7c) set to 0, so it is no longer auto; failing, `Failed to set state CameraPoint.Idle to 0` |
+| `CameraPoint` | `bNoDelete` set, `RemoteRole` None; the class's state `Idle` has its `StateFlags` (+0x7c) set to 0, so it is not auto; failing, `Failed to set state CameraPoint.Idle to 0` |
 | `InterpolationPoint` | `bNoDelete` set, `RemoteRole` None; the class's `BeginPlay` made simulated (`FUNC_Simulated`, 0x100 at +0x6c), so that a client links its own paths |
 | a brush with a model | its class (+0x24) swapped in place, the class exact: `DeusExMover` to `HXMover`, `BreakableGlass` to `HXBreakableGlass`, `BreakableWall` to `HXBreakableWall` |
 
@@ -560,9 +564,9 @@ actor, by its class:
 changed (`HXLockpick`), so the swap keeps every value. Runs (a private probe on a dedicated
 server with a client of it): UNATCO HQ's 27 movers' `Class` `HX.HXMover` on `HCC.exe server`
 and on `HX.exe`'s client; Liberty Island's client keeping no static decoration (HX's are sent)
-and the map's 32 interpolation points, each linked by its own `BeginPlay`. A state's or function's flags changed
-here are its class's, for the rest of the run. `HXTailMutator` keeps the
-`InterpolationPoint`s and replaces the `CameraPoint`s, `MapExit`s and `Teleporter`s.
+and the map's 32 interpolation points, each linked by its own `BeginPlay`. A state's or
+function's flags changed here are its class's, for the rest of the run. `HXTailMutator` keeps
+the `InterpolationPoint`s and replaces the `CameraPoint`s, `MapExit`s and `Teleporter`s.
 
 ### Co-op starts
 
@@ -573,10 +577,10 @@ starts of the one that matches, compiled in, through `HXSpawnSingleStart` (`0x10
 `spewcoopstarts` commandlet ([commandlets](#commandlets)). The table is code, not data: each
 start is a call whose sixteen arguments are constants pushed before it -- the level, the tag,
 the place (three floats), the rotation (three ints), the priority, `bDefaultStart`, the team,
-`bInitiallyEnabled`, the enable and disable tags, the message and the collision. The compiler
-made each map's last call one shared call at the function's end (`0x1003a1c0`, the last
-arguments pushed there or just before), which each map's block jumps to (the last falls into
-it), so the code holds 1,189 calls for the 1,268 starts.
+`bInitiallyEnabled`, the enable and disable tags, the message and the collision. Each map's
+last call is one shared call at the function's end (`0x1003a1c0`, the last arguments pushed
+there or just before), which each map's block jumps to (the last falls into it), so the code
+holds 1,189 calls for the 1,268 starts.
 
 `HXSpawnSingleStart` spawns each through the level's `SpawnActor`, with no name, owner or
 instigator and a spawn that may fail, then sets its `Tag` (its portal's name,
@@ -619,14 +623,14 @@ travel info. Its fields: `FlagBase` +0x324, `SkillPointsTotal` +0x328, `FirstGoa
 `KeyList` +0x330, `Portal` +0x334, `DataVaultImages[63]` +0x340.
 
 - **`Init(TravelInfo, Portal)`** (`0x10022c00`) runs the reader of each key the travel info
-  holds, in the table's order, and sets `Portal`; with no travel info it logs `Initializing
-  Steve.FlagBase`.
+  holds, in the table's order, and sets `Portal`; with no travel info, the flags' reader
+  alone, on nothing.
 - **`ExportTravel(TravelInfo)`** (`0x10023cb0`) writes each key as lines ended by CR LF
   (through an `FStringOutputDevice`):
 
 | Key | A line | Read back |
 |---|---|---|
-| `__INTERNAL_Steve_Flags` | `Name=%s Type=%i Expiration=%i Value=%i`, the bool flags alone, only with a `FlagBase` | `InitFlagBase` (`0x10023150`): type 0 sets the bool, added, with its expiration, set for a value not 0; types 1 to 6 warn `Unhandled Flag: Name=%s Type=%i Expiration=%i Value=%s`; a field missing warns `Found malformed Flag line in TravelInfo.` |
+| `__INTERNAL_Steve_Flags` | `Name=%s Type=%i Expiration=%i Value=%i`, the bool flags alone, only with a `FlagBase` | `InitFlagBase` (`0x10023150`) logs `Initializing Steve.FlagBase`, then: type 0 sets the bool, added, with its expiration, set for a value not 0; types 1 to 6 warn `Unhandled Flag: Name=%s Type=%i Expiration=%i Value=%s`; a field missing warns `Found malformed Flag line in TravelInfo.` |
 | `__INTERNAL_Steve_SkillPointsTotal` | `%i` | `appAtoi` |
 | `__INTERNAL_Steve_Goals` | `GoalName=%s bPrimaryGoal=%i bCompleted=%i Text="%s"` | `InitGoals` (`0x100234f0`): a new `HXGoal` (0x40, in the transient package) each, appended to `FirstGoal`; `Found malformed goal line in TravelInfo.` |
 | `__INTERNAL_Steve_NanoKeys` | `KeyID=%s Description="%s"` | `InitNanoKeys` (`0x100238f0`): a new `HXNanoKeyInfo` (0x3c) each, appended to `KeyList`; `Found malformed NanoKey line in TravelInfo.` |
@@ -729,14 +733,14 @@ difference is stored as a float before it is scaled, which can move the last bit
 `ActorCanSee` and the `FastRepTrace` natives use it ([traces](#traces)).
 
 Runs (a private probe on a dedicated server, `HCC.exe server` and DXEngine's, each with the
-other's client and DXEngine's with its own, on UNATCO HQ): a sprite the client's view reaches
-only through glass, a line `FastTrace` stops at and `FastRepTrace` passes, is sent, one behind
-a wall is not; with three extra views on the player, a sprite seen from the second alone and
-one seen from the third alone are sent, one seen from none is not; a hidden item that a pawn
-in view holds as its `SelectedItem` is sent, one it holds otherwise is not, nor the selected
-item of a pawn out of view; each actor sent has its `LastRenderTime` the level's time, the
-others keep theirs (a dedicated server draws nothing). A conversation an NPC starts as the
-player comes near moves the player's view to its camera, and what is sent with it.
+other's client, on UNATCO HQ): a sprite the client's view reaches only through glass, a line
+`FastTrace` stops at and `FastRepTrace` passes, is sent, one behind a wall is not; with three
+extra views on the player, a sprite seen from the second alone and one seen from the third
+alone are sent, one seen from none is not; a hidden item that a pawn in view holds as its
+`SelectedItem` is sent, one it holds otherwise is not, nor the selected item of a pawn out of
+view; each actor sent has its `LastRenderTime` the level's time, the others keep theirs (a
+dedicated server draws nothing). What is sent is reckoned from the player's view, a
+conversation's camera while one plays.
 
 ### The actor channel
 
@@ -745,14 +749,15 @@ the game's (`0x103fead0`, [replication](network.md#replication)) step for step b
 compare of a script property (`0x10016170`) takes a struct member by member, recursively,
 and any other value by `Identical` against the copy (the channel's, the class's defaults
 before its first), without the package map, where the game's first makes a reference the
-client cannot resolve None (`CanSerializeObject`, vtable +0x54); a value `NetSerializeItem`
-could not resolve has its copy cleared after the send. So read, a reference to an actor the
-client has no channel for would go again, as None, at every update. It does not: a private
-probe on a listen server, its reference set to a hidden actor no client is sent, then to
-another, then None, then the first again, the original's server with its own client (in a
-second Wine prefix) and with DXEngine's: no None reached either client, and the reference
-did once the actor was shown and relevant, as with the game's channel. What keeps it from
-going is not in the code read here. The native lists make such references None themselves.
+client cannot resolve None (`CanSerializeObject`, vtable +0x54). A reference to an actor the
+client has no channel for goes only once the client has the actor, never as None, as the
+game's channel sends it (a private probe on the original's listen server, with its own client
+and with DXEngine's: its reference set to a hidden actor no client is sent, then to another,
+then None, then the first again; no None reached either client, and the reference did once
+the actor was shown and relevant). What holds it back is not found in the code read here,
+which reads as sending it, as None, at every update: a value `NetSerializeItem` could not
+resolve has its copy cleared after the send. The native lists make such references None
+themselves.
 
 Runs of the rest (the same probe, each engine's server with each engine's client): an
 `HXScriptedPawn`'s six health values (with `bIsHuman`), its carried decoration, its
@@ -894,8 +899,8 @@ The natives:
   [a conversation's actors](consys-dll.md#a-conversations-actors)) offers every `Pawn`, then
   `Decoration`, then `PlayerPawn` in memory: a player twice, other
   levels' and deleted actors too, an event keeping the last actor offered. HX's binds none of
-  another level, the Entry level's among them, whose binding crashed now and then (HX's
-  changelog). Its callers: `HXConPlay.StartCoopConversation` and `JumpToConversation`,
+  another level, the Entry level's among them, a binding HX's changelog gives as a cause of
+  crashes. Its callers: `HXConPlay.StartCoopConversation` and `JumpToConversation`,
   `HXCinematicPlay.StartCinematic`, `HXClientDataLinkPlay`, `HXDataLinkDryRunner`.
 
 ## Sound slots
@@ -1170,11 +1175,11 @@ taken.
     × the angle's sine, `Roll` its part × `SwimAlpha` × its cosine, truncated; the item the
     decoration (`SwimPhi`, `SwimAlpha`, `SwimOmega`, `SwimAmp` at +0x428 to +0x434).
 
-  So swimming and carrying are drawn alone, and only the carrier sees his load translucent:
-  `HXPlayerPawn.PutCarriedDecorationInHand` no longer restyles it, `HXDecoration` sets
-  `SwimPhi` and `SwimAlpha` and destroys its `RenderProxy`. Not confirmed by a run: that the
-  hidden proxy is drawn as an item, what the carrier and the others see, the swim's
-  amplitude.
+  So swimming and carrying are drawn alone, and only the carrier sees its load translucent:
+  `HXPlayerPawn.PutCarriedDecorationInHand` makes only a decoration that is not an
+  `HXDecoration` translucent, and `HXDecoration` sets `SwimPhi` and `SwimAlpha` and destroys
+  its `RenderProxy`. Not confirmed by a run: that the hidden proxy is drawn as an item, what
+  the carrier and the others see, the swim's amplitude.
 - **`AHXRenderProxy`** (transient) has no C++ but its destructor. Its defaults: hidden,
   `RemoteRole` None, `LifeSpan` 100, `DrawType` None, `bGameRelevant`, no collision.
 
@@ -1215,7 +1220,7 @@ replacement for the old `ServerCommandlet`, with the improvements made in `Launc
   frames a second. It takes `GetMaxTickRate` (the game's: `NetServerMaxTickRate`, or
   `LanServerMaxTickRate` with `-lanplay`, held to 10..120, 0 with no net driver), holds it to
   2.5..200, a rate below 0.0001 taken for 200, and waits out the frame's 1 / rate: while 0
-  to 1 s is left, a 1 ms sleep while more than 1.5 ms is left, else a spin. The game's
+  to 1 s is left, a 1 ms sleep while 1.5 ms or more is left, else a spin. The game's
   (`0x103818b0`) sleeps the rest at once (`appSleep`), not at all at a rate of 0; Windows'
   coarse sleep makes that one sleep too long for the 90 frames a second HX's ini asks of a
   server (`NetServerMaxTickRate=90`). Run (a probe on `HCC.exe server`): `GETMAXTICKRATE`
@@ -1301,9 +1306,8 @@ Neither of the last two changes how a package loads.
   - DEP turned off (`0x10935ab0`), the player asked before the exit where it cannot be;
   - frames timed by the time-stamp counter when it keeps within 0.25% of
     `QueryPerformanceCounter`, else by the latter;
-  - the main loop (`0x10923a90`) holds the tick rate to 2.5..200, a rate of 0 (no cap) taken
-    for 200, and waits each frame out as `MainLoop` does (below): 1 ms sleeps while 1.5 ms or
-    more is left, then a spin, only while under a second is left; the game's has no cap;
+  - the main loop (`0x10923a90`) holds the tick rate and waits each frame out as `MainLoop`
+    does ([commandlets](#commandlets)); the game's has no cap;
   - 21 functions of Core and Engine rewritten by five-byte jumps (`RedirectCall`,
     `0x109047d0`): varargs and the string pool hardened (`0x10933d90`); `Logf` passing over
     suppressed names; `SafeLoadError`, `StaticLoadClass` (`%s is not a child class of %s`)
