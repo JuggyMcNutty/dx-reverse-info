@@ -557,7 +557,10 @@ actor, by its class:
 | a brush with a model | its class (+0x24) swapped in place, the class exact: `DeusExMover` to `HXMover`, `BreakableGlass` to `HXBreakableGlass`, `BreakableWall` to `HXBreakableWall` |
 
 `HXMover` declares `DeusExMover`'s 43 variables again, in their order, only `curPick`'s type
-changed (`HXLockpick`), so the swap keeps every value. A state's or function's flags changed
+changed (`HXLockpick`), so the swap keeps every value. Runs (a private probe on a dedicated
+server with a client of it): UNATCO HQ's 27 movers' `Class` `HX.HXMover` on `HCC.exe server`
+and on `HX.exe`'s client; Liberty Island's client keeping no static decoration (HX's are sent)
+and the map's 32 interpolation points, each linked by its own `BeginPlay`. A state's or function's flags changed
 here are its class's, for the rest of the run. `HXTailMutator` keeps the
 `InterpolationPoint`s and replaces the `CameraPoint`s, `MapExit`s and `Teleporter`s.
 
@@ -740,11 +743,22 @@ player comes near moves the player's view to its camera, and what is sent with i
 `UHXActorChannel::ReplicateActor` (`0x100152e0`, `HXChan.cpp`, Unreal Tournament's code) is
 the game's (`0x103fead0`, [replication](network.md#replication)) step for step but one: the
 compare of a script property (`0x10016170`) takes a struct member by member, recursively,
-and any other value by `Identical` against the copy, without the package map. The game's
-first makes a reference the client cannot resolve None (`CanSerializeObject`, vtable +0x54);
-in HX such a reference differs from the copy, which is cleared whenever `NetSerializeItem`
-fails, so it goes again, as None, at every update until the client has the actor (not
-confirmed by a run). The native lists make such references None themselves.
+and any other value by `Identical` against the copy (the channel's, the class's defaults
+before its first), without the package map, where the game's first makes a reference the
+client cannot resolve None (`CanSerializeObject`, vtable +0x54); a value `NetSerializeItem`
+could not resolve has its copy cleared after the send. So read, a reference to an actor the
+client has no channel for would go again, as None, at every update. It does not: a private
+probe on a listen server, its reference set to a hidden actor no client is sent, then to
+another, then None, then the first again, the original's server with its own client (in a
+second Wine prefix) and with DXEngine's: no None reached either client, and the reference
+did once the actor was shown and relevant, as with the game's channel. What keeps it from
+going is not in the code read here. The native lists make such references None themselves.
+
+Runs of the rest (the same probe, each engine's server with each engine's client): an
+`HXScriptedPawn`'s six health values (with `bIsHuman`), its carried decoration, its
+`ClientLastConEndTime` and its head turns, and the host's carried decoration (carried by
+`PutCarriedDecorationInHand`), head health and head turn, reach every client alike, the turns
+unpacked to the same tween rates (6.667 and 4.0 from 0.15 s and 0.25 s).
 
 ### The native lists
 
@@ -1042,7 +1056,9 @@ time off a positive field and, below 0.001, sets it to 0 and sends its event.
   over 639.9 and its height over 479.9 (449.9 with `WindowScale` -1), each truncated, at
   least 1, and lowered to `WindowScale` when that is above 0 and below it. The game's
   `ResizeRoot` (`0x1003adf0`) divides by 640 and 480. `HXPlayerPawn.WindowScale`, a
-  `globalconfig` with no menu, caps the UI's scale; -1 gives 1600x900 a scale of 2.
+  `globalconfig` with no menu, caps the UI's scale; -1 gives 1600x900 a scale of 2. Run (a
+  private probe at 1600x900, the player's `WindowScale` changed in play): the root 1600x900
+  with 1, 2 and 3, 800x450 with -1, from the next frame.
 - **`UHXWindow`**'s `Init` (`0x10014e30`) runs `XWindow::Init`, asserts a root (`HXWindow.cpp`
   29), keeps it in `RootWindow` (+0x150), and keeps the root's `parentPawn` in `PlayerPawn`
   (+0x14c), which must be an `HXPlayerPawn`: None or another class stops the game (`GError`,
@@ -1103,8 +1119,13 @@ time off a positive field and, below 0.001, sets it to 0 and sends its event.
   `XInputExt::Key`: Extension's knows only its own input.
 
 The Customize Keys screen sets a binding with `SET ini:Engine.Engine.Input <key> <value>`
-(`HXMenuScreenCustomizeKeys`). Which section of `HXUser.ini` the bindings are then saved in,
-`[HX.HXInput]` or `[Engine.Input]`, and read back from, is not confirmed by a run.
+(`HXMenuScreenCustomizeKeys`): the class's config saved whole into the user ini's own section,
+`[HX.HXInput]`, every key's binding and the aliases, `[Engine.Input]` left as it was; at the
+next start the constructor's `LoadConfig` reads `[Engine.Input]`, then `[HX.HXInput]` over it.
+Runs (a private probe, HX alone): F9 bound to `ShowScores` so lands in a new `[HX.HXInput]`,
+every key's binding from the last key down, key 0 as `StrProperty0`, then the 40 aliases, and
+is read again after a restart; with F9 bound otherwise in each section, `[HX.HXInput]`'s is
+taken.
 
 ## Render iterators
 
