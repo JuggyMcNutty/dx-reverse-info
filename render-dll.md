@@ -425,7 +425,12 @@ The renderer keeps it; the engine and the scripts read it
   `MoverDecalConsole`, a bullet hole on Liberty Island's `DeusExMover10`,
   gone from the face once the door has turned, the decal actor left where
   it was laid, its base None (why is not read: the tracker's filing of the
-  moved polygons is the lead). Its texture, the level's default one where it has none
+  moved polygons is the lead). In a mirror's frame no decal shows: DXEngine's
+  harness's `MirrorConsole` with `ScorchMarks`, a scorch mark on a wall that
+  Liberty Island's lobby floor reflects, on its wall and absent from the
+  reflection (why is not read: the frame turns each surface's points round,
+  and the planes through the eye and the polygon's edges with them). Its
+  texture, the level's default one where it has none
   (`0x10b1b154`), runs from its first corner, U toward the second and V
   toward the last, over the actor's `DrawScale` as it is drawn
   (`0x10b1c8e0`); it is drawn modulated, its colour the actor's
@@ -1208,6 +1213,18 @@ palette's last entry never shows (`0x10b05d40`).
   `D3DDrv` draws it only with `UseVertexFog`, which the game's ini has off
   ([`D3DDrv`'s fog](d3ddrv-dll.md#fog)), so the game's meshes are drawn
   unfogged.
+- **A face's normal in a mirror's frame.** Both draws make each face's
+  normal from its corners in the frame's view space -- `DrawLodMesh` the
+  cross product made a unit and summed into its three corners
+  (`0x10b0ea80`, its face loop), `DrawMesh` a unit normal a face
+  (`0x10b0d1a0`) -- and neither multiplies it by the frame's `Mirror`: the
+  facing test alone does (below). A mirror's frame is the parent's
+  reflected ([a frame](#a-frame)), and a cross product of reflected corners
+  points the other way from the reflected face's own normal, so in a
+  mirror's frame every lit face is lit as from its other side: DXEngine's
+  harness's `MirrorConsole` through `D3DDrv`, the lobby's potted plants in
+  Liberty Island's floor, a pot's reflection lit on the side its direct
+  view has dark.
 - **Which faces are drawn.**
   - `DrawLodMesh` keeps a face whose corners are not all beyond one side of
     the view, and that faces the eye: `((A − B) × (C − A)) · A`, in view

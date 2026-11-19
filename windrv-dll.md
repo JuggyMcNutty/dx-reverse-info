@@ -194,11 +194,15 @@ D3DDrv's (`BLIT_Direct3D`) is set to `WindowedViewportX` by `Y` in a window, Ope
 the width even, one more where it is odd, the height as it comes (`0x1110d9a8`-`0x1110d9ab`); in
 a window it sizes the window about that client area (`AdjustWindowRect`, `MoveWindow`,
 `0x1110e29f`), unless asked to leave the window alone (`BLIT_NoWindowChange`) or the viewport is a
-child window's. With a render device, outside the editor, it keeps a size of something as the
-client's for its mode -- `WindowedViewportX`, `Y` and `WindowedColorBits` (8 × the bytes a
-pixel), or the full screen ones -- and saves the client's config whatever the size
-(`SaveConfig`, `0x1110e2f3`-`0x1110e35b`), the config cache flushed, every changed ini written
-([configuration](core-dll.md#configuration)): a window sized by hand's too (`WM_SIZE`, below).
+child window's. With a render device, outside the editor, it keeps the size it was asked, where
+neither side is 0, as the client's for its mode -- `WindowedViewportX`, `Y` and
+`WindowedColorBits` (8 × the bytes a pixel), or the full screen ones -- and saves the client's
+config whatever the size (`SaveConfig`, `0x1110e2f3`-`0x1110e35b`), the config cache flushed,
+every changed ini written ([configuration](core-dll.md#configuration)): a window sized by
+hand's too (`WM_SIZE`, below). While it moves its own window the viewport's window procedure
+handles no message (a count the move raises, tested first, `0x11109b30`), the `WM_SIZE` of that
+move among them: where Windows holds the window under the size asked (`SETRES` past the
+screen), the size kept and saved is the one asked all the same.
 So in a window the windowed size is the window's own, and `ENDFULLSCREEN` there logs its line
 and sizes the window at the size it has; full screen it is the toggle's way back.
 `PREFERENCES` (`0x11107296`-`0x111073a6`) clears the client's mark to go back to full
