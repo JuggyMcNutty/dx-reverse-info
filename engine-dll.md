@@ -2205,6 +2205,16 @@ depends on what the key did:
 So a key bound to `Shot` (`DefUser.ini`'s `GreyStar`) takes a screenshot, and a
 viewport word is taken before an exec function of its name.
 
+**`SHOT`**, a viewport's word (`UViewport::Exec`, `0x10373fce`): it takes the
+first name of `Shot0000.bmp` to `Shot0255.bmp` that no file has, in the working
+folder (`System`), and with all 256 there takes nothing and says nothing. It
+reads the frame from the render device, then makes the file's writer with its
+errors sent to no device (`0x103740b5`): where there is none -- a folder that
+takes no file, a full disk -- it writes nothing and says nothing, and the game
+goes on. The file is a 14-byte header, a 40-byte image header of 24 bits a
+pixel, then each pixel's three bytes, the rows from the last to the first, no
+write of them checked.
+
 **`UInput::ReadInput`** (`0x10394580`), which a player's tick calls with the
 tick's time before `PlayerInput` and with −1 after `PlayerTick`
 ([a level's tick](#a-levels-tick)), takes the player class's `input`
