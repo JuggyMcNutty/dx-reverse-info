@@ -152,9 +152,13 @@ logged (`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of
 6. **Server:** spawns the player (`SpawnPlayActor`, the game's `Login`, as an
    autonomous proxy), or answers `FAILURE` and the reason, a bare `FAILURE `
    when the game gives none, logging `join failure` (`0x1039f780`). The `JOIN` is taken
-   whenever the connection has no player yet, whatever came before it: a
-   `HELLO` and a `JOIN` log a player in with no challenge answered and no
-   `PreLogin` asked (`0x1039f780`).
+   whenever the connection has no player yet, whatever came before it, with no
+   challenge answered and no `PreLogin` asked (`0x1039f780`). With no `LOGIN`
+   before it the join's URL is empty and the connection's package map holds
+   nothing, so the player's class is not found (`Package 'DeusEx' is not
+   accessible in this sandbox`) and the server stops with a critical error,
+   `Failed to load player class`: one packet of a `HELLO` and a `JOIN` ends a
+   server (run on a dedicated server with a game password).
 
 A client refused (`FAILURE`) or told `UPGRADE` stays in the level it was in,
 shown why ([what the player sees](#what-the-player-sees-of-a-join)). A
