@@ -343,7 +343,10 @@ fields, after their properties (none):
     A turn alone, with nothing standing
     on the actor, only sets its rotation (true), but for a brush that is not
     static, which turns as a move does, below. Such a brush traces nothing.
-  - Unless a test: what stands on the actor moves first, each by a
+  - Unless a test: what stands on the actor moves first -- each actor of
+    the level's list whose `Base` it is, looked for only while its
+    `StandingCount` is above 0, so one destroyed, its slot in the list None,
+    is not moved though its `Base` still names the actor -- each by a
     `MoveActor` of the delta plus its turn round the actor by the change of
     yaw (each yaw to a multiple of 4), what it stands on passed over, its own
     yaw (and a pawn's view) turned by the change; then a non-pawn that
@@ -1822,7 +1825,23 @@ back as a rotation with its roll (`FCoords::OrthoRotation`).
   `PostScale` is in it (DXEngine's `PostScaleConsole`: DXMP_CMD's bot door's
   top at -1289.999878, where one matrix of the same coordinates gives -1290).
   The scripts pass a mover's place and rotation at one of its
-  keys: the HUD's highlight on a door, and a mover's area.
+  keys: the HUD's highlight on a door, and a mover's area; no script of
+  the game asks it of an actor with no brush.
+  - A mesh's (`UMesh::GetRenderBoundingBox`, `0x103a6850`), whatever the
+    actor's `DrawType`: with the actor's `AnimSequence` one of the mesh's and
+    its `AnimFrame` 0 or above, the boxes of two of the sequence's frames
+    together -- frame (`AnimFrame` + 1) × the sequence's frames, rounded
+    down, and the one after it, each taken round the sequence's count --
+    else the mesh's own box. Its corners less the mesh's `Origin`, times the
+    mesh's `Scale` and the actor's `DrawScale` (1.5 for one that is
+    `bParticles`), each side then moved out by 1; that box through the
+    mesh's `RotOrigin` and the actor's rotation, at the actor's place plus
+    its `PrePivot`. Always valid.
+  - With neither (`UPrimitive::GetRenderBoundingBox`, `0x103d8580`, the
+    engine's cylinder): the actor's place less and plus its collision radius
+    + 1 on X and Y and its collision height + 1 on Z. Always valid.
+    DXEngine's `GhostBoxConsole`: a `CrateUnbreakableSmall`'s box 34 tall,
+    where its mesh's own, scaled, is 32.
 - **`CycleActors(BaseClass, Actor, Index)`** (`0x1036e9d0`): the level's actors
   of the class (Actor by default), from the slot `Index` names (0 when out of
   range), round once; each one found sets `Index` to the slot after it. Empty

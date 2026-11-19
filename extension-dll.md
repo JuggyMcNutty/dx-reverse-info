@@ -234,9 +234,15 @@ are `exec` exports.
   `NewChild` was asked not to, it is shown as `Show` shows it, so
   `VisibilityChanged` reaches it and every window its `InitWindow` made, and
   then asks once more to be laid out.
-  No class gives None. The window is locked from its `InitWindow` to after
-  its layout, so a destroy from inside (`SafeDestroy`) waits until the lock
-  lifts, and such a window is None to its maker.
+  No class gives None. The window is locked (`LockWindow`, `0x1004c140`)
+  from its `InitWindow` to after its layout. A destroy from inside
+  (`SafeDestroy`) runs at once all the same: the lock holds back the
+  object's deletion alone, done as the lock lifts (`UnlockWindow`,
+  `0x1004c150`). The steps go on with the window out of the tree, so one
+  destroyed in its `InitWindow` is still shown, when asked, and asks for its
+  layout: its `VisibilityChanged` and `ConfigurationChanged` reach it after
+  its `DestroyWindow`. A window destroyed anywhere in the three is None to
+  its maker.
 - **`KillAllChildren`** (`0x100505d0`) takes each child in turn by the next
   it had before the child's destroy.
 - **`DeusExHUD`** overrides the event to lay the HUD out again as its parts
@@ -253,7 +259,9 @@ are `exec` exports.
   5. the root lets go of it as the window under the mouse and as the grab;
      its timers go, and it leaves its parent.
 
-  The object is deleted unless its `lockCount` holds it.
+  The object is deleted unless its `lockCount` holds it. The mark that the
+  steps are done is set after the last, so a `Destroy` from the window's own
+  `DestroyWindow` runs them again.
 - **The pointer** (`XRootWindow::PaintWindows`, `0x1003ac18`) is drawn last,
   while a window takes the mouse and the root's `bCursorVisible` holds. Which
   (`XWindow::QueryCursor`, `0x1004f910`): from the window under the mouse up
@@ -450,6 +458,14 @@ yaw, its pitch left out.
 
 - **A new window** (`XWindow::Init`, `0x1004bb30`) is 10 by 10 at its
   parent's corner, left- and top-aligned with no margins and no size set.
+- **`Raise`** (`0x1004c250`) and **`Lower`** (`0x1004c2f0`): a window with a
+  parent that is not its last (first) child already is linked at the end
+  (start) of its parent's children, with no `ChildAdded` or
+  `DescendantAdded` (`AddChild`, `0x10050a80`), then asks its parent to lay
+  it out again (`AskParentForReconfigure`, `0x1004e060`) and has the root's
+  focus checked (`CheckFocusWindow`, `0x10050b80`). One already there does
+  nothing. A window that raises itself in its `DrawWindow` so gets its
+  `ConfigurationChanged` at once, its size unchanged.
 - **`SetPos(x, y)`** (`Move`, `0x1004ce80`) makes the window left- and
   top-aligned with x and y its margins. **`SetSize`**, `SetWidth` and
   `SetHeight` (`Resize`, `0x1004cf70`; `0x1004d040`, `0x1004d0e0`) set its
@@ -987,7 +1003,11 @@ every column to its margins.
   a row at a time (`ParentRequestedGranularity`: 1 across, a row size down).
 - **The row size** (`ComputeRowSize`, `0x10031fd0`): the tallest of the
   columns' fonts, by the height of a space, plus the row margin above and
-  below.
+  below, a column with no font counting 0. It is worked out into `lineSize`
+  where its parts change -- the number of columns (`SetNumColumns`,
+  `0x1002fa10`), a column's font (`SetColumnFont`, `0x100302d0`), the
+  margins (`SetFieldMargins`, `0x10031130`) -- so a list holds it before its
+  first layout and draw: 12 for a column in `FontMenuSmall`.
 - **When it changes.** Each of these asks the parent to lay the list out
   again (`AskParentForReconfigure`): adding, changing or deleting rows;
   setting a field's text or number when that widens its column
