@@ -1036,7 +1036,20 @@ The rest are UE1's own. The details:
     stored as a float: the squares summed X's and Y's first, then Z's, the
     sum stored as a double for `appSqrt`'s `fsqrt`, one over it an `fdivr`.
     In a console's tick two of three normals stand a last bit from a
-    double's (DXEngine's `SweepVmConsole`).
+    double's (DXEngine's `SweepVmConsole`);
+  - a vector over a float (`0x10137ab0`, `/=` `0x10138a10`) is each part
+    times one over the float: an `fdivr` of 1.0 kept on the x87's stack, then
+    a product and a float's store a part, so at 24 bits `vect(100,10,5) /
+    3.0` has 33.333336 for its X where a divide gives 33.333332, and at 64
+    the reciprocal keeps its bits;
+  - `MirrorVectorByNormal` (`0x101392a0`) makes the normal a unit
+    (`FVector::SafeNormal`, so one shorter than 0.0001 gives the vector
+    back), takes its dot with the vector, Y's and Z's products summed first,
+    then X's, stored as a float, and takes from each part twice the normal's
+    part times that dot: X's product as the x87 holds it, Y's and Z's stored
+    as floats before they are taken away. `(1,0,-1)` by `(0,0,2)` is
+    `(1,0,1)` (DXEngine's `Nat6Console`, each case alike in the console's
+    tick and the level's).
 - **A float made an int** -- `int(f)` (`0x10131b40`), `byte(f)`
   (`0x10131aa0`, the int's low 8 bits) and a rotator times a float
   (`0x101395e0`, `0x101396d0`, `*=` `0x101398b0`: each angle times the float

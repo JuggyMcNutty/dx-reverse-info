@@ -158,7 +158,15 @@ logged (`UControlChannel::Serialize`, `0x103fc6f0`): some 498 characters of
    nothing, so the player's class is not found (`Package 'DeusEx' is not
    accessible in this sandbox`) and the server stops with a critical error,
    `Failed to load player class`: one packet of a `HELLO` and a `JOIN` ends a
-   server (run on a dedicated server with a game password).
+   server (run on a dedicated server with a game password). The same after a
+   `LOGIN` the game's `PreLogin` refused, when the `JOIN` is the next line of
+   the same bunch: the control channel hands every line of a bunch on, the
+   refusal's closing of the connection notwithstanding, so the log reads
+   `PreLogin failure`, then `Join request` with the login's URL, and the
+   server stops as above, the connection never welcomed and its package map
+   empty. A `JOIN` in a later packet finds the connection gone and does
+   nothing (both run on a dedicated server with a game password, the login
+   with the challenge answered and no password).
 
 A client refused (`FAILURE`) or told `UPGRADE` stays in the level it was in,
 shown why ([what the player sees](#what-the-player-sees-of-a-join)). A
