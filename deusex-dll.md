@@ -359,7 +359,11 @@ menus. Each native's `exec` only unpacks its arguments.
   destroys the object, and deletes nothing on disk. `PurgeAllSaveInfo`
   (`0x10018240`) lets go of all of them.
 - **New slots.** `GetNewSaveFileIndex` (`0x10017cc0`): the highest `SaveNNNN`
-  listed plus 1, never a gap. `GenerateSaveFilename(n)` (`0x10017d60`):
+  listed plus 1, never a gap. A directory spelt in another case is not
+  counted: with `Save0004` and `save0005` the new index is 5, and the save,
+  whose directory Windows finds in any case, empties `save0005` and is
+  written there (run, DXEngine's `SaveConsole` with `NewSlot`).
+  `GenerateSaveFilename(n)` (`0x10017d60`):
   `SaveNNNN.<ext>`. `GenerateNewSaveFilename(n)` (`0x10017e30`) lists the
   saves first and takes a new index for -1.
 - **Other.** `GetTempSaveInfo` (`0x10018120`) makes one transient
