@@ -51,7 +51,7 @@ needs `OpenAL32.dll`, `ALURE32.dll` and `libxmp.dll`, beside it.
 
 **HX**, Sebastian Kaufel's co-op mod, abandoned since its 0.9.89.4 of 2019, is read as the
 game's binaries are: its `HX.dll`, `HX.exe` and `HCC.exe`, in [`hx-dll.md`](hx-dll.md), for
-DXEngine to play it. The mods still being made are not read
+DXEngine to play it. Nothing of the mods still being made is here
 ([Port Ex Machina's mods](https://github.com/JuggyMcNutty/port-ex-machina/blob/main/AGENTS.md#decided)).
 
 ## Working on the binaries
