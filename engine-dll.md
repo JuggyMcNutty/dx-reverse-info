@@ -2113,6 +2113,28 @@ own nodes (a Liberty Island save: 209 of the level's 13,212 flagged in front,
 
 ## A key's binding
 
+A key, a button or an axis comes into the engine by `UEngine::InputEvent`
+(`0x103814e0`; the game engine has none of its own, its table holding this
+one), with the viewport, the key, what it did and an amount, and is offered in
+this order:
+
+- **The console first**: the viewport's console's script `KeyEvent`, by its
+  name's number, 821, as `UConsole::eventKeyEvent` calls it (`0x1034e610`;
+  `KeyType` is 820). A key it takes (it answers true) goes no further, but a
+  release it takes is still shown to the input's `PreProcess`, so the input
+  knows the key is up.
+- **Then the input**: `UInput::PreProcess`, and if that lets it by,
+  `UInput::Process`, with the console as its output, or the log where there is
+  no console. Deus Ex's input is Extension's, whose `Process` offers the key to
+  the root window before its binding
+  ([extension-dll.md](extension-dll.md#the-engine-and-the-input)).
+
+So a window that holds the keyboard never keeps a key from the console: the
+console is asked before the root window is. Before all of it, while the menu
+the player's HUD shows is of a class named `UnrealQuitMenu` or
+`UnrealYesNoMenu`, or of one built on them, a letter that is the localized yes
+or no key is made `Y` or `N`; Deus Ex has no such menu.
+
 A key's binding is a line of commands with `|` between them (`[Engine.Input]`
 in `User.ini`), cut as Core's `ParseLine` cuts a line, not exact (Core.dll
 `0x10147e60`), into 256 characters: up to a CR, an LF or the text's end, 255
